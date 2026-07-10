@@ -34,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi data gagal.',
+                'message' => 'Email atau password yang anda masukkan salah. Silahkan coba kembali.',
                 'errors' => $e->errors()
             ], 422);
         });
@@ -49,7 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Halaman atau endpoint tidak ditemukan.'
+                'message' => 'Halaman tidak ditemukan.'
             ], 404);
         });
     })->create();

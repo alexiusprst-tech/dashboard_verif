@@ -1,7 +1,19 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+
 import { MainLayout } from '@/shared/layouts/MainLayout';
+
 import { LoginPage } from '@/features/auth/LoginPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
+
+import { PloCloPage } from '@/features/plo-clo/PloCloPage';
+import { SoalPage } from '@/features/soal/SoalPage';
+import { VerifikasiPage } from '@/features/verifikasi/VerifikasiPage';
+import { BeritaAcaraPage } from '@/features/berita-acara/BeritaAcaraPage';
+import { PenugasanPicPage } from '@/features/penugasan-pic/PenugasanPicPage';
+import { PeriodePage } from '@/features/periode/PeriodePage';
+import { KategoriPage } from '@/features/kategori/KategoriPage';
+import { BroadcastPage } from '@/features/broadcast/BroadcastPage';
+import { MonitoringPage } from '@/features/monitoring/MonitoringPage';
 
 /**
  * Router aplikasi Sistem Verifikasi Soal.
@@ -34,20 +46,61 @@ export const router = createBrowserRouter([
                 index: true,
                 element: <Navigate to="/dashboard" replace />,
             },
+
             {
                 path: 'dashboard',
                 element: <DashboardPage />,
             },
-            // TODO: tambahkan route fitur lain saat dibangun:
-            // { path: 'plo-clo', element: <PloCloPage /> },
-            // { path: 'soal', element: <SoalPage /> },
-            // { path: 'verifikasi', element: <VerifikasiPage /> },
-            // { path: 'berita-acara', element: <BeritaAcaraPage /> },
-            // { path: 'penugasan-pic', element: <PenugasanPicPage /> },
-            // { path: 'periode', element: <PeriodePage /> },
-            // { path: 'kategori', element: <KategoriPage /> },
-            // { path: 'broadcast', element: <BroadcastPage /> },
-            // { path: 'monitoring', element: <MonitoringPage /> },
+
+            {
+                path: 'plo-clo',
+                element: <PloCloPage />,
+            },
+
+            {
+                path: 'soal',
+                element: <SoalPage />,
+            },
+
+            {
+                path: 'soal/semua',
+                element: <SoalPage />,
+            },
+
+            {
+                path: 'verifikasi',
+                element: <VerifikasiPage />,
+            },
+
+            {
+                path: 'berita-acara',
+                element: <BeritaAcaraPage />,
+            },
+
+            {
+                path: 'penugasan-pic',
+                element: <PenugasanPicPage />,
+            },
+
+            {
+                path: 'periode',
+                element: <PeriodePage />,
+            },
+
+            {
+                path: 'kategori',
+                element: <KategoriPage />,
+            },
+
+            {
+                path: 'broadcast',
+                element: <BroadcastPage />,
+            },
+
+            {
+                path: 'monitoring',
+                element: <MonitoringPage />,
+            },
         ],
     },
 
