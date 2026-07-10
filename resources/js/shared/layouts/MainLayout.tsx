@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { useAuth } from '@/shared/hooks/useAuth';
+import api from '@/shared/lib/api';
 
 /**
  * MainLayout — wrapper untuk semua halaman yang membutuhkan autentikasi.
@@ -22,7 +24,21 @@ export function MainLayout() {
     const { isAuthenticated } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // Guard: redirect ke login jika belum login
+    // Fetch unread notification count — harus dipanggil SEBELUM early return
+    // agar urutan hooks selalu konsisten (Rules of Hooks).
+    // enabled: false saat belum login supaya tidak trigger request.
+    const { data: notifData } = useQuery({
+        queryKey: ['notifikasi-unread-count'],
+        queryFn: async () => {
+            const res = await api.get('/notifikasi', { params: { unread: 1, per_page: 1 } });
+            return (res.data.unread_count as number) ?? 0;
+        },
+        enabled: isAuthenticated,
+        refetchInterval: 60_000,
+        staleTime: 30_000,
+    });
+
+    // Guard: redirect ke login jika belum autentikasi
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
@@ -40,7 +56,7 @@ export function MainLayout() {
                 {/* Topbar */}
                 <Topbar
                     onMobileMenuToggle={() => setMobileMenuOpen(true)}
-                    notificationCount={0} /* TODO: ganti dengan data dari TanStack Query */
+                    notificationCount={notifData ?? 0}
                 />
 
                 {/* Page Content */}

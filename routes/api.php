@@ -36,6 +36,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('plo', PloController::class);
     Route::apiResource('clo', CloController::class);
 
+    // Program Studi & Courses helper
+    Route::get('/program-studi', function () {
+        return response()->json([
+            'success' => true,
+            'data' => \App\Models\ProgramStudi::orderBy('nama_prodi')->get()
+        ]);
+    });
+    Route::get('/courses', function (Illuminate\Http\Request $request) {
+        $prodiId = $request->query('prodi_id');
+        $query = \App\Models\Course::query();
+        if ($prodiId) {
+            $query->where('prodi_id', $prodiId);
+        }
+        return response()->json([
+            'success' => true,
+            'data' => $query->orderBy('nama_mk')->get()
+        ]);
+    });
+
     // Periode
     Route::get('/periode', [PeriodeController::class, 'index']);
     Route::get('/periode/{id}', [PeriodeController::class, 'show']);
