@@ -15,7 +15,9 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'nama_kategori' => $this->nama_kategori,
             'deskripsi' => $this->deskripsi,
-            'active_template' => new TemplateResource($this->whenLoaded('activeTemplate')),
+            'active_template' => $this->whenLoaded('activeTemplate')
+                ? new TemplateResource($this->activeTemplate)
+                : null,
         ];
     }
 }

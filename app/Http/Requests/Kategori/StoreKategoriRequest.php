@@ -13,7 +13,8 @@ class StoreKategoriRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('kategori');
+        // Ensure we have an integer id (avoid empty string causing SQL errors)
+        $id = (int) $this->route('kategori');
 
         return [
             'nama_kategori' => 'required|string|max:100|unique:categories,nama_kategori,' . $id,

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Category extends Model
 {
@@ -21,9 +22,9 @@ class Category extends Model
         return $this->hasMany(Template::class, 'kategori_id');
     }
 
-    public function activeTemplate(): HasMany
+    public function activeTemplate(): HasOne
     {
-        return $this->hasMany(Template::class, 'kategori_id')
+        return $this->hasOne(Template::class, 'kategori_id')
             ->where('is_active', true);
     }
 }

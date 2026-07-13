@@ -9,11 +9,7 @@ export async function getTemplateList(kategoriId: number | string): Promise<Temp
 }
 
 export async function uploadTemplate(payload: FormData): Promise<TemplateSoal> {
-    const { data } = await api.post(BASE, payload, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const { data } = await api.post(BASE, payload);
     return data.data;
 }
 

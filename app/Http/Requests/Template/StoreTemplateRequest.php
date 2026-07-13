@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Template;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Support\Facades\Log;
 
 class StoreTemplateRequest extends FormRequest
 {
@@ -32,5 +34,24 @@ class StoreTemplateRequest extends FormRequest
             'versi.required' => 'Versi template wajib diisi.',
             'versi.max' => 'Versi template maksimal 20 karakter.',
         ];
+    }
+
+    /**
+     * Log incoming request data when validation fails to aid debugging.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        try {
+            Log::error('Template upload validation failed', [
+                'input' => $this->all(),
+                'file_keys' => array_keys($this->allFiles()),
+                'errors' => $validator->errors()->toArray(),
+            ]);
+        } catch (\Throwable $e) {
+            // ensure we don't break the normal validation flow
+            Log::error('Failed logging template upload validation details', ['exception' => $e->getMessage()]);
+        }
+
+        parent::failedValidation($validator);
     }
 }
