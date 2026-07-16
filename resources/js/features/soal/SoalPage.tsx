@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Download, Edit2, Trash2, Eye, FileText, Calendar, Clock, RefreshCw } from 'lucide-react';
+import { Plus, Download, Edit2, MinusCircle, Eye, FileText, Calendar, Clock, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { SearchBar } from '@/shared/components/ui/SearchBar';
@@ -287,7 +287,7 @@ export function SoalPage() {
                                                         className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
                                                         title="Hapus"
                                                     >
-                                                        <Trash2 size={15} />
+                                                        <MinusCircle size={15} />
                                                     </button>
                                                 )}
                                             </div>

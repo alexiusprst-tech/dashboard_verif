@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Upload, Trash2, FileText, Plus, AlertCircle } from 'lucide-react';
+import { Download, Upload, MinusCircle, FileText, Plus, AlertTriangle } from 'lucide-react';
 import { useTemplateList, useUploadTemplate, useDeleteTemplate } from '../hooks/useTemplate';
 import type { Kategori } from '../types/kategori.types';
 import { useToast } from '@/shared/hooks/useToast';
@@ -32,7 +32,8 @@ export function TemplateSection({ kategori }: TemplateSectionProps) {
             if (selected.name.endsWith('.docx') || selected.name.endsWith('.doc')) {
                 setFile(selected);
             } else {
-                toast.error('File harus berupa Word (.docx / .doc)');
+                toast.error('File harus berupa Word (.docx / .doc). Format lain tidak diterima.');
+                e.target.value = ''; // reset input
             }
         }
     };
@@ -160,62 +161,91 @@ export function TemplateSection({ kategori }: TemplateSectionProps) {
 
                 {!isLoading && templates && templates.length > 0 && (
                     <div className="rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden bg-white">
-                        {templates.map((t) => (
-                            <div key={t.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                                        <FileText size={18} />
+                        {templates.map((t) => {
+                            const isValidFormat =
+                                t.nama_file.endsWith('.docx') || t.nama_file.endsWith('.doc');
+                            return (
+                            <div
+                                    key={t.id}
+                                    className={`flex items-center justify-between p-4 transition ${
+                                        isValidFormat
+                                            ? 'hover:bg-gray-50'
+                                            : 'bg-red-50 hover:bg-red-100'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                                                isValidFormat
+                                                    ? 'bg-blue-50 text-blue-600'
+                                                    : 'bg-red-100 text-red-500'
+                                            }`}
+                                        >
+                                            {isValidFormat ? <FileText size={18} /> : <AlertTriangle size={18} />}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className={`text-sm font-medium ${
+                                                    isValidFormat ? 'text-gray-800' : 'text-red-700'
+                                                }`}>
+                                                    {t.nama_file}
+                                                </p>
+                                                {!isValidFormat && (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600 border border-red-200">
+                                                        <AlertTriangle size={9} />
+                                                        Format tidak valid
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-gray-400">
+                                                Versi {t.versi} • Diunggah pada{' '}
+                                                {new Date(t.created_at).toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                })}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-800">{t.nama_file}</p>
-                                        <p className="text-xs text-gray-400">
-                                            Versi {t.versi} • Diunggah pada{' '}
-                                            {new Date(t.created_at).toLocaleDateString('id-ID', {
-                                                day: 'numeric',
-                                                month: 'short',
-                                                year: 'numeric',
-                                            })}
-                                        </p>
+
+                                    <div className="flex items-center gap-1.5">
+                                        {t.is_active && isValidFormat && (
+                                            <span className="mr-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 border border-green-200">
+                                                Aktif
+                                            </span>
+                                        )}
+
+                                        {t.file_url ? (
+                                            <a
+                                                href={t.file_url}
+                                                download
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
+                                                title="Download"
+                                            >
+                                                <Download size={15} />
+                                            </a>
+                                        ) : (
+                                            <a
+                                                href={`/storage/${t.file_path}`}
+                                                download
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
+                                                title="Download"
+                                            >
+                                                <Download size={15} />
+                                            </a>
+                                        )}
+
+                                        <button
+                                            onClick={() => handleOpenDelete(t.id)}
+                                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
+                                            title="Hapus"
+                                        >
+                                            <MinusCircle size={15} />
+                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-1.5">
-                                    {t.is_active && (
-                                        <span className="mr-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 border border-green-200">
-                                            Aktif
-                                        </span>
-                                    )}
-
-                                    {t.file_url ? (
-                                        <a
-                                            href={t.file_url}
-                                            download
-                                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
-                                            title="Download"
-                                        >
-                                            <Download size={15} />
-                                        </a>
-                                    ) : (
-                                        <a
-                                            href={`/storage/${t.file_path}`}
-                                            download
-                                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
-                                            title="Download"
-                                        >
-                                            <Download size={15} />
-                                        </a>
-                                    )}
-
-                                    <button
-                                        onClick={() => handleOpenDelete(t.id)}
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
-                                        title="Hapus"
-                                    >
-                                        <Trash2 size={15} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

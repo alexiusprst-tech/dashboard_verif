@@ -1,4 +1,4 @@
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle, MinusCircle } from 'lucide-react';
 import { Modal } from './Modal';
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -52,7 +52,7 @@ export function ConfirmDialog({
                         {loading ? (
                             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         ) : (
-                            <Trash2 size={14} />
+                            <MinusCircle size={14} />
                         )}
                         {confirmLabel}
                     </button>

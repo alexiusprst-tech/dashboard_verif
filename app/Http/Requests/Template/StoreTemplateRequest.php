@@ -16,8 +16,14 @@ class StoreTemplateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'kategori_id' => 'required|exists:categories,id',
-            'file_template' => ['required', 'file', 'mimes:pdf', 'max:10240'], // Max 10MB, PDF only
+            'kategori_id'   => 'required|exists:categories,id',
+            'file_template' => [
+                'required',
+                'file',
+                // Terima format Word (.docx dan .doc)
+                'mimes:docx,doc,vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'max:20480', // Maks 20MB
+            ],
             'versi' => 'required|string|max:20',
         ];
     }
@@ -25,14 +31,14 @@ class StoreTemplateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'kategori_id.required' => 'Kategori wajib dipilih.',
-            'kategori_id.exists' => 'Kategori tidak valid.',
+            'kategori_id.required'   => 'Kategori wajib dipilih.',
+            'kategori_id.exists'     => 'Kategori tidak valid.',
             'file_template.required' => 'File template wajib diunggah.',
-            'file_template.file' => 'File yang diunggah harus berupa file.',
-            'file_template.mimes'    => 'File harus berformat PDF.',
-            'file_template.max' => 'Ukuran file template maksimal 10MB.',
-            'versi.required' => 'Versi template wajib diisi.',
-            'versi.max' => 'Versi template maksimal 20 karakter.',
+            'file_template.file'     => 'File yang diunggah harus berupa file.',
+            'file_template.mimes'    => 'File template harus berformat Word (.docx atau .doc).',
+            'file_template.max'      => 'Ukuran file template maksimal 20MB.',
+            'versi.required'         => 'Versi template wajib diisi.',
+            'versi.max'              => 'Versi template maksimal 20 karakter.',
         ];
     }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Check, Play, Edit2, Trash2, Calendar, Clock } from 'lucide-react';
+import { Plus, Check, Play, Edit2, MinusCircle, Calendar, Clock } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { SearchBar } from '@/shared/components/ui/SearchBar';
@@ -252,7 +252,7 @@ export function PeriodePage() {
                                                         className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
                                                         title="Delete"
                                                     >
-                                                        <Trash2 size={15} />
+                                                        <MinusCircle size={15} />
                                                     </button>
                                                 </div>
                                             </td>

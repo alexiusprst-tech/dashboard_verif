@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Calendar, UserCheck } from 'lucide-react';
+import { Plus, MinusCircle, Calendar, UserCheck } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { Pagination } from '@/shared/components/ui/Pagination';
@@ -199,7 +199,7 @@ export function PenugasanPicPage() {
                                                     className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
                                                     title="Cabut Role PIC"
                                                 >
-                                                    <Trash2 size={15} />
+                                                    <MinusCircle size={15} />
                                                 </button>
                                             </div>
                                         </td>
