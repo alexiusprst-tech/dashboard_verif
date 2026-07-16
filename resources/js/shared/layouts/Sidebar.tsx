@@ -15,6 +15,7 @@ import {
     GraduationCap,
     Bell,
     X,
+    Scroll,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -57,6 +58,7 @@ const COORDINATOR_ITEMS: NavItem[] = [
 const ADMIN_ITEMS: NavItem[] = [
     { label: 'Periode & Deadline', href: '/periode', icon: Calendar },
     { label: 'Kategori & Template', href: '/kategori', icon: Tag },
+    { label: 'Template Berita Acara', href: '/template-ba', icon: Scroll },
     { label: 'Penugasan PIC', href: '/penugasan-pic', icon: Users },
     { label: 'Broadcast', href: '/broadcast', icon: Megaphone },
     { label: 'Semua Soal', href: '/soal/semua', icon: FileText },

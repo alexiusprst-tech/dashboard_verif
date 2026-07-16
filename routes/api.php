@@ -74,6 +74,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/templates', [TemplateController::class, 'store'])->middleware('super_admin');
     Route::delete('/templates/{id}', [TemplateController::class, 'destroy'])->middleware('super_admin');
 
+    // Template Berita Acara
+    Route::get('/template-ba', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'index'])->middleware('super_admin');
+    Route::get('/template-ba/active', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'active']);
+    Route::post('/template-ba', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'store'])->middleware('super_admin');
+    Route::put('/template-ba/{id}/activate', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'activate'])->middleware('super_admin');
+    Route::delete('/template-ba/{id}', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'destroy'])->middleware('super_admin');
+    Route::get('/template-ba/{id}/download', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'download'])->middleware('super_admin');
+
     // Soal
     Route::apiResource('soal', SoalController::class);
 
@@ -92,6 +100,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/berita-acara', [BeritaAcaraController::class, 'index']);
     Route::post('/berita-acara/generate', [BeritaAcaraController::class, 'generate'])->middleware('pic_periode');
     Route::get('/berita-acara/{id}/print', [BeritaAcaraController::class, 'print']);
+    Route::get('/berita-acara/{id}/download', [BeritaAcaraController::class, 'download']);
 
     // Broadcast
     Route::get('/broadcast', [BroadcastController::class, 'index']);

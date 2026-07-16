@@ -1,6 +1,9 @@
 # Sistem Verifikasi Soal
 
-Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara) soal ujian di lingkungan akademik. Sistem mendukung penugasan dosen sebagai verifikator secara dinamis pada setiap periode, sehingga proses verifikasi, monitoring, dan dokumentasi dapat dilakukan secara terstruktur, transparan, dan terdokumentasi dengan baik.
+Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara) soal ujian oleh dosen, dengan alur penugasan PIC (Person in Charge) yang bersifat dinamis per periode. Fokus penggunaan saat ini untuk **Program Studi Sistem Informasi**.
+
+> Dokumen ini adalah versi terbaru yang sudah mencakup seluruh revisi: penyederhanaan role (Coordinator melebur ke PIC), pembedaan Dosen Biasa/LB, pemetaan dosen↔mata kuliah, PLO/CLO per periode, dan format soal wajib PDF.
+
 ---
 
 ## Daftar Isi
@@ -15,272 +18,134 @@ Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara
 - [8. Entitas Data Utama](#8-entitas-data-utama)
 - [9. Alur Berita Acara](#9-alur-berita-acara)
 - [10. Catatan Pengembangan](#10-catatan-pengembangan)
-- [11. Peraturan Bisnis](#11-peraturan-bisnis)
-- [12. Error Handling](#12-error-handling)
-- [13. Master Data](#13-master-data)
+
 ---
 
 ## 1. Ringkasan Sistem
 
-Sistem ini dibangun untuk mendigitalkan proses upload, verifikasi, dan dokumentasi soal ujian di lingkungan akademik. Pada setiap periode akademik (misalnya UTS atau UAS), dosen mengunggah soal sesuai kategori dan template yang telah ditentukan. Selanjutnya, Super Admin menugaskan beberapa dosen sebagai verifikator untuk melakukan proses pemeriksaan terhadap soal dari dosen yang menjadi tanggung jawabnya. Penugasan tersebut bersifat dinamis dan hanya berlaku pada periode yang ditentukan.
-
-Seluruh proses verifikasi terdokumentasi secara otomatis oleh sistem dan menghasilkan Berita Acara (BA) yang dapat diunduh sebagai dokumen resmi.
-
-Sistem ini memiliki beberapa karakteristik utama yang membedakannya dari aplikasi CRUD biasa, yaitu:
-
-Verifikator bukan merupakan role permanen. Setiap dosen dapat ditugaskan sebagai verifikator pada periode tertentu melalui mekanisme penugasan oleh Super Admin. Setelah periode berakhir, status tersebut otomatis tidak berlaku.
-Penugasan verifikator bersifat spesifik. Setiap verifikator bertanggung jawab memeriksa soal dari dosen-dosen tertentu yang telah ditetapkan oleh Super Admin, sehingga proses verifikasi menjadi lebih terstruktur dan mudah dipantau.
-Berita Acara dihasilkan secara otomatis berdasarkan data hasil verifikasi, tanpa memerlukan pengisian dokumen secara manual, sehingga lebih konsisten, efisien, dan mudah diaudit.
-Seluruh proses dapat dimonitor secara real-time, mulai dari progres upload soal, proses verifikasi, hingga penyelesaian dokumentasi pada setiap periode akademik.
+Sistem ini dibangun untuk mendigitalkan proses verifikasi soal ujian di lingkungan akademik, khususnya Program Studi Sistem Informasi. Setiap periode (semester ganjil/genap), dosen mengunggah soal (format PDF) sesuai kategori dan template yang ditentukan, sesuai mata kuliah yang diampunya pada periode tersebut. Sejumlah dosen ditunjuk oleh Super Admin untuk memegang **role PIC**, yang memverifikasi soal dan memantau progres verifikasi. Hasil verifikasi didokumentasikan secara otomatis dalam bentuk **Berita Acara (BA)** yang bisa dicetak.
 
 Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
 
-Verifikator bukan merupakan role permanen. Setiap dosen dapat ditugaskan sebagai verifikator pada periode tertentu melalui mekanisme penugasan oleh Super Admin. Penugasan tersebut hanya berlaku pada periode yang dipilih dan dapat berubah pada periode berikutnya.
-Berita Acara dihasilkan secara otomatis berdasarkan data hasil verifikasi, sehingga tidak memerlukan pengisian dokumen secara manual. Pendekatan ini menjaga konsistensi dokumen, mempercepat proses administrasi, dan memudahkan proses audit.
-Penugasan verifikator bersifat spesifik (granular). Setiap dosen yang ditugaskan sebagai verifikator hanya bertanggung jawab memverifikasi soal dari dosen-dosen tertentu yang telah ditetapkan oleh Super Admin berdasarkan kode dosen dan nama lengkap, sehingga proses verifikasi lebih terstruktur dan mudah dipantau.
+- **Hanya ada 3 tingkat akses**: Super Admin, Dosen (base), dan Dosen yang diberi **role PIC**. Tidak ada role Coordinator terpisah — seluruh fitur yang sebelumnya dianggap "milik Coordinator" (monitoring/dashboard progres) sudah melebur menjadi bagian dari role PIC.
+- **PIC bukan role permanen.** Status PIC adalah *penugasan role* yang berlaku untuk satu periode tertentu saja (disimpan di tabel `user_roles`), bisa berbeda-beda setiap periode. Seorang dosen bisa jadi PIC di periode ini, dan jadi dosen biasa di periode berikutnya.
+- **Dosen yang diberi role PIC dapat memverifikasi SEMUA soal** yang diupload dosen dalam periode aktif tempat dia bertugas — tidak dibatasi ke target dosen tertentu, karena scope aplikasi ini memang fokus untuk satu prodi (Sistem Informasi).
+- **Ada dua tipe dosen**: Dosen Biasa (aktif di semua periode) dan Dosen LB/Luar Biasa (hanya aktif di satu jenis periode — ganjil atau genap sesuai penugasannya).
+- **PLO dan CLO di-scope per periode** — bisa berbeda konten antar semester, tidak dipakai lintas periode secara otomatis.
+- **Berita Acara digenerate otomatis** dari data verifikasi (snapshot immutable), bukan diketik manual atau live-query, untuk menjaga konsistensi dokumen resmi walau ada perubahan data setelahnya.
+- **Format soal dan template wajib PDF** untuk menjaga konsistensi saat digabung ke dokumen Berita Acara.
 
 ---
 
 ## 2. Role & Hak Akses
 
-| Role            | Sifat                | Deskripsi Singkat
-| **Super Admin** | Permanen             | Mengelola keseluruhan sistem, termasuk manajemen pengguna, periode akademik, deadline, penugasan verifikator, kategori dan template soal, broadcast, monitoring, serta laporan.         |
-| **Dosen**       | Permanen (Base Role) | Role dasar seluruh pengguna non-admin. Mengelola PLO, CLO, mengunggah soal, memantau status verifikasi, dan **dapat memperoleh tugas sebagai verifikator (PIC)** pada periode tertentu. |
-| **Coordinator** | Permanen             | Melakukan monitoring proses upload dan verifikasi soal, melihat statistik, progres, serta laporan tanpa terlibat langsung dalam proses operasional.                                     |
+| Role | Sifat | Deskripsi Singkat |
+|---|---|---|
+| **Super Admin** | Permanen | Mengelola keseluruhan sistem: user, periode, deadline, pemetaan dosen↔matkul, pemberian role PIC, broadcast, dan monitoring semua data |
+| **Dosen (Biasa)** | Permanen (base role) | Role dasar, aktif di semua periode. Berhak CRUD PLO/CLO dan upload soal |
+| **Dosen (LB / Luar Biasa)** | Permanen (base role, dengan batasan) | Sama seperti Dosen Biasa, tapi **hanya aktif di satu jenis periode** (ganjil **atau** genap) sesuai penugasan |
+| **Dosen dengan role PIC** | Dinamis (assignment per periode, melekat pada akun dosen) | Diberikan Super Admin untuk satu periode tertentu. Mendapat **seluruh fitur dosen**, ditambah **verifikasi soal** dan **monitoring/dashboard progres** (fitur yang sebelumnya disebut "Coordinator" sudah melebur ke sini) |
 
+> **Catatan penting:** karena PIC adalah assignment dinamis, secara teknis disimpan di tabel `user_roles` (kombinasi `user_id`, `role_id`, `periode_id`), bukan sebagai kolom `role` tetap di tabel `users`. Tidak ada lagi kolom `is_coordinator` — role Coordinator sudah dihapus sepenuhnya dari desain.
 
+### Matriks Hak Akses
 
-> **Catatan penting:** PIC (Person in Charge) bukan merupakan role permanen, melainkan status penugasan yang diberikan kepada dosen oleh Super Admin pada periode tertentu. Selama penugasan masih aktif, dosen akan memperoleh menu tambahan untuk melakukan verifikasi soal, melihat daftar penugasan, serta menghasilkan Berita Acara. Setelah periode berakhir atau penugasan dicabut, menu tersebut otomatis tidak lagi ditampilkan.
-
-| Fitur                                                         | Super Admin | Dosen |   Coordinator  |
-| ------------------------------------------------------------- | :---------: | :---: | :------------: |
-| Dashboard                                                     |      ✅      |   ✅   |        ✅       |
-| Statistik Sistem                                              |      ✅      |   ❌   |        ✅       |
-| Statistik Soal Pribadi                                        |      ❌      |   ✅   |        ❌       |
-| Upload Soal                                                   |      ❌      |   ✅   |        ❌       |
-| Status Upload                                                 |      ❌      |   ✅   |        ❌       |
-| Revisi Soal                                                   |      ❌      |   ✅   |        ❌       |
-| Riwayat Upload                                                |      ❌      |   ✅   |        ❌       |
-| Verifikasi Soal *(jika sedang ditugaskan sebagai PIC)*        |      ❌      |   ✅   |        ❌       |
-| Melihat Assignment PIC *(jika sedang ditugaskan sebagai PIC)* |      ❌      |   ✅   |        ❌       |
-| Generate Berita Acara *(jika sedang ditugaskan sebagai PIC)*  |      ✅      |   ✅   |        ❌       |
-| Broadcast                                                     |      ✅      |   ✅   |        ✅       |
-| Deadline                                                      |      ✅      |   ✅   |        ✅       |
-| Assignment PIC                                                |      ✅      |   ❌   | ✅ (monitoring) |
-| Monitoring Seluruh Proses                                     |      ✅      |   ❌   |        ✅       |
-| Grafik Progress                                               |      ✅      |   ❌   |        ✅       |
-| Export Laporan                                                |      ✅      |   ❌   |        ✅       |
-
+| Fitur | Super Admin | Dosen (tanpa role PIC) | Dosen (dengan role PIC) |
+|---|:---:|:---:|:---:|
+| CRUD PLO & CLO (per periode) | ✅ | ✅ | ✅ |
+| Upload Soal (PDF, sesuai matkul yang diampu) | ❌ | ✅ | ✅ |
+| Kelola Periode & Deadline | ✅ | ❌ | ❌ |
+| Kelola Kategori/Template Soal (PDF) | ✅ | ❌ | ❌ |
+| Kelola Pemetaan Dosen ↔ Mata Kuliah | ✅ | ❌ | ❌ |
+| Berikan Role PIC ke Dosen | ✅ | ❌ | ❌ |
+| Verifikasi Soal (approve/revisi/reject) | ❌ | ❌ | ✅ (semua soal dalam periode tugasnya) |
+| Monitoring/Dashboard Progres Verifikasi | ✅ (semua periode) | ❌ | ✅ (periode tempat dia jadi PIC) |
+| Generate & Print Berita Acara | ✅ (semua) | ❌ | ✅ (miliknya) |
+| Kirim Broadcast | ✅ | ❌ | ❌ |
 
 ---
 
 ## 3. Proses Bisnis
 
-Berikut alur end-to-end sistem, mulai dari pembukaan periode hingga proses dokumentasi Berita Acara selesai.
+### Tahap 1 — Persiapan Periode (Super Admin)
+1. Super Admin membuat **Periode** baru (tentukan jenis semester: ganjil/genap) beserta **tenggat waktu (deadline)** upload soal.
+2. Super Admin menyiapkan/memilih **Kategori & Template** soal (format PDF) yang berlaku untuk periode tersebut.
+3. Super Admin membuat **pemetaan dosen ↔ mata kuliah** untuk periode ini (menentukan dosen mana mengampu mata kuliah apa) — pemetaan ini fleksibel dan bisa diedit kapan saja oleh Super Admin.
+4. Super Admin mengirim **Broadcast** pemberitahuan ke seluruh dosen terkait pembukaan periode dan deadline.
 
-Tahap 1 — Persiapan Periode (Super Admin)
-Super Admin membuat Periode baru beserta tenggat waktu (deadline) pengumpulan soal.
-Super Admin menentukan Kategori Soal dan Template Soal yang akan digunakan pada periode tersebut.
-Super Admin mengirimkan Broadcast kepada seluruh dosen atau program studi tertentu sebagai pemberitahuan dimulainya periode upload soal beserta informasi deadline.
-Tahap 2 — Upload Soal (Dosen)
-Dosen login ke sistem.
-Dosen melengkapi atau memperbarui data PLO (Program Learning Outcome) dan CLO (Course Learning Outcome) apabila belum tersedia.
-Dosen mengunduh template soal sesuai kategori yang ditentukan.
-Dosen menyusun dan mengunggah soal sebelum batas waktu yang telah ditetapkan.
-Setiap soal wajib dikaitkan dengan:
-Mata Kuliah
-CLO
-Periode
-Kategori Soal
-Setelah berhasil diunggah, status soal otomatis berubah menjadi Submitted.
-Tahap 3 — Penugasan PIC (Super Admin)
-Setelah masa upload selesai atau mendekati deadline, Super Admin melakukan penugasan PIC (Person in Charge).
-PIC dipilih dari akun dosen yang sudah terdaftar pada sistem.
-Penugasan PIC bersifat sementara dan hanya berlaku pada periode yang dipilih.
-Super Admin menentukan dosen mana saja yang menjadi tanggung jawab setiap PIC berdasarkan:
-Kode Dosen
-Nama Dosen
-Satu PIC dapat menangani verifikasi beberapa dosen.
-Dalam satu periode, setiap dosen hanya memiliki satu PIC yang bertanggung jawab melakukan verifikasi.
+### Tahap 2 — Upload Soal (Dosen)
+5. Dosen login. Jika Dosen LB, sistem otomatis mengecek apakah jenis semester periode aktif sesuai dengan penugasannya — jika tidak sesuai, menu upload tidak tersedia.
+6. Dosen melengkapi **PLO** dan **CLO** untuk periode aktif (data ini spesifik per periode, tidak otomatis terbawa dari periode sebelumnya).
+7. Dosen mengunduh template (PDF), menyusun soal dalam format PDF, lalu mengunggahnya ke sistem sebelum deadline — hanya bisa memilih mata kuliah yang sesuai dengan pemetaan dosen↔matkul miliknya di periode ini.
+8. Status soal otomatis menjadi `submitted`.
 
-Catatan: PIC bukan merupakan role permanen, melainkan penugasan yang melekat pada akun dosen selama periode tertentu.
+### Tahap 3 — Pemberian Role PIC (Super Admin)
+9. Menjelang/setelah deadline, Super Admin memberikan **role PIC** kepada 4–5 dosen terpilih untuk periode tersebut — pencarian dosen dilakukan berdasarkan **kode dosen** dan **nama lengkap**.
+10. Dosen yang diberi role ini otomatis mendapat akses penuh: verifikasi seluruh soal dalam periode tersebut + dashboard monitoring progres.
 
-Tahap 4 — Verifikasi Soal
-Dosen yang sedang mendapatkan penugasan sebagai PIC akan memperoleh menu tambahan Verifikasi Soal pada dashboardnya.
-PIC melihat daftar soal yang menjadi tanggung jawabnya berdasarkan data penugasan.
-PIC melakukan proses verifikasi terhadap setiap soal dengan memilih salah satu hasil berikut:
-Approve
-Revisi
-Reject
-Setiap proses verifikasi wajib disertai catatan sebagai dokumentasi hasil pemeriksaan.
-Setelah dilakukan verifikasi, status soal akan berubah sesuai keputusan PIC.
-Tahap 5 — Revisi Soal
-Jika hasil verifikasi adalah Revisi, maka status soal berubah menjadi Revisi.
-Dosen melakukan perbaikan terhadap soal sesuai catatan dari PIC.
-Dosen mengunggah kembali file soal hasil revisi.
-Status soal kembali menjadi Submitted dan otomatis masuk kembali ke antrean verifikasi PIC yang sama.
-Siklus revisi dapat berlangsung berulang hingga soal dinyatakan Approved atau Rejected.
-Tahap 6 — Monitoring (Coordinator)
-Coordinator memantau keseluruhan progres proses upload dan verifikasi melalui dashboard monitoring.
-Coordinator dapat melihat statistik berdasarkan:
-Program Studi
-Mata Kuliah
-Periode
-Status Verifikasi
-Coordinator hanya berperan sebagai pengawas (monitoring) dan tidak terlibat langsung dalam proses verifikasi maupun perubahan data soal.
-Tahap 7 — Dokumentasi Berita Acara
-Setelah seluruh proses verifikasi selesai, sistem secara otomatis menghasilkan Berita Acara (BA) berdasarkan data verifikasi.
-Data yang digunakan meliputi:
-Periode
-Dosen yang ditugaskan sebagai PIC
-Daftar dosen yang diverifikasi
-Daftar soal
-Hasil verifikasi
-Catatan verifikasi
-Tanggal pelaksanaan
-Nomor Berita Acara
-Berita Acara dibuat secara otomatis oleh sistem menggunakan template yang telah ditentukan sehingga tidak memerlukan pengisian manual.
-Tahap 8 — Cetak Dokumen
-Dosen yang sedang bertugas sebagai PIC dapat mencetak dokumen hasil verifikasi melalui sistem.
-Sistem menyediakan tiga pilihan dokumen yang dapat diunduh:
-Berita Acara (BA)
-Soal
-Berita Acara + Soal (Gabungan)
-Seluruh dokumen dihasilkan dalam format PDF melalui backend menggunakan DomPDF, sehingga format dokumen tetap konsisten dan mudah diaudit.
----
+### Tahap 4 — Verifikasi (Dosen dengan role PIC)
+11. Dosen dengan role PIC login dan melihat **seluruh soal** yang perlu diverifikasi dalam periode tugasnya (tidak dibatasi ke dosen tertentu).
+12. PIC memverifikasi tiap soal dengan hasil: **approve**, **minta revisi**, atau **reject**, disertai catatan.
+13. Jika soal diminta revisi, dosen pemilik soal mengunggah ulang (tetap PDF), status kembali ke `submitted`, dan masuk antrian verifikasi lagi.
 
-#Super Admin
+### Tahap 5 — Monitoring Progres (Dosen dengan role PIC)
+14. Dosen dengan role PIC dapat memantau progres verifikasi keseluruhan (dashboard rekap per mata kuliah/status) untuk periode tempat dia bertugas — fitur ini yang sebelumnya dianggap terpisah sebagai "Coordinator".
 
-Fokus: Mengelola seluruh sistem, mengatur periode akademik, melakukan penugasan PIC, serta memonitor keseluruhan proses verifikasi soal.
-
-Fitur
-Dashboard ringkasan sistem
-Manajemen akun dosen
-Manajemen Program Studi
-Manajemen Mata Kuliah
-Manajemen Periode Akademik
-Manajemen Deadline Upload Soal
-Manajemen Kategori Soal
-Manajemen Template Soal
-Penugasan PIC pada setiap periode
-Pencarian dosen berdasarkan kode dosen atau nama
-Manajemen Broadcast
-Monitoring progres upload dan verifikasi
-Melihat seluruh aktivitas sistem
-Generate seluruh Berita Acara
-Export laporan
-Melihat Audit Log
-
-Dosen
-
-Fokus: Mengelola data pembelajaran, mengunggah soal, memantau status verifikasi, serta melakukan proses verifikasi apabila sedang mendapatkan penugasan sebagai PIC.
-
-Fitur Dasar
-Dashboard pribadi
-CRUD Program Learning Outcome (PLO)
-CRUD Course Learning Outcome (CLO)
-Upload soal
-Download template soal
-Melihat status soal
-Revisi soal
-Riwayat upload soal
-Melihat broadcast
-Melihat deadline upload
-Melihat notifikasi
-Fitur Tambahan (Saat Ditugaskan sebagai PIC)
-
-Menu berikut muncul secara otomatis apabila dosen sedang mendapatkan penugasan sebagai PIC pada periode aktif.
-
-Dashboard Verifikasi
-Melihat daftar soal yang menjadi tanggung jawab
-Melakukan verifikasi soal
-Memberikan hasil verifikasi:
-Approve
-Revisi
-Reject
-Memberikan catatan verifikasi
-Melihat riwayat verifikasi
-Generate Berita Acara
-Print Berita Acara
-Print Soal
-Print Berita Acara + Soal
-
-Catatan: Fitur verifikasi hanya tersedia selama dosen memiliki penugasan sebagai PIC pada periode yang sedang berlangsung. Setelah penugasan berakhir, menu tersebut otomatis tidak lagi ditampilkan.
-
-Coordinator
-
-Fokus: Melakukan monitoring terhadap proses upload dan verifikasi soal tanpa terlibat langsung dalam proses operasional.
-
-Fitur
-Dashboard monitoring
-Monitoring progres upload soal
-Monitoring progres verifikasi soal
-Statistik berdasarkan Program Studi
-Statistik berdasarkan Mata Kuliah
-Statistik berdasarkan Periode
-Monitoring aktivitas verifikasi
-Monitoring assignment PIC
-Melihat detail status setiap soal
-Monitoring deadline
-Grafik progres sistem
-Export laporan monitoring
-
-Opsional: Coordinator dapat diberikan hak untuk melakukan approval tambahan apabila kebijakan institusi mengharuskannya sebagai lapisan verifikasi kedua.
+### Tahap 6 — Dokumentasi
+15. Setelah proses verifikasi selesai, sistem **secara otomatis men-generate Berita Acara** berdasarkan snapshot data verifikasi (siapa PIC, soal-soal apa saja yang diverifikasi, hasil verifikasi, tanggal pelaksanaan) — data ini **tidak berubah lagi** meskipun ada soal yang direvisi lagi setelahnya.
+16. Dosen dengan role PIC dapat **mencetak** dokumen dengan tiga opsi: **BA saja**, **Soal saja**, atau **BA + Soal (gabungan)**.
 
 ---
 
-Status soal menggambarkan siklus hidup sebuah soal mulai dari proses penyusunan hingga selesai diverifikasi. Setiap perubahan status dilakukan berdasarkan aksi pengguna sesuai hak akses yang dimiliki.
+## 4. Fitur per Role
 
-Draft
-   │
-   ▼
-Submitted
-   │
-   ▼
-In Review
-   │
-   ├───────────────┬────────────────┐
-   ▼               ▼                ▼
-Approved        Revisi         Rejected
-                    │
-                    ▼
-              Submitted
-                    │
-                    ▼
-                In Review
-Penjelasan Status
-Status	Keterangan
-Draft	Soal masih disusun oleh dosen dan belum dikirim untuk proses verifikasi.
-Submitted	Soal telah berhasil diunggah dan menunggu proses verifikasi oleh dosen yang sedang ditugaskan sebagai PIC.
-In Review	Soal sedang diperiksa oleh dosen yang mendapatkan penugasan sebagai PIC pada periode aktif.
-Approved	Soal telah memenuhi seluruh ketentuan dan dinyatakan lolos verifikasi.
-Revisi	Soal memerlukan perbaikan sesuai catatan hasil verifikasi.
-Rejected	Soal ditolak karena tidak memenuhi ketentuan atau tidak layak digunakan.
-Alur Revisi
+### Super Admin
+- Dashboard ringkasan progres upload & verifikasi seluruh periode
+- Manajemen akun dosen (kode dosen, nama, tipe dosen Biasa/LB, prodi)
+- Manajemen Periode & Deadline (dengan jenis semester ganjil/genap)
+- Manajemen Kategori/Template Soal (validasi PDF)
+- Manajemen pemetaan Dosen ↔ Mata Kuliah per periode
+- Pemberian role PIC ke dosen terpilih (pencarian via kode/nama)
+- Kirim & kelola Broadcast pemberitahuan
+- Melihat & mengunduh rekap seluruh Berita Acara
 
-Apabila hasil verifikasi adalah Revisi, maka proses berjalan sebagai berikut:
+### Dosen (Biasa & LB — base role)
+- CRUD PLO (Program Learning Outcome) khusus periode aktif
+- CRUD CLO (Course Learning Outcome) khusus periode aktif, terhubung ke PLO dan mata kuliah
+- Upload soal (PDF) sesuai kategori, template, dan mata kuliah yang diampu, sebelum deadline
+- Melihat status soal sendiri (draft/submitted/in review/revisi/approved/rejected)
+- Menerima notifikasi broadcast dari Super Admin
+- *(Khusus Dosen LB)* akses upload/interaksi soal hanya tersedia saat periode aktif sesuai jenis semester penugasannya
 
-Revisi
-   │
-   ▼
-Dosen melakukan perbaikan
-   │
-   ▼
-Upload ulang soal
-   │
-   ▼
-Submitted
-   │
-   ▼
-In Review
+### Dosen dengan Role PIC (Muncul sebagai menu tambahan saat role aktif di periode berjalan)
+- Melihat **seluruh** soal yang perlu diverifikasi dalam periode tugasnya
+- Melakukan verifikasi (approve/revisi/reject) disertai catatan
+- Melihat riwayat verifikasi yang sudah dilakukan
+- **Dashboard monitoring progres verifikasi** (per mata kuliah/status) — fitur yang sebelumnya disebut terpisah sebagai "Coordinator"
+- Generate & Print Berita Acara (BA saja/Soal saja/Keduanya)
 
-Siklus revisi dapat terjadi lebih dari satu kali hingga soal memperoleh status Approved atau Rejected.
+---
+
+## 5. State Machine Soal
+
+```
+Draft → Submitted → In Review (oleh dosen dengan role PIC)
+                        │
+          ┌─────────────┼─────────────┐
+          ▼             ▼             ▼
+       Approved       Revisi       Rejected
+                        │
+                        ▼
+                   Submitted (ulang, masuk antrian verifikasi lagi)
+```
+
+---
 
 ## 6. Tech Stack
 
 ### Frontend
 - React + Vite + TypeScript
-- React Router — routing & route guard per role
+- React Router — routing & route guard per role (termasuk guard dinamis untuk role PIC)
 - Tailwind CSS — styling
 - Shadcn UI — komponen UI
 - Axios Instance — HTTP client dengan interceptor token
@@ -291,15 +156,13 @@ Siklus revisi dapat terjadi lebih dari satu kali hingga soal memperoleh status A
 - Laravel 12
 - Sanctum — autentikasi SPA/token
 - Pola Controller → Service → Repository → Model
-- Form Request Validation
+- Form Request Validation (termasuk validasi wajib PDF untuk file soal/template)
 - API Resource untuk format response
 - PostgreSQL sebagai database
 
 ---
 
 ## 7. Struktur Proyek
-
-Struktur ini menggabungkan frontend dan backend dalam satu monorepo agar mudah dipahami sebagai satu kesatuan sistem. Backend dan frontend tetap berjalan sebagai dua service terpisah (backend sebagai REST API, frontend sebagai SPA yang mengonsumsinya).
 
 ```
 verifikasi-soal/
@@ -314,7 +177,8 @@ verifikasi-soal/
 │   │   │   │   ├── PeriodeController.php
 │   │   │   │   ├── KategoriTemplateController.php
 │   │   │   │   ├── SoalController.php
-│   │   │   │   ├── PenugasanPicController.php
+│   │   │   │   ├── DosenMataKuliahController.php
+│   │   │   │   ├── UserRoleController.php        # pemberian role PIC
 │   │   │   │   ├── VerifikasiController.php
 │   │   │   │   ├── BeritaAcaraController.php
 │   │   │   │   ├── BroadcastController.php
@@ -323,8 +187,9 @@ verifikasi-soal/
 │   │   │   ├── Requests/
 │   │   │   │   ├── Plo/{Store,Update}PloRequest.php
 │   │   │   │   ├── Clo/{Store,Update}CloRequest.php
-│   │   │   │   ├── Soal/{Store,Update}SoalRequest.php
-│   │   │   │   ├── PenugasanPic/StorePenugasanRequest.php
+│   │   │   │   ├── Soal/{Store,Update}SoalRequest.php     # validasi mimes:pdf
+│   │   │   │   ├── DosenMataKuliah/StoreMappingRequest.php
+│   │   │   │   ├── UserRole/AssignPicRequest.php
 │   │   │   │   ├── Verifikasi/StoreVerifikasiRequest.php
 │   │   │   │   └── Broadcast/StoreBroadcastRequest.php
 │   │   │   │
@@ -333,35 +198,35 @@ verifikasi-soal/
 │   │   │   │   ├── PloResource.php
 │   │   │   │   ├── CloResource.php
 │   │   │   │   ├── SoalResource.php
-│   │   │   │   ├── PenugasanPicResource.php
+│   │   │   │   ├── UserRoleResource.php
 │   │   │   │   ├── VerifikasiResource.php
 │   │   │   │   └── BeritaAcaraResource.php
 │   │   │   │
 │   │   │   └── Middleware/
 │   │   │       ├── EnsureIsSuperAdmin.php
-│   │   │       ├── EnsureIsPicForPeriode.php   # cek assignment dinamis
-│   │   │       └── EnsureIsCoordinator.php
+│   │   │       └── EnsureIsPicForPeriode.php   # cek dinamis ke tabel user_roles
 │   │   │
 │   │   ├── Services/
 │   │   │   ├── PloService.php
 │   │   │   ├── CloService.php
 │   │   │   ├── PeriodeService.php
-│   │   │   ├── SoalService.php
-│   │   │   ├── PenugasanPicService.php
+│   │   │   ├── SoalService.php                  # termasuk validateUploadEligibility()
+│   │   │   ├── DosenMataKuliahService.php
+│   │   │   ├── UserRoleService.php               # pemberian role PIC
 │   │   │   ├── VerifikasiService.php
-│   │   │   ├── BeritaAcaraService.php          # logic generate PDF
+│   │   │   ├── BeritaAcaraService.php            # logic generate PDF + snapshot
 │   │   │   └── BroadcastService.php
 │   │   │
 │   │   ├── Repositories/
 │   │   │   ├── Contracts/
 │   │   │   │   ├── PloRepositoryInterface.php
 │   │   │   │   ├── SoalRepositoryInterface.php
-│   │   │   │   ├── PenugasanPicRepositoryInterface.php
+│   │   │   │   ├── UserRoleRepositoryInterface.php
 │   │   │   │   └── VerifikasiRepositoryInterface.php
 │   │   │   └── Eloquent/
 │   │   │       ├── PloRepository.php
 │   │   │       ├── SoalRepository.php
-│   │   │       ├── PenugasanPicRepository.php
+│   │   │       ├── UserRoleRepository.php
 │   │   │       └── VerifikasiRepository.php
 │   │   │
 │   │   ├── Models/
@@ -370,8 +235,10 @@ verifikasi-soal/
 │   │   │   ├── Clo.php
 │   │   │   ├── Periode.php
 │   │   │   ├── KategoriTemplate.php
+│   │   │   ├── DosenMataKuliah.php
+│   │   │   ├── Role.php
+│   │   │   ├── UserRole.php
 │   │   │   ├── Soal.php
-│   │   │   ├── PenugasanPic.php
 │   │   │   ├── Verifikasi.php
 │   │   │   ├── BeritaAcara.php
 │   │   │   └── Broadcast.php
@@ -379,6 +246,8 @@ verifikasi-soal/
 │   │   ├── Enums/
 │   │   │   ├── SoalStatus.php          # Draft, Submitted, InReview, Revisi, Approved, Rejected
 │   │   │   ├── VerifikasiStatus.php
+│   │   │   ├── TipeDosen.php           # Biasa, LB
+│   │   │   ├── SemesterType.php        # Ganjil, Genap
 │   │   │   └── PrintType.php           # BA_ONLY, SOAL_ONLY, BOTH
 │   │   │
 │   │   └── Providers/
@@ -387,6 +256,7 @@ verifikasi-soal/
 │   ├── database/
 │   │   ├── migrations/
 │   │   └── seeders/
+│   │       └── RoleSeeder.php          # seed role "pic"
 │   │
 │   └── routes/
 │       └── api.php
@@ -397,7 +267,7 @@ verifikasi-soal/
 │   │   │   ├── App.tsx
 │   │   │   ├── router/
 │   │   │   │   ├── index.tsx
-│   │   │   │   ├── ProtectedRoute.tsx          # guard per role + PIC assignment
+│   │   │   │   ├── ProtectedRoute.tsx          # guard role + PIC assignment dinamis
 │   │   │   │   └── routePaths.ts
 │   │   │   └── providers/
 │   │   │       ├── QueryProvider.tsx
@@ -412,7 +282,7 @@ verifikasi-soal/
 │   │   │   ├── layouts/
 │   │   │   │   ├── SuperAdminLayout.tsx
 │   │   │   │   ├── DosenLayout.tsx
-│   │   │   │   └── PicLayout.tsx
+│   │   │   │   └── PicLayout.tsx               # dipakai juga untuk fitur monitoring
 │   │   │   ├── types/common.types.ts
 │   │   │   └── utils/
 │   │   │       ├── cn.ts
@@ -430,7 +300,7 @@ verifikasi-soal/
 │   │       │   ├── api/{ploApi,cloApi}.ts
 │   │       │   ├── hooks/{usePloList,useCreatePlo,useCloByPlo}.ts
 │   │       │   ├── components/{PloTable,PloFormDialog,CloFormDialog}.tsx
-│   │       │   ├── pages/PloCloPage.tsx
+│   │       │   ├── pages/PloCloPage.tsx         # ter-filter otomatis by periode aktif
 │   │       │   └── types/plo-clo.types.ts
 │   │       │
 │   │       ├── periode/
@@ -440,6 +310,13 @@ verifikasi-soal/
 │   │       │   ├── pages/PeriodeManagementPage.tsx
 │   │       │   └── types/periode.types.ts
 │   │       │
+│   │       ├── dosen-mata-kuliah/
+│   │       │   ├── api/dosenMataKuliahApi.ts
+│   │       │   ├── hooks/{useMappingList,useCreateMapping}.ts
+│   │       │   ├── components/MappingFormDialog.tsx
+│   │       │   ├── pages/DosenMataKuliahPage.tsx
+│   │       │   └── types/mapping.types.ts
+│   │       │
 │   │       ├── soal/
 │   │       │   ├── api/soalApi.ts
 │   │       │   ├── hooks/{useSoalList,useUploadSoal,useSoalStatus}.ts
@@ -447,12 +324,12 @@ verifikasi-soal/
 │   │       │   ├── pages/{UploadSoalPage,SoalListPage}.tsx
 │   │       │   └── types/soal.types.ts
 │   │       │
-│   │       ├── penugasan-pic/
-│   │       │   ├── api/penugasanPicApi.ts
-│   │       │   ├── hooks/{useDosenSearch,useAssignPic}.ts   # search by kode dosen + nama
-│   │       │   ├── components/{DosenSearchCombobox,PicAssignmentTable}.tsx
-│   │       │   ├── pages/AssignPicPage.tsx
-│   │       │   └── types/penugasan.types.ts
+│   │       ├── user-role/
+│   │       │   ├── api/userRoleApi.ts
+│   │       │   ├── hooks/{useDosenSearch,useAssignPicRole}.ts   # search by kode dosen + nama
+│   │       │   ├── components/{DosenSearchCombobox,PicRoleTable}.tsx
+│   │       │   ├── pages/AssignPicRolePage.tsx
+│   │       │   └── types/user-role.types.ts
 │   │       │
 │   │       ├── verifikasi/
 │   │       │   ├── api/verifikasiApi.ts
@@ -477,7 +354,10 @@ verifikasi-soal/
 │   │       │
 │   │       └── dashboard/
 │   │           ├── api/dashboardApi.ts
-│   │           ├── components/{SuperAdminDashboard,DosenDashboard,PicDashboard,CoordinatorDashboard}.tsx
+│   │           ├── components/
+│   │           │   ├── SuperAdminDashboard.tsx
+│   │           │   ├── DosenDashboard.tsx
+│   │           │   └── PicDashboard.tsx        # gabungan verifikasi + monitoring progres
 │   │           └── pages/DashboardPage.tsx
 │   │
 │   ├── index.html
@@ -486,435 +366,109 @@ verifikasi-soal/
 └── README.md
 ```
 
+> Catatan: folder/komponen terkait "Coordinator" (`CoordinatorLayout`, `CoordinatorDashboard`, dsb.) yang sempat muncul di draf sebelumnya **dihapus** — seluruh fungsinya sudah tergabung ke dalam `PicLayout`/`PicDashboard`.
+
 ---
 
 ## 8. Entitas Data Utama
 
 ```
 User
-
-id
-uuid
-kode_dosen
-nama_lengkap
-email
-password
-prodi_id (FK)
-
-is_super_admin
-is_coordinator
-
-status_aktif
-
-last_login_at
-
-created_at
-updated_at
-deleted_at
-
-Relasi
-
-User memiliki banyak PLO
-User memiliki banyak CLO
-User memiliki banyak Soal
-User dapat menjadi PIC melalui PenugasanPIC
-User memiliki banyak Broadcast (creator)
-
-Program Studi
-
-id
-kode_prodi
-nama_prodi
-
-created_at
-updated_at
-
-Mata Kuliah
-
-id
-kode_mk
-nama_mk
-prodi_id (FK)
-
-created_at
-updated_at
-
-PLO
-
-id
-kode
-deskripsi
-
-prodi_id (FK)
-
-created_by (FK User)
-
-created_at
-updated_at
-
-CLO
-
-id
-kode
-deskripsi
-
-mata_kuliah_id (FK)
-
-plo_id (FK)
-
-created_by (FK User)
-
-created_at
-updated_at
-
-Periode
-
-id
-nama_periode
-
-semester
-
-tahun_akademik
-
-tanggal_mulai
-
-tanggal_deadline
-
-status
-
-Kategori Soal
-
-id
-
-nama_kategori
-
-deskripsi
-
-created_at
-updated_at
-
-Template Soal
-
-id
-
-kategori_id (FK)
-
-nama_file
-
-file_path
-
-versi
-
-created_at
-updated_at
-
-Soal
-
-id
-
-uuid
-
-dosen_id (FK)
-
-mata_kuliah_id (FK)
-
-clo_id (FK)
-
-periode_id (FK)
-
-kategori_id (FK)
-
-template_id (FK)
-
-judul_soal
-
-file_soal
-
-versi
-
-status
-
-uploaded_at
-
-created_at
-updated_at
-
-Penugasan Dosen
-
-id
-
-periode_id (FK)
-
-pic_dosen_id (FK User)
-
-target_dosen_id (FK User)
-
-assigned_by (FK User)
-
-assigned_at
-
-created_at
-updated_at
-
-Verifikasi
-
-id
-
-soal_id (FK)
-
-pic_id (FK User)
-
-status
-
-catatan
-
-verified_at
-
-created_at
-updated_at
-
-Berita Acara
-
-id
-
-nomor_ba
-
-periode_id (FK)
-
-pic_id (FK User)
-
-generated_at
-
-file_pdf
-
-created_at
-updated_at
-
-Broadcast
-
-id
-
-judul
-
-isi
-
-target
-
-prodi_id (nullable)
-
-periode_id (nullable)
-
-created_by (FK User)
-
-published_at
-
-created_at
-updated_at
-
-Notifikasi
-
-id
-
-user_id (FK)
-
-judul
-
-pesan
-
-tipe
-
-is_read
-
-reference_type
-
-reference_id
-
-created_at
-
-Activity Log
-
-id
-
-user_id (FK)
-
-aktivitas
-
-modul
-
-ip_address
-
-user_agent
-
-created_at
-
-Riwayat Revisi
-
-id
-
-soal_id (FK)
-
-versi
-
-file_soal
-
-catatan_pic
-
-uploaded_by
-
-uploaded_at
+- id, uuid, kode_dosen, nama_lengkap, email, password
+- prodi_id (FK)
+- tipe_dosen: enum('biasa','lb')
+- semester_lb: enum('ganjil','genap') nullable   // hanya untuk Dosen LB
+- is_super_admin (bool)
+- status_aktif (bool)
+- deleted_at (soft delete)
 
 ProgramStudi
-      │
-      │
-      ▼
-User────────────┐
- │              │
- │              │
- ▼              ▼
-PLO          PenugasanPIC
- │          ▲          ▲
- ▼          │          │
-CLO         │          │
- │          │          │
- ▼          │          │
-MataKuliah  │          │
- │          │          │
- ▼          │          │
-Soal────────┘          │
- │                     │
- ▼                     │
-Verifikasi─────────────┘
- │
- ▼
-BeritaAcara
+- id, kode_prodi, nama_prodi
 
-KategoriSoal
-      │
-      ▼
-TemplateSoal
-      │
-      ▼
-Soal
+Course (Mata Kuliah)
+- id, kode_mk, nama_mk, prodi_id
+
+DosenMataKuliah (pemetaan fleksibel)
+- id, dosen_id, mata_kuliah_id, periode_id, created_by
+
+Role
+- id, nama_role   // saat ini hanya "pic"
+
+UserRole (penugasan role dinamis)
+- id, user_id, role_id, periode_id, assigned_by, assigned_at
+  → dosen dengan entry role "pic" di sini dapat akses verifikasi + monitoring
 
 Periode
-   │
-   ├────────► Soal
-   ├────────► Broadcast
-   ├────────► PenugasanPIC
-   └────────► BeritaAcara
+- id, nama_periode, semester (ganjil/genap), tahun_akademik
+- tanggal_mulai, tanggal_deadline, status
 
-User
- ├────────► Broadcast
- ├────────► ActivityLog
- ├────────► Notifikasi
- └────────► RiwayatRevisi
+PLO (per periode)
+- id, kode, deskripsi, prodi_id, periode_id, created_by
 
---- 
+CLO (per periode)
+- id, kode, deskripsi, mata_kuliah_id, plo_id, periode_id, created_by
+
+KategoriTemplate
+- id, nama_kategori, deskripsi
+
+Template (wajib PDF)
+- id, kategori_id, nama_file, file_path, versi, is_active
+
+Soal (wajib PDF)
+- id, uuid, dosen_id, mata_kuliah_id, clo_id, periode_id, template_id
+- judul_soal, file_soal, versi, status, uploaded_at, deleted_at (soft delete)
+
+RevisiHistory
+- id, soal_id, versi, file_soal, catatan_verifikator, uploaded_by
+
+Verifikasi (satu jenis verifikator: dosen dengan role PIC)
+- id, soal_id, verifier_id, status, catatan, verified_at, deleted_at
+
+BeritaAcara (auto-generated)
+- id, nomor_ba, periode_id, verifier_id, generated_at, file_pdf
+
+BeritaAcaraItem (snapshot immutable)
+- id, berita_acara_id, soal_id, verification_id, status_snapshot, catatan_snapshot
+
+Broadcast
+- id, judul, isi, target, prodi_id, periode_id, created_by, published_at
+
+Notifikasi
+- id, user_id, judul, pesan, tipe, is_read, reference_type, reference_id
+```
+
+---
 
 ## 9. Alur Berita Acara
 
-Berita Acara dirancang sebagai dokumen yang di-generate otomatis (bukan diketik manual), dengan pendekatan template + mail merge:
+Berita Acara dirancang sebagai dokumen yang di-generate otomatis (bukan diketik manual), dengan pendekatan snapshot immutable:
 
-1. Setelah proses verifikasi soal seorang dosen selesai (oleh PIC tertentu), sistem mengumpulkan data:
-   - Nama & kode dosen PIC yang bertugas
-   - Daftar dosen & soal yang diverifikasi beserta hasilnya (approve/revisi/reject)
-   - Tanggal pelaksanaan verifikasi
-   - Nomor BA (auto-increment per periode)
-2. Data tersebut dirender ke template dokumen (PDF) melalui backend.
-3. PIC dapat memilih opsi cetak:
+1. Setelah proses verifikasi soal selesai untuk suatu periode, dosen dengan role PIC memicu generate BA.
+2. Sistem mengambil data dari tabel `verifications` **pada saat itu juga** dan menyalinnya ke `berita_acara_items` (snapshot) — nomor BA, daftar soal & hasilnya, catatan, tanggal.
+3. Dokumen dirender ke PDF di sisi backend (bukan di frontend) agar konsisten dan dapat diaudit, hasilnya di-cache (`file_pdf`).
+4. Dosen dengan role PIC dapat memilih opsi cetak:
    - **BA saja**
    - **Soal saja**
    - **BA + Soal (gabungan)**
-4. Dokumen di-generate di sisi backend agar konsisten dan dapat diaudit (bukan dirender di frontend), lalu diunduh oleh PIC melalui tombol print/download.
+5. Karena datanya snapshot, **BA yang sudah dicetak tidak akan berubah** meskipun ada soal yang direvisi lagi setelahnya.
 
 ---
 
 ## 10. Catatan Pengembangan
 
-Beberapa hal yang perlu disepakati/diputuskan sebelum atau selama development:
+Hal-hal yang sudah difinalisasi melalui diskusi sebelumnya:
 
-1. **Peran Coordinator** — apakah berfungsi sebagai lapisan approval kedua setelah PIC (soal harus melalui Coordinator sebelum benar-benar final), atau murni sebagai pemantau progres tanpa hak approval.
-2. **Rangkap peran** — apakah seorang dosen yang sedang menjadi PIC di suatu periode tetap boleh mengunggah soal miliknya sendiri di periode yang sama, dan apakah boleh menjadi PIC untuk lebih dari satu kelompok dosen sekaligus.
-3. **Format template soal** — apakah upload berupa file bebas (Word/PDF mengikuti template), atau input terstruktur langsung di form web.
-4. **Mekanisme revisi** — apakah ada batas jumlah revisi per soal, atau bisa berulang tanpa batas hingga disetujui.
-5. **Mode autentikasi Sanctum** — SPA (cookie-based) atau token-based, tergantung apakah frontend dan backend di-deploy pada domain yang sama atau berbeda. Perlu dipastikan konfigurasi `SANCTUM_STATEFUL_DOMAINS` dan CORS sejak awal.
+- ✅ Role Coordinator dihapus, seluruh fiturnya melebur ke role PIC
+- ✅ Dosen LB dibatasi aktif hanya di satu jenis semester (ganjil/genap)
+- ✅ Format kode dosen & kode mata kuliah menggunakan huruf, pemetaan per periode dan editable oleh Super Admin
+- ✅ Soal dan template wajib PDF
+- ✅ Sistem role menggunakan pendekatan hybrid: boolean (`is_super_admin`) untuk role permanen, tabel `user_roles` untuk role dinamis (`pic`)
+- ✅ Scope verifikasi PIC: seluruh soal dalam periode aktif (tanpa filter prodi, karena aplikasi memang fokus untuk Prodi Sistem Informasi)
+- ✅ PLO dan CLO di-scope per periode
 
-# 11. Business Rules
+Hal yang masih bisa didiskusikan lebih lanjut ke depannya (opsional, bukan blocker):
 
-## Upload Soal
-
-- Upload hanya dapat dilakukan pada periode aktif.
-- Deadline ditentukan oleh Super Admin.
-- File maksimal 20 MB.
-- Format PDF/DOCX.
-- Wajib memilih CLO.
-- Draft dapat diubah.
-- Submitted tidak dapat diubah kecuali direvisi.
-
----
-
-## Penugasan Dosen (PIC)
-
-- PIC hanya dapat ditentukan oleh Super Admin.
-- PIC tidak boleh memverifikasi soal miliknya sendiri.
-- Penugasan hanya berlaku satu periode.
-- Penugasan dapat diubah sebelum verifikasi dimulai.
-
----
-
-## Verifikasi
-
-- Approve
-- Revisi
-- Reject
-
-Catatan wajib ketika memilih Revisi atau Reject.
-
----
-
-## Berita Acara
-
-- Nomor otomatis.
-- Generate otomatis.
-- Tidak dapat diedit manual.
-
-## 12. Error Handling
-
-400
-
-Data tidak valid
-
-401
-
-Belum login
-
-403
-
-Tidak punya akses
-
-404
-
-Data tidak ditemukan
-
-422
-
-Validation Error
-
-500
-
-Server Error
-
-## 13. Master Data
-
-- User
-- Fakultas
-- Program Studi
-- Mata Kuliah
-- Semester
-- Tahun Akademik
-- Periode
-- Template Soal
-- Kategori Soal
-- PLO
-- CLO
-
+1. Apakah perlu fitur **duplikasi PLO/CLO dari periode sebelumnya** supaya dosen tidak input dari nol tiap semester?
+2. Format pasti `kode_dosen` dan `kode_mk` (pola huruf seperti apa) — saat ini kolom dibuat fleksibel (`varchar`, tanpa regex ketat) sampai format resmi dari institusi tersedia.
+3. Validasi jumlah PIC per periode (4–5 dosen) — apakah perlu hard-block di sistem, atau cukup warning ke Super Admin jika belum terpenuhi?
+4. Mode autentikasi Sanctum — SPA (cookie-based) atau token-based, tergantung apakah frontend dan backend di-deploy pada domain yang sama atau berbeda. Perlu dipastikan konfigurasi `SANCTUM_STATEFUL_DOMAINS` dan CORS sejak awal.

@@ -73,4 +73,28 @@ class BeritaAcaraController extends Controller
 
         return response()->download($filePath);
     }
+
+    public function download(Request $request, int $id): BinaryFileResponse
+    {
+        $ba = $this->beritaAcaraRepository->findById($id);
+        if (!$ba) {
+            abort(404, 'Berita Acara tidak ditemukan.');
+        }
+
+        // Hanya Super Admin dan PIC yang bersangkutan yang boleh mengunduh
+        if (!$request->user()->isSuperAdmin() && $ba->verifier_id !== $request->user()->id) {
+            abort(403, 'Anda tidak memiliki wewenang untuk mengunduh Berita Acara ini.');
+        }
+
+        if (!$ba->file_docx) {
+            abort(404, 'File DOCX belum di-generate.');
+        }
+
+        $path = \Illuminate\Support\Facades\Storage::disk('local')->path($ba->file_docx);
+        if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($ba->file_docx)) {
+            abort(404, 'File tidak ditemukan di server.');
+        }
+
+        return response()->download($path, basename($ba->file_docx));
+    }
 }

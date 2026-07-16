@@ -29,7 +29,7 @@ return new class extends Migration
                 ->constrained('templates')
                 ->nullOnDelete();
             $table->string('judul_soal', 255);
-            $table->text('file_soal');
+            $table->text('file_soal')->comment('wajib PDF, divalidasi di Form Request saat upload');
             $table->unsignedInteger('versi')->default(1);
             $table->enum('status', [
                 'draft', 'submitted', 'in_review', 'revisi', 'approved', 'rejected',

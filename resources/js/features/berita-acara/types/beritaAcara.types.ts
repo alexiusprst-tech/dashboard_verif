@@ -22,6 +22,8 @@ export interface BeritaAcara {
     generated_at: string;
     file_pdf: string | null;
     file_url?: string;
+    file_docx: string | null;
+    file_docx_url?: string;
     items?: BeritaAcaraItem[];
 }
 

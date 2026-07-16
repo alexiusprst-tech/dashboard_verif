@@ -16,6 +16,7 @@ class BeritaAcara extends Model
         'verifier_id',
         'generated_at',
         'file_pdf',
+        'file_docx',
     ];
 
     protected function casts(): array

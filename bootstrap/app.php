@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(\App\Http\Middleware\AuthenticateQueryToken::class);
         $middleware->alias([
             'super_admin' => \App\Http\Middleware\EnsureIsSuperAdmin::class,
             'coordinator' => \App\Http\Middleware\EnsureIsCoordinator::class,
@@ -43,10 +44,20 @@ return Application::configure(basePath: dirname(__DIR__))
             ], $e->getStatusCode());
         });
 
-        $exceptions->render(function (\Illuminate\Validation\ValidationException $e) {
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, Request $request) {
+            $message = $e->getMessage();
+            if ($request->is('api/auth/login')) {
+                $message = 'Email atau password yang anda masukkan salah. Silahkan coba kembali.';
+            } else {
+                $errors = $e->errors();
+                if (count($errors) > 0) {
+                    $message = reset($errors)[0];
+                }
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'Email atau password yang anda masukkan salah. Silahkan coba kembali.',
+                'message' => $message,
                 'errors' => $e->errors()
             ], 422);
         });
