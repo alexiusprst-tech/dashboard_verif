@@ -5,6 +5,18 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 
+// Polyfill for PHP 8.4 request_parse_body() on PHP < 8.4
+if (!class_exists('RequestParseBodyException')) {
+    class RequestParseBodyException extends \Exception {}
+}
+
+if (!function_exists('request_parse_body')) {
+    function request_parse_body(): array
+    {
+        throw new \RequestParseBodyException('Polyfill fallback');
+    }
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',

@@ -6,9 +6,10 @@ import { Modal } from '@/shared/components/ui/Modal';
 import type { Plo, PloFormData, ProgramStudi } from '../types/plo.types';
 
 const schema = z.object({
-    kode: z.string().min(1, 'Kode PLO wajib diisi').max(20, 'Kode PLO maksimal 20 karakter'),
-    deskripsi: z.string().min(1, 'Deskripsi PLO wajib diisi'),
-    prodi_id: z.coerce.number({ invalid_type_error: 'Program Studi wajib dipilih' }).min(1, 'Program Studi wajib dipilih'),
+    kode:       z.string().min(1, 'Kode PLO wajib diisi').max(20, 'Kode PLO maksimal 20 karakter'),
+    deskripsi:  z.string().min(1, 'Deskripsi PLO wajib diisi'),
+    prodi_id:   z.coerce.number({ invalid_type_error: 'Program Studi wajib dipilih' }).min(1, 'Program Studi wajib dipilih'),
+    periode_id: z.coerce.number().optional(),
 });
 
 interface PloModalProps {
@@ -17,6 +18,8 @@ interface PloModalProps {
     onSubmit: (data: PloFormData) => void;
     plo?: Plo | null;
     programStudiList: ProgramStudi[];
+    /** Periode yang sedang aktif/dipilih — disertakan saat create/update PLO */
+    defaultPeriodeId?: string | number;
     loading?: boolean;
 }
 
@@ -26,6 +29,7 @@ export function PloModal({
     onSubmit,
     plo,
     programStudiList,
+    defaultPeriodeId,
     loading = false,
 }: PloModalProps) {
     const {
@@ -36,27 +40,30 @@ export function PloModal({
     } = useForm<PloFormData>({
         resolver: zodResolver(schema),
         defaultValues: {
-            kode: '',
-            deskripsi: '',
-            prodi_id: '',
+            kode:       '',
+            deskripsi:  '',
+            prodi_id:   '',
+            periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
         },
     });
 
     useEffect(() => {
         if (plo) {
             reset({
-                kode: plo.kode,
-                deskripsi: plo.deskripsi,
-                prodi_id: plo.prodi_id,
+                kode:       plo.kode,
+                deskripsi:  plo.deskripsi,
+                prodi_id:   plo.prodi_id,
+                periode_id: plo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
             });
         } else {
             reset({
-                kode: '',
-                deskripsi: '',
-                prodi_id: '',
+                kode:       '',
+                deskripsi:  '',
+                prodi_id:   '',
+                periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
             });
         }
-    }, [plo, reset, open]);
+    }, [plo, reset, open, defaultPeriodeId]);
 
     return (
         <Modal
@@ -141,6 +148,8 @@ export function PloModal({
                         <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.deskripsi.message}</p>
                     )}
                 </div>
+                {/* Hidden field: periode_id — scoping PLO per periode */}
+                <input type="hidden" {...register('periode_id')} />
             </form>
         </Modal>
     );

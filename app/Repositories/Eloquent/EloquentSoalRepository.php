@@ -97,14 +97,11 @@ class EloquentSoalRepository implements SoalRepositoryContract
 
     public function findForVerifier(int $verifierId, int $periodeId, int $perPage = 15): LengthAwarePaginator
     {
-        // Soal yang dosen target-nya di-assign ke verifier ini
+        // PIC memverifikasi semua soal dalam periode aktif (scope: Prodi Sistem Informasi).
+        // Tidak ada filter target_dosen_id — sesuai keputusan final (bagian 2.5 Revision Notes).
         return Soal::with(['dosen', 'mataKuliah', 'clo', 'template.kategori'])
-            ->whereHas('dosen.penugasanSebagaiTarget', function ($q) use ($verifierId, $periodeId) {
-                $q->where('verifier_id', $verifierId)
-                  ->where('periode_id', $periodeId);
-            })
             ->where('periode_id', $periodeId)
-            ->whereIn('status', ['submitted', 'in_review'])
+            ->whereIn('status', ['submitted', 'in_review', 'revisi'])
             ->orderByDesc('uploaded_at')
             ->paginate($perPage);
     }

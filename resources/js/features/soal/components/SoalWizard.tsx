@@ -125,11 +125,15 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
         const selected = e.target.files?.[0];
         if (selected) {
             const ext = selected.name.split('.').pop()?.toLowerCase();
-            const allowed = ['doc', 'docx', 'pdf', 'zip', 'rar'];
-            if (ext && allowed.includes(ext)) {
+            if (ext === 'pdf') {
+                // Cek ukuran maksimal 10MB
+                if (selected.size > 10 * 1024 * 1024) {
+                    toast.error('Ukuran berkas soal maksimal 10MB.');
+                    return;
+                }
                 setFileSoal(selected);
             } else {
-                toast.error('Format file tidak didukung. Gunakan doc, docx, pdf, zip, atau rar.');
+                toast.error('File harus berformat PDF.');
             }
         }
     };
@@ -367,7 +371,7 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
                 {step === 5 && (
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-gray-800">Langkah 5: Judul & Unggah File Soal</h3>
-                        <p className="text-xs text-gray-500">Lengkapi judul soal dan lampirkan berkas soal ujian Anda dalam format doc, docx, pdf, zip atau rar.</p>
+                        <p className="text-xs text-gray-500">Lengkapi judul soal dan lampirkan berkas soal ujian Anda dalam format <strong>PDF</strong>.</p>
 
                         <div className="space-y-3 max-w-lg">
                             <div>
@@ -389,7 +393,7 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
                                         Pilih Berkas Soal
                                         <input
                                             type="file"
-                                            accept=".doc,.docx,.pdf,.zip,.rar"
+                                            accept=".pdf"
                                             onChange={handleFileChange}
                                             className="hidden"
                                         />
@@ -402,7 +406,7 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
                                     )}
                                 </div>
                                 <span className="text-[10px] text-gray-400 mt-1 block">
-                                    Format didukung: doc, docx, pdf, zip, rar. Maksimal ukuran 15MB.
+                                    Format: PDF saja. Maksimal 10MB.
                                 </span>
                             </div>
                         </div>

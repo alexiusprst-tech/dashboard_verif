@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Repositories\Contracts\PenugasanRepositoryContract;
+use App\Repositories\Contracts\UserRoleRepositoryContract;
 use App\Repositories\Contracts\PeriodeRepositoryContract;
 use Closure;
 use Illuminate\Http\Request;
@@ -10,15 +10,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureIsPicForPeriode
 {
-    protected PenugasanRepositoryContract $penugasanRepository;
+    protected UserRoleRepositoryContract $userRoleRepository;
     protected PeriodeRepositoryContract $periodeRepository;
 
     public function __construct(
-        PenugasanRepositoryContract $penugasanRepository,
+        UserRoleRepositoryContract $userRoleRepository,
         PeriodeRepositoryContract $periodeRepository
     ) {
-        $this->penugasanRepository = $penugasanRepository;
-        $this->periodeRepository = $periodeRepository;
+        $this->userRoleRepository = $userRoleRepository;
+        $this->periodeRepository  = $periodeRepository;
     }
 
     /**
@@ -75,17 +75,17 @@ class EnsureIsPicForPeriode
 
         /*
         |--------------------------------------------------------------------------
-        | Cek apakah user adalah PIC
+        | Cek apakah user adalah PIC di periode ini (via user_roles)
         |--------------------------------------------------------------------------
         */
 
-        $isPic = $this->penugasanRepository->isActivePic(
+        $isPic = $this->userRoleRepository->isActivePic(
             $user->id,
             (int) $periodeId
         );
 
         if (!$isPic) {
-            abort(403, 'Anda bukan PIC pada periode ini.');
+            abort(403, 'Anda tidak memiliki penugasan PIC pada periode ini.');
         }
 
         return $next($request);

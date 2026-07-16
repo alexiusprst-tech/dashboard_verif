@@ -17,7 +17,7 @@ class StoreTemplateRequest extends FormRequest
     {
         return [
             'kategori_id' => 'required|exists:categories,id',
-            'file_template' => 'required|file|mimes:doc,docx,pdf,rtf|max:10240', // Max 10MB
+            'file_template' => ['required', 'file', 'mimes:pdf', 'max:10240'], // Max 10MB, PDF only
             'versi' => 'required|string|max:20',
         ];
     }
@@ -29,7 +29,7 @@ class StoreTemplateRequest extends FormRequest
             'kategori_id.exists' => 'Kategori tidak valid.',
             'file_template.required' => 'File template wajib diunggah.',
             'file_template.file' => 'File yang diunggah harus berupa file.',
-            'file_template.mimes' => 'Format file template harus berupa doc, docx, pdf, atau rtf.',
+            'file_template.mimes'    => 'File harus berformat PDF.',
             'file_template.max' => 'Ukuran file template maksimal 10MB.',
             'versi.required' => 'Versi template wajib diisi.',
             'versi.max' => 'Versi template maksimal 20 karakter.',

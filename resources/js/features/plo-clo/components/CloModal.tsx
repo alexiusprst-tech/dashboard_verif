@@ -6,10 +6,11 @@ import { Modal } from '@/shared/components/ui/Modal';
 import type { Clo, CloFormData, Plo, MataKuliah } from '../types/plo.types';
 
 const schema = z.object({
-    kode: z.string().min(1, 'Kode CLO wajib diisi').max(20, 'Kode CLO maksimal 20 karakter'),
-    deskripsi: z.string().min(1, 'Deskripsi CLO wajib diisi'),
-    plo_id: z.coerce.number({ invalid_type_error: 'PLO wajib dipilih' }).min(1, 'PLO wajib dipilih'),
+    kode:           z.string().min(1, 'Kode CLO wajib diisi').max(20, 'Kode CLO maksimal 20 karakter'),
+    deskripsi:      z.string().min(1, 'Deskripsi CLO wajib diisi'),
+    plo_id:         z.coerce.number({ invalid_type_error: 'PLO wajib dipilih' }).min(1, 'PLO wajib dipilih'),
     mata_kuliah_id: z.coerce.number({ invalid_type_error: 'Mata Kuliah wajib dipilih' }).min(1, 'Mata Kuliah wajib dipilih'),
+    periode_id:     z.coerce.number().optional(),
 });
 
 interface CloModalProps {
@@ -19,6 +20,8 @@ interface CloModalProps {
     clo?: Clo | null;
     ploList: Plo[];
     mataKuliahList: MataKuliah[];
+    /** Periode yang sedang aktif/dipilih — disertakan saat create/update CLO */
+    defaultPeriodeId?: string | number;
     loading?: boolean;
 }
 
@@ -29,6 +32,7 @@ export function CloModal({
     clo,
     ploList,
     mataKuliahList,
+    defaultPeriodeId,
     loading = false,
 }: CloModalProps) {
     const {
@@ -39,30 +43,33 @@ export function CloModal({
     } = useForm<CloFormData>({
         resolver: zodResolver(schema),
         defaultValues: {
-            kode: '',
-            deskripsi: '',
-            plo_id: '',
+            kode:           '',
+            deskripsi:      '',
+            plo_id:         '',
             mata_kuliah_id: '',
+            periode_id:     defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
         },
     });
 
     useEffect(() => {
         if (clo) {
             reset({
-                kode: clo.kode,
-                deskripsi: clo.deskripsi,
-                plo_id: clo.plo_id || (clo.plo?.id ?? ''),
+                kode:           clo.kode,
+                deskripsi:      clo.deskripsi,
+                plo_id:         clo.plo_id || (clo.plo?.id ?? ''),
                 mata_kuliah_id: clo.mata_kuliah_id || (clo.mata_kuliah?.id ?? ''),
+                periode_id:     clo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
             });
         } else {
             reset({
-                kode: '',
-                deskripsi: '',
-                plo_id: '',
+                kode:           '',
+                deskripsi:      '',
+                plo_id:         '',
                 mata_kuliah_id: '',
+                periode_id:     defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
             });
         }
-    }, [clo, reset, open]);
+    }, [clo, reset, open, defaultPeriodeId]);
 
     return (
         <Modal
@@ -168,6 +175,8 @@ export function CloModal({
                         <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.deskripsi.message}</p>
                     )}
                 </div>
+                {/* Hidden field: periode_id — scoping CLO per periode */}
+                <input type="hidden" {...register('periode_id')} />
             </form>
         </Modal>
     );

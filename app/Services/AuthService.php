@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\Contracts\UserRepositoryContract;
-use App\Repositories\Contracts\PenugasanRepositoryContract;
+use App\Repositories\Contracts\UserRoleRepositoryContract;
 use App\Repositories\Contracts\PeriodeRepositoryContract;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -12,19 +12,19 @@ use App\Models\User;
 class AuthService
 {
     protected UserRepositoryContract $userRepository;
-    protected PenugasanRepositoryContract $penugasanRepository;
+    protected UserRoleRepositoryContract $userRoleRepository;
     protected PeriodeRepositoryContract $periodeRepository;
     protected ActivityLogService $activityLogService;
 
     public function __construct(
         UserRepositoryContract $userRepository,
-        PenugasanRepositoryContract $penugasanRepository,
+        UserRoleRepositoryContract $userRoleRepository,
         PeriodeRepositoryContract $periodeRepository,
         ActivityLogService $activityLogService
     ) {
-        $this->userRepository = $userRepository;
-        $this->penugasanRepository = $penugasanRepository;
-        $this->periodeRepository = $periodeRepository;
+        $this->userRepository     = $userRepository;
+        $this->userRoleRepository = $userRoleRepository;
+        $this->periodeRepository  = $periodeRepository;
         $this->activityLogService = $activityLogService;
     }
 
@@ -50,21 +50,15 @@ class AuthService
         // Generate token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Get active period PIC assignments
-        $activePeriode = $this->periodeRepository->findActive();
-        $isPicActive = false;
-        if ($activePeriode) {
-            $isPicActive = $this->penugasanRepository->isActivePic($user->id, $activePeriode->id);
-        }
-
-        $user->is_pic_active = $isPicActive;
+        // Ambil periode_id di mana user berperan PIC (dari user_roles)
+        $activePicPeriodes = $this->userRoleRepository->getActivePicPeriodes($user->id);
 
         $this->activityLogService->log('User melakukan login', 'Auth', $user->id);
 
         return [
-            'token' => $token,
-            'user' => $user,
-            'active_assignments' => $this->penugasanRepository->getActivePicPeriodes($user->id)
+            'token'              => $token,
+            'user'               => $user,
+            'active_pic_periode' => $activePicPeriodes,   // array of periode_id
         ];
     }
 
@@ -76,17 +70,12 @@ class AuthService
 
     public function me(User $user): array
     {
-        $activePeriode = $this->periodeRepository->findActive();
-        $isPicActive = false;
-        if ($activePeriode) {
-            $isPicActive = $this->penugasanRepository->isActivePic($user->id, $activePeriode->id);
-        }
-        
-        $user->is_pic_active = $isPicActive;
+        // Ambil periode_id di mana user berperan PIC (dari user_roles)
+        $activePicPeriodes = $this->userRoleRepository->getActivePicPeriodes($user->id);
 
         return [
-            'user' => $user,
-            'active_assignments' => $this->penugasanRepository->getActivePicPeriodes($user->id)
+            'user'               => $user,
+            'active_pic_periode' => $activePicPeriodes,   // array of periode_id
         ];
     }
 }
