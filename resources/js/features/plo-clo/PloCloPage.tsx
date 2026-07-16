@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Download, Upload, Eye, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Download, Upload, Eye, Edit2, Trash2, Calendar } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { SearchBar } from '@/shared/components/ui/SearchBar';
@@ -11,7 +11,7 @@ import { useToast } from '@/shared/hooks/useToast';
 import { useAuth } from '@/shared/hooks/useAuth';
 import api from '@/shared/lib/api';
 
-import type { Plo, Clo, ProgramStudi, MataKuliah } from './types/plo.types';
+import type { Plo, Clo, ProgramStudi, MataKuliah, Periode as PloPeriode } from './types/plo.types';
 import { usePloList, useCreatePlo, useUpdatePlo, useDeletePlo } from './hooks/usePlo';
 import { useCloList, useCreateClo, useUpdateClo, useDeleteClo } from './hooks/useClo';
 import { PloModal } from './components/PloModal';
@@ -23,9 +23,10 @@ export function PloCloPage() {
     const [activeTab, setActiveTab] = useState<'plo' | 'clo'>('plo');
 
     // Filter states
-    const [search, setSearch] = useState('');
-    const [prodiId, setProdiId] = useState<string>('');
+    const [search, setSearch]                   = useState('');
+    const [prodiId, setProdiId]                 = useState<string>('');
     const [selectedPloFilter, setSelectedPloFilter] = useState<string>('');
+    const [selectedPeriodeId, setSelectedPeriodeId] = useState<string>('');
 
     // Pagination states
     const [ploPage, setPloPage] = useState(1);
@@ -34,9 +35,10 @@ export function PloCloPage() {
     const [cloPerPage, setCloPerPage] = useState(10);
 
     // Helpers list
-    const [prodiList, setProdiList] = useState<ProgramStudi[]>([]);
-    const [courseList, setCourseList] = useState<MataKuliah[]>([]);
+    const [prodiList, setProdiList]           = useState<ProgramStudi[]>([]);
+    const [courseList, setCourseList]         = useState<MataKuliah[]>([]);
     const [allPloForSelect, setAllPloForSelect] = useState<Plo[]>([]);
+    const [periodeList, setPeriodeList]       = useState<any[]>([]);
 
     // Modal states
     const [ploModalOpen, setPloModalOpen] = useState(false);
@@ -48,7 +50,7 @@ export function PloCloPage() {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<{ type: 'plo' | 'clo'; id: number } | null>(null);
 
-    // Fetch Program Studi & Courses
+    // Fetch Program Studi, Courses & Periodes
     useEffect(() => {
         api.get('/program-studi').then((res) => {
             setProdiList(res.data.data);
@@ -63,16 +65,23 @@ export function PloCloPage() {
         api.get('/courses').then((res) => {
             setCourseList(res.data.data);
         });
+
+        api.get('/periode', { params: { per_page: 50 } }).then((res) => {
+            setPeriodeList(res.data.data);
+            const active = res.data.data.find((p: any) => p.status === 'aktif');
+            if (active) setSelectedPeriodeId(String(active.id));
+            else if (res.data.data.length > 0) setSelectedPeriodeId(String(res.data.data[0].id));
+        });
     }, [user]);
 
     // Set prodi_id filter and load PLO list for select dropdown
     useEffect(() => {
         if (prodiId) {
-            api.get('/plo', { params: { prodi_id: prodiId, per_page: 100 } }).then((res) => {
+            api.get('/plo', { params: { prodi_id: prodiId, periode_id: selectedPeriodeId, per_page: 100 } }).then((res) => {
                 setAllPloForSelect(res.data.data);
             });
         }
-    }, [prodiId]);
+    }, [prodiId, selectedPeriodeId]);
 
     // TanStack queries
     const {
@@ -81,9 +90,10 @@ export function PloCloPage() {
         error: ploError,
         refetch: refetchPlo,
     } = usePloList({
-        prodi_id: prodiId,
-        page: ploPage,
-        per_page: ploPerPage,
+        prodi_id:   prodiId,
+        periode_id: selectedPeriodeId,
+        page:       ploPage,
+        per_page:   ploPerPage,
         search,
     });
 
@@ -93,9 +103,10 @@ export function PloCloPage() {
         error: cloError,
         refetch: refetchClo,
     } = useCloList({
-        plo_id: selectedPloFilter,
-        page: cloPage,
-        per_page: cloPerPage,
+        plo_id:     selectedPloFilter,
+        periode_id: selectedPeriodeId,
+        page:       cloPage,
+        per_page:   cloPerPage,
         search,
     });
 
@@ -117,6 +128,9 @@ export function PloCloPage() {
         setSelectedPloFilter('');
         setPloPage(1);
         setCloPage(1);
+        // Kembali ke periode aktif
+        const active = periodeList.find((p) => p.status === 'aktif');
+        if (active) setSelectedPeriodeId(String(active.id));
     };
 
     // PLO Handlers
@@ -314,6 +328,27 @@ export function PloCloPage() {
                     placeholder={activeTab === 'plo' ? 'Cari PLO...' : 'Cari CLO...'}
                     className="w-full sm:w-64"
                 />
+
+                {/* Periode filter — untuk semua tab */}
+                <div className="flex items-center gap-2">
+                    <Calendar size={15} className="text-gray-400" />
+                    <select
+                        value={selectedPeriodeId}
+                        onChange={(e) => {
+                            setSelectedPeriodeId(e.target.value);
+                            setPloPage(1);
+                            setCloPage(1);
+                        }}
+                        className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
+                    >
+                        <option value="">Semua Periode</option>
+                        {periodeList.map((p) => (
+                            <option key={p.id} value={p.id}>
+                                {p.nama_periode}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
                 {activeTab === 'plo' ? (
                     <select
@@ -526,6 +561,7 @@ export function PloCloPage() {
                 onSubmit={handleSavePlo}
                 plo={currentPlo}
                 programStudiList={prodiList}
+                defaultPeriodeId={selectedPeriodeId}
                 loading={createPloMutation.isPending || updatePloMutation.isPending}
             />
 
@@ -536,6 +572,7 @@ export function PloCloPage() {
                 clo={currentClo}
                 ploList={allPloForSelect}
                 mataKuliahList={courseList}
+                defaultPeriodeId={selectedPeriodeId}
                 loading={createCloMutation.isPending || updateCloMutation.isPending}
             />
 

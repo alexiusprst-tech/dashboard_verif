@@ -52,6 +52,16 @@ class RepositoryServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(
+            \App\Repositories\Contracts\UserRoleRepositoryContract::class,
+            \App\Repositories\Eloquent\EloquentUserRoleRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\DosenMataKuliahRepositoryContract::class,
+            \App\Repositories\Eloquent\EloquentDosenMataKuliahRepository::class
+        );
+
+        $this->app->bind(
             \App\Repositories\Contracts\VerificationRepositoryContract::class,
             \App\Repositories\Eloquent\EloquentVerificationRepository::class
         );

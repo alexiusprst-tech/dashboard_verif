@@ -19,6 +19,10 @@ class Periode extends Model
         'status',
     ];
 
+    protected $attributes = [
+        'status' => 'draft',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -54,7 +58,7 @@ class Periode extends Model
 
     public function isDeadlinePassed(): bool
     {
-        return now()->gt($this->tanggal_deadline);
+        return $this->tanggal_deadline ? now()->gt($this->tanggal_deadline) : false;
     }
 
     public function isActive(): bool

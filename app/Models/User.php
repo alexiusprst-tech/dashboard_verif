@@ -26,6 +26,8 @@ class User extends Authenticatable
         'prodi_id',
         'is_super_admin',
         'is_coordinator',
+        'tipe_dosen',
+        'semester_lb',
         'status_aktif',
         'last_login_at',
     ];
@@ -59,16 +61,19 @@ class User extends Authenticatable
         return $this->hasMany(Soal::class, 'dosen_id');
     }
 
-    /** Assignment di mana user ini adalah PIC (verifier) */
-    public function penugasanSebagaiPic(): HasMany
+    /**
+     * Role dinamis (PIC, dsb.) per periode.
+     * Gunakan ini untuk cek apakah user adalah PIC.
+     */
+    public function userRoles(): HasMany
     {
-        return $this->hasMany(Penugasan::class, 'verifier_id');
+        return $this->hasMany(UserRole::class, 'user_id');
     }
 
-    /** Assignment di mana soal user ini diverifikasi */
-    public function penugasanSebagaiTarget(): HasMany
+    /** Pemetaan mata kuliah yang diampu oleh dosen ini per periode */
+    public function dosenMataKuliah(): HasMany
     {
-        return $this->hasMany(Penugasan::class, 'target_dosen_id');
+        return $this->hasMany(DosenMataKuliah::class, 'dosen_id');
     }
 
     /** Verifikasi yang pernah dilakukan oleh user ini */
@@ -94,17 +99,6 @@ class User extends Authenticatable
 
     /* ── Helpers ────────────────────────────────────────────── */
 
-    /**
-     * Cek apakah user adalah PIC aktif di suatu periode.
-     * Tidak menyimpan state — selalu query ke tabel penugasan.
-     */
-    public function isPicOnPeriode(int $periodeId): bool
-    {
-        return $this->penugasanSebagaiPic()
-            ->where('periode_id', $periodeId)
-            ->exists();
-    }
-
     public function isSuperAdmin(): bool
     {
         return (bool) $this->is_super_admin;
@@ -113,5 +107,40 @@ class User extends Authenticatable
     public function isCoordinator(): bool
     {
         return (bool) $this->is_coordinator;
+    }
+
+    public function isLbDosen(): bool
+    {
+        return $this->tipe_dosen === 'lb';
+    }
+
+    /**
+     * Cek apakah user adalah PIC aktif di suatu periode.
+     * Query ke tabel user_roles (bukan penugasan lama).
+     */
+    public function isPicOnPeriode(int $periodeId): bool
+    {
+        return $this->userRoles()
+            ->whereHas('role', fn ($q) => $q->where('nama_role', 'pic'))
+            ->where('periode_id', $periodeId)
+            ->exists();
+    }
+
+    /**
+     * Cek apakah dosen LB aktif di periode ini.
+     * Dosen biasa selalu aktif.
+     * Dosen LB aktif hanya di periode dengan semester yang sesuai semester_lb-nya.
+     *
+     * @param  Periode  $periode
+     */
+    public function isAktifDiPeriode(Periode $periode): bool
+    {
+        if (!$this->isLbDosen()) {
+            // Dosen biasa — selalu aktif
+            return true;
+        }
+
+        // Dosen LB — aktif hanya di periode yang semester-nya cocok
+        return $this->semester_lb === $periode->semester;
     }
 }

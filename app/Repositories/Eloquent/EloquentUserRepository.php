@@ -21,9 +21,10 @@ class EloquentUserRepository implements UserRepositoryContract
 
     public function searchByKodeOrNama(string $query, int $perPage = 15): LengthAwarePaginator
     {
-        return User::where(function ($q) use ($query) {
-                $q->where('kode_dosen', 'ilike', "%{$query}%")
-                  ->orWhere('nama_lengkap', 'ilike', "%{$query}%");
+        $lowerQuery = strtolower($query);
+        return User::where(function ($q) use ($lowerQuery) {
+                $q->whereRaw('lower(kode_dosen) like ?', ["%{$lowerQuery}%"])
+                  ->orWhereRaw('lower(nama_lengkap) like ?', ["%{$lowerQuery}%"]);
             })
             ->where('status_aktif', true)
             ->where('is_super_admin', false)

@@ -5,8 +5,9 @@ namespace App\Services;
 use App\Repositories\Contracts\SoalRepositoryContract;
 use App\Repositories\Contracts\PeriodeRepositoryContract;
 use App\Repositories\Contracts\TemplateRepositoryContract;
-use App\Repositories\Contracts\PenugasanRepositoryContract;
+use App\Repositories\Contracts\DosenMataKuliahRepositoryContract;
 use App\Models\Soal;
+use App\Models\Periode;
 use App\Models\User;
 use App\Enums\SoalStatus;
 use App\Enums\PeriodeStatus;
@@ -21,21 +22,54 @@ class SoalService
     protected SoalRepositoryContract $soalRepository;
     protected PeriodeRepositoryContract $periodeRepository;
     protected TemplateRepositoryContract $templateRepository;
-    protected PenugasanRepositoryContract $penugasanRepository;
+    protected DosenMataKuliahRepositoryContract $dosenMataKuliahRepository;
     protected ActivityLogService $activityLogService;
 
     public function __construct(
         SoalRepositoryContract $soalRepository,
         PeriodeRepositoryContract $periodeRepository,
         TemplateRepositoryContract $templateRepository,
-        PenugasanRepositoryContract $penugasanRepository,
+        DosenMataKuliahRepositoryContract $dosenMataKuliahRepository,
         ActivityLogService $activityLogService
     ) {
-        $this->soalRepository = $soalRepository;
-        $this->periodeRepository = $periodeRepository;
-        $this->templateRepository = $templateRepository;
-        $this->penugasanRepository = $penugasanRepository;
-        $this->activityLogService = $activityLogService;
+        $this->soalRepository             = $soalRepository;
+        $this->periodeRepository          = $periodeRepository;
+        $this->templateRepository         = $templateRepository;
+        $this->dosenMataKuliahRepository  = $dosenMataKuliahRepository;
+        $this->activityLogService         = $activityLogService;
+    }
+
+    /**
+     * Validasi eligibilitas upload soal bagi seorang dosen.
+     *
+     * Dua aturan yang dicek secara berurutan:
+     * 1. Dosen LB hanya boleh upload di periode yang semester-nya sesuai semester_lb miliknya.
+     * 2. Mata kuliah yang dipilih harus ada di pemetaan dosen_mata_kuliah miliknya untuk periode aktif.
+     *
+     * @throws BusinessException jika salah satu aturan dilanggar
+     */
+    public function validateUploadEligibility(User $user, int $mataKuliahId, Periode $periode): void
+    {
+        // ── Aturan 1: Dosen LB hanya aktif di semester yang sesuai ────────────────
+        if ($user->isLbDosen()) {
+            if (!$user->isAktifDiPeriode($periode)) {
+                throw new BusinessException(
+                    "Anda tidak memiliki penugasan pada periode ini. " .
+                    "Sebagai dosen Luar Biasa semester {$user->semester_lb}, " .
+                    "Anda hanya dapat mengunggah soal pada periode semester {$user->semester_lb}.",
+                    403
+                );
+            }
+        }
+
+        // ── Aturan 2: Mata kuliah harus ada di pemetaan dosen periode ini ─────────
+        if (!$this->dosenMataKuliahRepository->isDosenAmpu($user->id, $mataKuliahId, $periode->id)) {
+            throw new BusinessException(
+                'Mata kuliah yang dipilih tidak termasuk dalam penugasan mengajar Anda pada periode ini. ' .
+                'Hubungi Super Admin untuk memperbarui pemetaan mata kuliah.',
+                403
+            );
+        }
     }
 
     public function upload(array $data, UploadedFile $file, User $user): Soal
@@ -53,6 +87,9 @@ class SoalService
             throw new BusinessException('Batas waktu pengunggahan soal untuk periode ini telah berakhir.', 422);
         }
 
+        // Validasi eligibilitas: LB semester check + pemetaan dosen_mata_kuliah
+        $this->validateUploadEligibility($user, (int) $data['mata_kuliah_id'], $periode);
+
         $template = $this->templateRepository->findById($data['template_id']);
         if (!$template || !$template->is_active) {
             throw new BusinessException('Template yang dipilih tidak valid atau sudah tidak aktif.', 422);
@@ -66,17 +103,17 @@ class SoalService
 
         $soal = DB::transaction(function () use ($data, $user, $path, $versi) {
             return $this->soalRepository->create([
-                'uuid' => Str::uuid()->toString(),
-                'dosen_id' => $user->id,
+                'uuid'           => Str::uuid()->toString(),
+                'dosen_id'       => $user->id,
                 'mata_kuliah_id' => $data['mata_kuliah_id'],
-                'clo_id' => $data['clo_id'],
-                'periode_id' => $data['periode_id'],
-                'template_id' => $data['template_id'],
-                'judul_soal' => $data['judul_soal'],
-                'file_soal' => $path,
-                'versi' => $versi,
-                'status' => SoalStatus::Submitted->value,
-                'uploaded_at' => now(),
+                'clo_id'         => $data['clo_id'],
+                'periode_id'     => $data['periode_id'],
+                'template_id'    => $data['template_id'],
+                'judul_soal'     => $data['judul_soal'],
+                'file_soal'      => $path,
+                'versi'          => $versi,
+                'status'         => SoalStatus::Submitted->value,
+                'uploaded_at'    => now(),
             ]);
         });
 
@@ -125,21 +162,21 @@ class SoalService
                 $latestVersi = $this->soalRepository->getLatestVersi($user->id, $soal->periode_id, $soal->mata_kuliah_id);
                 $versi = $latestVersi + 1;
                 
-                $updateData['versi'] = $versi;
-                $updateData['status'] = SoalStatus::Submitted->value;
+                $updateData['versi']       = $versi;
+                $updateData['status']      = SoalStatus::Submitted->value;
                 $updateData['uploaded_at'] = now();
 
                 $soal = DB::transaction(function () use ($soal, $updateData, $path, $user) {
                     // Create entry in revisi_history
                     DB::table('revisi_history')->insert([
-                        'soal_id' => $soal->id,
-                        'versi' => $soal->versi,
-                        'file_soal' => $soal->file_soal,
-                        'catatan_verifikator' => $soal->verifications()->latest()->first()?->catatan,
-                        'uploaded_by' => $user->id,
-                        'uploaded_at' => $soal->uploaded_at,
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                        'soal_id'               => $soal->id,
+                        'versi'                 => $soal->versi,
+                        'file_soal'             => $soal->file_soal,
+                        'catatan_verifikator'   => $soal->verifications()->latest()->first()?->catatan,
+                        'uploaded_by'           => $user->id,
+                        'uploaded_at'           => $soal->uploaded_at,
+                        'created_at'            => now(),
+                        'updated_at'            => now(),
                     ]);
 
                     return $this->soalRepository->update($soal, $updateData);

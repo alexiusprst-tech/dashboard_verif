@@ -2,104 +2,100 @@
 
 namespace App\Services;
 
-use App\Repositories\Contracts\PenugasanRepositoryContract;
+use App\Repositories\Contracts\UserRoleRepositoryContract;
 use App\Repositories\Contracts\PeriodeRepositoryContract;
-use App\Models\Penugasan;
+use App\Models\UserRole;
 use App\Models\User;
 use App\Exceptions\BusinessException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 
 class PenugasanPicService
 {
-    protected PenugasanRepositoryContract $penugasanRepository;
+    protected UserRoleRepositoryContract $userRoleRepository;
     protected PeriodeRepositoryContract $periodeRepository;
     protected ActivityLogService $activityLogService;
 
     public function __construct(
-        PenugasanRepositoryContract $penugasanRepository,
+        UserRoleRepositoryContract $userRoleRepository,
         PeriodeRepositoryContract $periodeRepository,
         ActivityLogService $activityLogService
     ) {
-        $this->penugasanRepository = $penugasanRepository;
+        $this->userRoleRepository = $userRoleRepository;
         $this->periodeRepository = $periodeRepository;
         $this->activityLogService = $activityLogService;
     }
 
+    /**
+     * Assign role PIC ke dosen untuk periode tertentu.
+     *
+     * @param  array{periode_id: int, pic_dosen_id: int}  $data
+     * @param  User  $assignedBy
+     * @return array{user_role: UserRole, pic_count: int, warning: string|null}
+     */
     public function assign(array $data, User $assignedBy): array
     {
-        $periodeId = $data['periode_id'];
-        $verifierId = $data['pic_dosen_id'];
-        $targetDosenIds = $data['target_dosen_id']; // Array of target dosen IDs
+        $periodeId = (int) $data['periode_id'];
+        $userId    = (int) $data['pic_dosen_id'];
 
         $periode = $this->periodeRepository->findById($periodeId);
         if (!$periode) {
             throw new BusinessException('Periode tidak ditemukan.', 404);
         }
 
-        $assignments = [];
-        
-        DB::transaction(function () use ($periodeId, $verifierId, $targetDosenIds, $assignedBy, &$assignments) {
-            foreach ($targetDosenIds as $targetDosenId) {
-                if ((int)$verifierId === (int)$targetDosenId) {
-                    throw new BusinessException('PIC tidak boleh ditugaskan untuk memverifikasi soalnya sendiri.', 422);
-                }
+        // Cegah Super Admin assign dirinya sendiri (opsional, bisa direlaksasi)
+        if ($userId === $assignedBy->id && $assignedBy->isSuperAdmin()) {
+            // Boleh — Super Admin mungkin juga dosen
+        }
 
-                // Cek apakah target dosen sudah ditugaskan ke PIC lain di periode yang sama
-                if ($this->penugasanRepository->isTargetAssignedToOtherVerifier($targetDosenId, $periodeId, $verifierId)) {
-                    throw new BusinessException('Salah satu target dosen sudah ditugaskan ke PIC lain pada periode ini.', 422);
+        $userRole = DB::transaction(function () use ($userId, $periodeId, $assignedBy) {
+            try {
+                return $this->userRoleRepository->assignPic($userId, $periodeId, $assignedBy->id);
+            } catch (\Exception $e) {
+                if (
+                    str_contains($e->getMessage(), 'user_roles_unique_assignment')
+                    || $e instanceof UniqueConstraintViolationException
+                ) {
+                    throw new BusinessException('Dosen ini sudah menjadi PIC pada periode tersebut.', 422);
                 }
-
-                try {
-                    $assignments[] = $this->penugasanRepository->create([
-                        'periode_id' => $periodeId,
-                        'verifier_id' => $verifierId,
-                        'target_dosen_id' => $targetDosenId,
-                        'assigned_by' => $assignedBy->id,
-                        'assigned_at' => now(),
-                    ]);
-                } catch (\Exception $e) {
-                    // Tangkap duplicate unique key constraint dari database
-                    if (str_contains($e->getMessage(), 'penugasan_unique_assignment') || $e instanceof UniqueConstraintViolationException) {
-                        throw new BusinessException('Penugasan ini sudah ada sebelumnya.', 422);
-                    }
-                    throw $e;
-                }
+                throw $e;
             }
         });
 
-        // Hitung total PIC unik di periode ini
-        $uniqueVerifierCount = $this->penugasanRepository->countUniqueVerifierInPeriode($periodeId);
+        $picCount = $this->userRoleRepository->countPicInPeriode($periodeId);
 
         $warning = null;
-        if ($uniqueVerifierCount < 4 || $uniqueVerifierCount > 5) {
-            $warning = "Perhatian: Jumlah PIC yang ditugaskan pada periode ini saat ini adalah {$uniqueVerifierCount} dosen. (Rekomendasi institusi: 4–5 PIC per periode).";
+        if ($picCount < 4 || $picCount > 5) {
+            $warning = "Perhatian: Jumlah PIC pada periode ini adalah {$picCount} dosen. (Rekomendasi institusi: 4–5 PIC per periode).";
         }
 
         $this->activityLogService->log(
-            "Menugaskan PIC dosen ID {$verifierId} untuk " . count($targetDosenIds) . " dosen target.",
+            "Menugaskan role PIC kepada dosen ID {$userId} untuk periode ID {$periodeId}.",
             'Penugasan PIC',
             $assignedBy->id
         );
 
         return [
-            'assignments' => $assignments,
-            'unique_pic_count' => $uniqueVerifierCount,
-            'warning' => $warning
+            'user_role' => $userRole->load(['user', 'role', 'periode', 'assignedByUser']),
+            'pic_count' => $picCount,
+            'warning'   => $warning,
         ];
     }
 
-    public function cabut(int $id, User $user): void
+    /**
+     * Cabut role PIC dari user_roles berdasarkan ID baris user_roles.
+     */
+    public function cabut(int $userRoleId, User $user): void
     {
-        $penugasan = $this->penugasanRepository->findById($id);
-        if (!$penugasan) {
-            throw new BusinessException('Penugasan tidak ditemukan.', 404);
+        $userRole = $this->userRoleRepository->findById($userRoleId);
+        if (!$userRole) {
+            throw new BusinessException('Penugasan PIC tidak ditemukan.', 404);
         }
 
-        $this->penugasanRepository->delete($penugasan);
+        $this->userRoleRepository->revokePic($userRole);
 
         $this->activityLogService->log(
-            "Mencabut penugasan PIC ID {$penugasan->verifier_id} untuk dosen ID {$penugasan->target_dosen_id}",
+            "Mencabut role PIC dari dosen ID {$userRole->user_id} (periode ID {$userRole->periode_id}).",
             'Penugasan PIC',
             $user->id
         );
