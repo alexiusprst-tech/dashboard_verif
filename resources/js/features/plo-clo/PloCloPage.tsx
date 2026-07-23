@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Download, Upload, Eye, Edit2, Trash2, Calendar } from 'lucide-react';
+import { Plus, Download, Upload, Eye, Edit2, MinusCircle, Calendar } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { SearchBar } from '@/shared/components/ui/SearchBar';
@@ -350,22 +350,7 @@ export function PloCloPage() {
                     </select>
                 </div>
 
-                {activeTab === 'plo' ? (
-                    <select
-                        value={prodiId}
-                        onChange={(e) => {
-                            setProdiId(e.target.value);
-                            setPloPage(1);
-                        }}
-                        className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
-                    >
-                        {prodiList.map((prodi) => (
-                            <option key={prodi.id} value={prodi.id}>
-                                {prodi.nama_prodi}
-                            </option>
-                        ))}
-                    </select>
-                ) : (
+                {activeTab === 'clo' && (
                     <select
                         value={selectedPloFilter}
                         onChange={(e) => {
@@ -399,9 +384,7 @@ export function PloCloPage() {
                                 <th className="px-6 py-4 w-16">No</th>
                                 <th className="px-6 py-4 w-32">Kode</th>
                                 <th className="px-6 py-4">Deskripsi</th>
-                                {activeTab === 'plo' ? (
-                                    <th className="px-6 py-4 w-48">Program Studi</th>
-                                ) : (
+                                {activeTab === 'clo' && (
                                     <>
                                         <th className="px-6 py-4 w-36">PLO Relasi</th>
                                         <th className="px-6 py-4 w-48">Mata Kuliah</th>
@@ -414,7 +397,7 @@ export function PloCloPage() {
                         <tbody className="divide-y divide-gray-200">
                             {/* Loading Skeleton */}
                             {((activeTab === 'plo' && ploLoading) || (activeTab === 'clo' && cloLoading)) && (
-                                <SkeletonTable rows={5} cols={activeTab === 'plo' ? 7 : 8} />
+                                <SkeletonTable rows={5} cols={activeTab === 'plo' ? 6 : 7} />
                             )}
 
                             {/* PLO Tab Content */}
@@ -434,7 +417,7 @@ export function PloCloPage() {
                                         <td className="px-6 py-4 max-w-md truncate" title={r.deskripsi}>
                                             {r.deskripsi}
                                         </td>
-                                        <td className="px-6 py-4">{r.prodi_name ?? prodiList.find(p => p.id === r.prodi_id)?.nama_prodi ?? '—'}</td>
+
                                         <td className="px-6 py-4 text-gray-400">
                                             {new Date(r.created_at).toLocaleDateString('id-ID', {
                                                 day: 'numeric',
@@ -456,7 +439,7 @@ export function PloCloPage() {
                                                     className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
                                                     title="Delete"
                                                 >
-                                                    <Trash2 size={15} />
+                                                    <MinusCircle size={15} />
                                                 </button>
                                             </div>
                                         </td>
@@ -509,7 +492,7 @@ export function PloCloPage() {
                                                     className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
                                                     title="Delete"
                                                 >
-                                                    <Trash2 size={15} />
+                                                    <MinusCircle size={15} />
                                                 </button>
                                             </div>
                                         </td>

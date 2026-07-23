@@ -336,10 +336,8 @@ export function Topbar({ onMobileMenuToggle, notificationCount = 0 }: TopbarProp
                             </p>
                             <p className="text-xs text-gray-400 leading-tight">
                                 {user?.is_super_admin
-                                    ? 'Super Admin'
-                                    : user?.is_coordinator
-                                        ? 'Koordinator'
-                                        : 'Dosen'}
+                                    ? 'Coordinator'
+                                    : 'Dosen'}
                                 {user?.is_pic_active && (
                                     <span className="ml-1 rounded-sm bg-[var(--color-primary-light)] px-1 py-px text-[10px] font-semibold text-[var(--color-primary)]">
                                         PIC

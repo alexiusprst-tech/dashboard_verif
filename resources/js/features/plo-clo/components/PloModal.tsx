@@ -48,22 +48,25 @@ export function PloModal({
     });
 
     useEffect(() => {
-        if (plo) {
-            reset({
-                kode:       plo.kode,
-                deskripsi:  plo.deskripsi,
-                prodi_id:   plo.prodi_id,
-                periode_id: plo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
-            });
-        } else {
-            reset({
-                kode:       '',
-                deskripsi:  '',
-                prodi_id:   '',
-                periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
-            });
+        if (open) {
+            const siProdi = programStudiList.find(p => p.nama_prodi.toLowerCase().includes('sistem informasi') || p.kode_prodi === 'SI') || programStudiList[0];
+            if (plo) {
+                reset({
+                    kode:       plo.kode,
+                    deskripsi:  plo.deskripsi,
+                    prodi_id:   plo.prodi_id,
+                    periode_id: plo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
+                });
+            } else {
+                reset({
+                    kode:       '',
+                    deskripsi:  '',
+                    prodi_id:   siProdi ? siProdi.id : '',
+                    periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
+                });
+            }
         }
-    }, [plo, reset, open, defaultPeriodeId]);
+    }, [plo, reset, open, defaultPeriodeId, programStudiList]);
 
     return (
         <Modal

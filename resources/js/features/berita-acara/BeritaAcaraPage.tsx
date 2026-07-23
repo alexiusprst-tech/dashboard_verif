@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Download, RefreshCw, CheckCircle2, AlertCircle, Calendar, Eye, X } from 'lucide-react';
+import { FileText, Download, RefreshCw, CheckCircle2, AlertCircle, Calendar, Eye, Users } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { Pagination } from '@/shared/components/ui/Pagination';
@@ -15,6 +15,12 @@ import type { BeritaAcara } from './types/beritaAcara.types';
 import type { Periode } from '@/features/periode/types/periode.types';
 import { useBaList, useGenerateBa } from './hooks/useBeritaAcara';
 
+interface PicOption {
+    id: number;
+    nama_lengkap: string;
+    kode_dosen: string | null;
+}
+
 export function BeritaAcaraPage() {
     const { toast } = useToast();
     const { user } = useAuth();
@@ -24,6 +30,10 @@ export function BeritaAcaraPage() {
     const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
+
+    // PIC dropdown (hanya untuk super admin)
+    const [picList, setPicList] = useState<PicOption[]>([]);
+    const [selectedVerifierId, setSelectedVerifierId] = useState('');
 
     // View Detail Modal
     const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -39,6 +49,25 @@ export function BeritaAcaraPage() {
         });
     }, []);
 
+    // Load daftar PIC untuk dropdown pilih verifikator (hanya super admin)
+    useEffect(() => {
+        if (!user?.is_super_admin || !selectedPeriodeId) return;
+        api.get('/penugasan', { params: { periode_id: selectedPeriodeId, per_page: 100 } })
+            .then((res) => {
+                const pics: PicOption[] = (res.data.data ?? []).map((p: any) => ({
+                    id: p.dosen?.id ?? p.user_id,
+                    nama_lengkap: p.dosen?.nama_lengkap ?? p.dosen?.name ?? '—',
+                    kode_dosen: p.dosen?.kode_dosen ?? null,
+                }));
+                // Deduplicate
+                const unique = pics.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+                setPicList(unique);
+                if (unique.length > 0) setSelectedVerifierId(String(unique[0].id));
+                else setSelectedVerifierId('');
+            })
+            .catch(() => setPicList([]));
+    }, [user?.is_super_admin, selectedPeriodeId]);
+
     const { data: response, isLoading, refetch } = useBaList({
         periode_id: selectedPeriodeId || undefined,
         page,
@@ -52,9 +81,14 @@ export function BeritaAcaraPage() {
             toast.error('Pilih Periode terlebih dahulu.');
             return;
         }
+        if (!selectedVerifierId) {
+            toast.error('Pilih PIC terlebih dahulu.');
+            return;
+        }
         try {
             await generateMutation.mutateAsync({
                 periode_id: Number(selectedPeriodeId),
+                verifier_id: Number(selectedVerifierId),
                 regenerate,
             });
             toast.success(regenerate ? 'Berita Acara berhasil diregenerasi.' : 'Berita Acara berhasil digenerate.');
@@ -65,12 +99,10 @@ export function BeritaAcaraPage() {
     };
 
     const handleOpenDetail = async (ba: BeritaAcara) => {
-        // Load items
         try {
-            const res = await api.get(`/berita-acara`, {
+            await api.get(`/berita-acara`, {
                 params: { periode_id: ba.periode_id, per_page: 100 }
             });
-            // find with items loaded; we may need to refetch individual detail
             setSelectedBa(ba);
             setDetailModalOpen(true);
         } catch {
@@ -92,28 +124,30 @@ export function BeritaAcaraPage() {
                 description="Generate dan download Berita Acara resmi hasil verifikasi soal ujian per periode pelaksanaan."
                 breadcrumb={[{ label: 'Berita Acara' }]}
                 action={
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => handleGenerate(false)}
-                            disabled={generateMutation.isPending || !selectedPeriodeId}
-                            className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
-                        >
-                            {generateMutation.isPending ? (
-                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                            ) : (
-                                <FileText size={16} />
-                            )}
-                            Generate BA
-                        </button>
-                        <button
-                            onClick={() => handleGenerate(true)}
-                            disabled={generateMutation.isPending || !selectedPeriodeId}
-                            className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
-                        >
-                            <RefreshCw size={15} />
-                            Regenerate
-                        </button>
-                    </div>
+                    user?.is_super_admin ? (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handleGenerate(false)}
+                                disabled={generateMutation.isPending || !selectedPeriodeId || !selectedVerifierId}
+                                className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
+                            >
+                                {generateMutation.isPending ? (
+                                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                ) : (
+                                    <FileText size={16} />
+                                )}
+                                Generate BA
+                            </button>
+                            <button
+                                onClick={() => handleGenerate(true)}
+                                disabled={generateMutation.isPending || !selectedPeriodeId || !selectedVerifierId}
+                                className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                <RefreshCw size={15} />
+                                Regenerate
+                            </button>
+                        </div>
+                    ) : undefined
                 }
             />
 
@@ -134,6 +168,30 @@ export function BeritaAcaraPage() {
                         <option key={p.id} value={p.id}>{p.nama_periode}</option>
                     ))}
                 </select>
+
+                {/* Dropdown PIC — hanya tampil untuk Super Admin */}
+                {user?.is_super_admin && (
+                    <>
+                        <div className="flex items-center gap-2 ml-2">
+                            <Users size={16} className="text-gray-400" />
+                            <span className="text-xs font-semibold text-gray-500 uppercase">PIC:</span>
+                        </div>
+                        <select
+                            value={selectedVerifierId}
+                            onChange={(e) => setSelectedVerifierId(e.target.value)}
+                            className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
+                        >
+                            {picList.length === 0 && (
+                                <option value="">— Tidak ada PIC —</option>
+                            )}
+                            {picList.map((pic) => (
+                                <option key={pic.id} value={pic.id}>
+                                    {pic.nama_lengkap}{pic.kode_dosen ? ` (${pic.kode_dosen})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                    </>
+                )}
             </FilterBar>
 
             <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

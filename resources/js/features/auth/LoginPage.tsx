@@ -223,23 +223,24 @@ export function LoginPage() {
             : null;
 
     return (
-    <div className="min-h-screen bg-gray-100 lg:grid lg:grid-cols-[530px_1fr]">
+    <div className="min-h-screen bg-gray-100 lg:grid lg:grid-cols-[1fr_530px]">
 
-        {/* LEFT */}
+        {/* LEFT - Decorative Panel */}
+        <DecorativePanel />
+
+        {/* RIGHT - Login Panel */}
         <div className="flex items-center justify-center bg-white px-6 py-10 sm:px-10 lg:px-14">
 
             <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl lg:shadow-none">
 
                 {/* Logo & Title */}
-                <div className="mb-10">
-                    <div className="mb-5 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]">
-                            <GraduationCap size={22} className="text-white" />
-                        </div>
-
-                        <span className="text-sm font-semibold tracking-wide text-gray-400">
-                            TELKOM UNIVERSITY
-                        </span>
+                <div className="mb-8">
+                    <div className="mb-6 flex items-center">
+                        <img
+                            src="/images/logo-telkom.png"
+                            alt="Telkom University Logo"
+                            className="h-20 w-auto object-contain"
+                        />
                     </div>
 
                     <h1 className="text-3xl font-bold text-[var(--color-secondary)] whitespace-nowrap">
@@ -372,9 +373,6 @@ export function LoginPage() {
             </div>
 
         </div>
-
-        {/* RIGHT */}
-        <DecorativePanel />
 
     </div>
     );

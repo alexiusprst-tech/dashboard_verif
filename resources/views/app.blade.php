@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#C8102E" />
 
     <title>Sistem Verifikasi Soal — Telkom University</title>
+    <link rel="icon" type="image/png" href="/images/logo-telkom.png" />
 
     {{-- CSRF meta (untuk Sanctum SPA) --}}
     <meta name="csrf-token" content="{{ csrf_token() }}" />

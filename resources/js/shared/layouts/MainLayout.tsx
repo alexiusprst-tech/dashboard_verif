@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
-import { useAuth } from '@/shared/hooks/useAuth';
+import { useAuth, type AuthUser } from '@/shared/hooks/useAuth';
 import api from '@/shared/lib/api';
 
 /**
@@ -19,9 +19,10 @@ import api from '@/shared/lib/api';
  * - Redirect ke /login jika belum autentikasi
  * - Sidebar collapsible di desktop, drawer di mobile
  * - Topbar sticky di atas area konten
+ * - Sync data user dari /auth/me saat pertama load (agar is_pic_active fresh)
  */
 export function MainLayout() {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, updateUser } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Fetch unread notification count — harus dipanggil SEBELUM early return
@@ -37,6 +38,25 @@ export function MainLayout() {
         refetchInterval: 60_000,
         staleTime: 30_000,
     });
+
+    // Sync data user dari server saat pertama load.
+    // Ini memastikan is_pic_active selalu up-to-date (mis. setelah super admin
+    // assign role PIC tanpa user perlu logout-login ulang).
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        api.get('/auth/me')
+            .then((res) => {
+                const userData = res.data?.data as AuthUser | undefined;
+                if (userData) {
+                    updateUser(userData);
+                }
+            })
+            .catch(() => {
+                // Abaikan error — user tetap bisa pakai data dari localStorage
+            });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Hanya saat pertama mount
 
     // Guard: redirect ke login jika belum autentikasi
     if (!isAuthenticated) {

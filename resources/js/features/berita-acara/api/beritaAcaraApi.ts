@@ -19,7 +19,11 @@ export async function generateBa(payload: GenerateBaFormData): Promise<BeritaAca
     if (payload.regenerate) {
         params.regenerate = 1;
     }
-    const { data } = await api.post(`${BASE}/generate`, { periode_id: payload.periode_id }, { params });
+    const { data } = await api.post(
+        `${BASE}/generate`,
+        { periode_id: payload.periode_id, verifier_id: payload.verifier_id },
+        { params }
+    );
     return data.data;
 }
 

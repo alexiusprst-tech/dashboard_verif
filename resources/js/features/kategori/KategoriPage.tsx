@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, FileText, ChevronRight } from 'lucide-react';
+import { Plus, Edit2, MinusCircle, FileText, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { SearchBar } from '@/shared/components/ui/SearchBar';
@@ -14,7 +14,9 @@ import { Modal } from '@/shared/components/ui/Modal';
 import type { Kategori } from './types/kategori.types';
 import { useKategoriList, useCreateKategori, useUpdateKategori, useDeleteKategori } from './hooks/useKategori';
 import { KategoriModal } from './components/KategoriModal';
+import type { KategoriModalSubmitData } from './components/KategoriModal';
 import { TemplateSection } from './components/TemplateSection';
+import { uploadTemplate } from './api/templateApi';
 
 // Client-side maps for visual aesthetics
 const KATEGORI_DECORATIONS: Record<string, { icon: string; color: string; bg: string }> = {
@@ -70,14 +72,33 @@ export function KategoriPage() {
         setKategoriModalOpen(true);
     };
 
-    const handleSaveKategori = async (data: any) => {
+    const handleSaveKategori = async (data: KategoriModalSubmitData) => {
         try {
             if (currentKategori) {
                 await updateMutation.mutateAsync({ id: currentKategori.id, payload: data });
                 toast.success('Kategori berhasil diperbarui.');
             } else {
-                await createMutation.mutateAsync(data);
-                toast.success('Kategori baru berhasil ditambahkan.');
+                // 1. Buat kategori baru
+                const newKategori = await createMutation.mutateAsync({
+                    nama_kategori: data.nama_kategori,
+                    deskripsi: data.deskripsi,
+                });
+
+                // 2. Upload template jika ada file yang dipilih
+                if (data.templateFile) {
+                    const formData = new FormData();
+                    formData.append('kategori_id', String(newKategori.id));
+                    formData.append('file_template', data.templateFile);
+                    formData.append('versi', data.templateVersi || '1.0');
+                    try {
+                        await uploadTemplate(formData);
+                        toast.success('Kategori & template berhasil ditambahkan.');
+                    } catch {
+                        toast.success('Kategori berhasil ditambahkan, namun template gagal diunggah.');
+                    }
+                } else {
+                    toast.success('Kategori baru berhasil ditambahkan.');
+                }
             }
             setKategoriModalOpen(false);
             refetch();
@@ -216,7 +237,7 @@ export function KategoriPage() {
                                                         className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
                                                         title="Delete"
                                                     >
-                                                        <Trash2 size={15} />
+                                                        <MinusCircle size={15} />
                                                     </button>
                                                 </div>
                                             </td>

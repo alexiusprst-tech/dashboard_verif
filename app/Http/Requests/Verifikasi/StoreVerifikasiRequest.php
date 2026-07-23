@@ -13,11 +13,18 @@ class StoreVerifikasiRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'tipe_verifikator' => 'pic',
+        ]);
+    }
+
     public function rules(): array
     {
         return [
             'status' => 'required|in:' . implode(',', array_column(VerifikasiStatus::cases(), 'value')),
-            'tipe_verifikator' => 'required|in:' . implode(',', array_column(TipeVerifikator::cases(), 'value')),
+            'tipe_verifikator' => 'required|in:pic,coordinator',
             'catatan' => 'required_if:status,' . VerifikasiStatus::Revisi->value . ',' . VerifikasiStatus::Rejected->value . '|nullable|string',
         ];
     }

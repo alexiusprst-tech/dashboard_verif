@@ -46,17 +46,18 @@ class BeritaAcaraController extends Controller
     public function generate(GenerateBeritaAcaraRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $user = $request->user();
+
+        // Super Admin menentukan PIC (verifier) yang BA-nya digenerate
+        $verifier = \App\Models\User::findOrFail((int) $data['verifier_id']);
 
         // Cek jika sudah ada BA untuk PIC ini di periode ini.
-        // Jika sudah ada, service akan menolak. Tapi jika user secara eksplisit meminta 'regenerate' (misal via query param), panggil regenerate.
-        $existing = $this->beritaAcaraRepository->findByVerifierAndPeriode($user->id, (int)$data['periode_id']);
-        
+        $existing = $this->beritaAcaraRepository->findByVerifierAndPeriode($verifier->id, (int)$data['periode_id']);
+
         if ($existing && $request->has('regenerate')) {
-            $ba = $this->beritaAcaraService->regenerate($existing->id, $user);
+            $ba = $this->beritaAcaraService->regenerate($existing->id, $request->user());
             $message = 'Berita Acara berhasil diregenerasi dengan data verifikasi terbaru.';
         } else {
-            $ba = $this->beritaAcaraService->generate((int)$data['periode_id'], $user);
+            $ba = $this->beritaAcaraService->generate((int)$data['periode_id'], $verifier);
             $message = 'Berita Acara berhasil dibangun (generate).';
         }
 

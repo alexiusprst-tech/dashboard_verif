@@ -107,9 +107,7 @@ export function MonitoringPage() {
 
     /* Dashboard data */
     const dashEndpoint =
-        role === 'super_admin'
-            ? '/dashboard/super-admin'
-            : role === 'coordinator'
+        role === 'coordinator'
             ? '/dashboard/coordinator'
             : '/dashboard/dosen';
 
@@ -225,7 +223,7 @@ export function MonitoringPage() {
                     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center gap-2 mb-4">
                             <BarChart3 size={16} className="text-[var(--color-primary)]" />
-                            <h3 className="text-sm font-bold text-gray-700">Progress Keseluruhan</h3>
+                            <h3 className="text-sm font-bold text-gray-700">Progress Verifikasi Overall</h3>
                         </div>
                         <div className="flex items-end justify-between mb-3">
                             <div>
@@ -254,7 +252,7 @@ export function MonitoringPage() {
                     <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center gap-2 mb-4">
                             <Users size={16} className="text-[var(--color-primary)]" />
-                            <h3 className="text-sm font-bold text-gray-700">Progress per Program Studi</h3>
+                            <h3 className="text-sm font-bold text-gray-700">Progress Verifikasi Program Studi</h3>
                         </div>
                         <div className="space-y-3">
                             {prodiProgress.map((p) => (
