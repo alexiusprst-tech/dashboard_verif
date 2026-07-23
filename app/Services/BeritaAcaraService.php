@@ -5,12 +5,14 @@ namespace App\Services;
 use App\Repositories\Contracts\BeritaAcaraRepositoryContract;
 use App\Repositories\Contracts\VerificationRepositoryContract;
 use App\Repositories\Contracts\PeriodeRepositoryContract;
+use App\Repositories\Contracts\BeritaAcaraTemplateRepositoryContract;
 use App\Models\BeritaAcara;
 use App\Models\User;
 use App\Enums\PrintType;
 use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class BeritaAcaraService
@@ -19,17 +21,104 @@ class BeritaAcaraService
     protected VerificationRepositoryContract $verificationRepository;
     protected PeriodeRepositoryContract $periodeRepository;
     protected ActivityLogService $activityLogService;
+    protected BeritaAcaraTemplateRepositoryContract $templateBaRepository;
 
     public function __construct(
         BeritaAcaraRepositoryContract $beritaAcaraRepository,
         VerificationRepositoryContract $verificationRepository,
         PeriodeRepositoryContract $periodeRepository,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        BeritaAcaraTemplateRepositoryContract $templateBaRepository
     ) {
         $this->beritaAcaraRepository = $beritaAcaraRepository;
         $this->verificationRepository = $verificationRepository;
         $this->periodeRepository = $periodeRepository;
         $this->activityLogService = $activityLogService;
+        $this->templateBaRepository = $templateBaRepository;
+    }
+
+    /**
+     * Generate the DOCX file for a Berita Acara based on the active template.
+     */
+    protected function generateDocxFile(BeritaAcara $ba, \App\Models\Periode $periode, User $verifier): string
+    {
+        $template = $this->templateBaRepository->findActive();
+        if (!$template) {
+            throw new BusinessException('Template Berita Acara belum tersedia.', 422);
+        }
+
+        $templatePath = Storage::disk('local')->path($template->file_path);
+        if (!Storage::disk('local')->exists($template->file_path)) {
+            throw new BusinessException('Template Berita Acara tidak ditemukan di disk.', 422);
+        }
+
+        try {
+            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($templatePath);
+        } catch (\Exception $e) {
+            throw new BusinessException('Template tidak dapat diproses.', 500);
+        }
+
+        // Get snapshot/current items
+        $items = $this->beritaAcaraRepository->findById($ba->id)->items;
+
+        // Prep data for placeholders
+        $variables = $templateProcessor->getVariables();
+
+        $singlePlaceholders = [
+            'nomor_ba' => $ba->nomor_ba,
+            'periode' => $periode->nama_periode,
+            'nama_pic' => $verifier->nama_lengkap ?? $verifier->name,
+            'tanggal' => now()->translatedFormat('d F Y'),
+        ];
+
+        foreach ($singlePlaceholders as $key => $val) {
+            if (in_array($key, $variables)) {
+                $templateProcessor->setValue($key, $val);
+            } else {
+                Log::warning("Placeholder '{$key}' not found in Berita Acara template.");
+            }
+        }
+
+        // If there are items, clone the row
+        if ($items->isNotEmpty()) {
+            if (in_array('nama_dosen', $variables)) {
+                try {
+                    $templateProcessor->cloneRow('nama_dosen', $items->count());
+                    foreach ($items as $index => $item) {
+                        $rowNum = $index + 1;
+                        $soal = $item->soal;
+                        $dosenName = $soal && $soal->dosen ? ($soal->dosen->nama_lengkap ?? $soal->dosen->name) : '—';
+                        $statusText = $item->status_snapshot === 'approved' ? 'Disetujui' : ($item->status_snapshot === 'revisi' ? 'Perlu Revisi' : 'Ditolak');
+
+                        $templateProcessor->setValue("nama_dosen#{$rowNum}", $dosenName);
+                        $templateProcessor->setValue("status#{$rowNum}", $statusText);
+                        $templateProcessor->setValue("catatan#{$rowNum}", $item->catatan_snapshot ?? '—');
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Failed to clone row 'nama_dosen' in Berita Acara template: " . $e->getMessage());
+                }
+            } else {
+                Log::warning("Placeholder 'nama_dosen' for rows cloning not found in Berita Acara template.");
+            }
+        }
+
+        // Save generated file
+        $generatedFolder = 'generated/ba';
+        if (!Storage::disk('local')->exists($generatedFolder)) {
+            Storage::disk('local')->makeDirectory($generatedFolder);
+        }
+
+        $fileName = 'ba_' . $ba->id . '_' . time() . '.docx';
+        $relativeFilePath = $generatedFolder . '/' . $fileName;
+        $outputPath = Storage::disk('local')->path($relativeFilePath);
+
+        try {
+            $templateProcessor->saveAs($outputPath);
+        } catch (\Exception $e) {
+            throw new BusinessException('Gagal menyimpan file hasil generate.', 500);
+        }
+
+        return $relativeFilePath;
     }
 
     public function generate(int $periodeId, User $verifier): BeritaAcara
@@ -37,6 +126,12 @@ class BeritaAcaraService
         $periode = $this->periodeRepository->findById($periodeId);
         if (!$periode) {
             throw new BusinessException('Periode tidak ditemukan.', 404);
+        }
+
+        // Cek template aktif terlebih dahulu
+        $template = $this->templateBaRepository->findActive();
+        if (!$template) {
+            throw new BusinessException('Template Berita Acara belum tersedia.', 422);
         }
 
         // Cek apakah sudah pernah digenerate sebelumnya
@@ -59,7 +154,8 @@ class BeritaAcaraService
                 'periode_id' => $periodeId,
                 'verifier_id' => $verifier->id,
                 'generated_at' => now(),
-                'file_pdf' => null, // Mulai dari null, dicache saat print pertama kali
+                'file_pdf' => null,
+                'file_docx' => null,
             ]);
 
             $items = [];
@@ -77,6 +173,13 @@ class BeritaAcaraService
 
             return $ba;
         });
+
+        // Generate DOCX file
+        $fileDocx = $this->generateDocxFile($beritaAcara, $periode, $verifier);
+
+        $beritaAcara = $this->beritaAcaraRepository->update($beritaAcara, [
+            'file_docx' => $fileDocx
+        ]);
 
         $this->activityLogService->log(
             "Membangun Berita Acara nomor {$beritaAcara->nomor_ba} untuk periode ID {$periodeId}",
@@ -98,6 +201,12 @@ class BeritaAcaraService
             throw new BusinessException('Anda tidak berwenang untuk meregenerasi Berita Acara ini.', 403);
         }
 
+        // Cek template aktif terlebih dahulu
+        $template = $this->templateBaRepository->findActive();
+        if (!$template) {
+            throw new BusinessException('Template Berita Acara belum tersedia.', 422);
+        }
+
         $approvedVerifications = $this->verificationRepository->findApprovedForPicInPeriode($ba->verifier_id, $ba->periode_id);
         if ($approvedVerifications->isEmpty()) {
             throw new BusinessException('Tidak ditemukan soal yang telah disetujui (Approved) pada periode ini untuk diregenerasi.', 422);
@@ -110,6 +219,11 @@ class BeritaAcaraService
             // Hapus file cache PDF lama dari disk jika ada
             if ($ba->file_pdf) {
                 Storage::disk('public')->delete($ba->file_pdf);
+            }
+
+            // Hapus file DOCX lama dari disk jika ada
+            if ($ba->file_docx && Storage::exists($ba->file_docx)) {
+                Storage::delete($ba->file_docx);
             }
 
             // Insert snapshot baru
@@ -129,8 +243,16 @@ class BeritaAcaraService
             return $this->beritaAcaraRepository->update($ba, [
                 'generated_at' => now(),
                 'file_pdf' => null,
+                'file_docx' => null,
             ]);
         });
+
+        // Generate DOCX file baru
+        $fileDocx = $this->generateDocxFile($ba, $ba->periode, $verifier);
+
+        $ba = $this->beritaAcaraRepository->update($ba, [
+            'file_docx' => $fileDocx
+        ]);
 
         $this->activityLogService->log(
             "Meregenerasi Berita Acara nomor {$ba->nomor_ba}",

@@ -18,7 +18,7 @@ return new class extends Migration
                 ->comment('Periode di mana PLO ini berlaku');
 
             // Drop unique constraint lama, ganti dengan yang baru
-            $table->dropUnique(['kode', 'prodi_id']);
+            $table->dropUnique('plo_unique_kode_prodi');
             $table->unique(['kode', 'prodi_id', 'periode_id'], 'plo_kode_prodi_periode_unique');
         });
     }
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->dropColumn('periode_id');
 
             // Restore unique constraint lama
-            $table->unique(['kode', 'prodi_id']);
+            $table->unique(['kode', 'prodi_id'], 'plo_unique_kode_prodi');
         });
     }
 };

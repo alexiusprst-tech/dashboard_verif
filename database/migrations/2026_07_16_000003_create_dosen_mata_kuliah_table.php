@@ -12,27 +12,22 @@ return new class extends Migration
             $table->id();
             $table->foreignId('dosen_id')
                 ->constrained('users')
-                ->cascadeOnDelete()
-                ->comment('Dosen yang mengampu');
+                ->cascadeOnDelete();
             $table->foreignId('mata_kuliah_id')
                 ->constrained('courses')
-                ->cascadeOnDelete()
-                ->comment('Mata kuliah yang diampu');
+                ->cascadeOnDelete();
             $table->foreignId('periode_id')
                 ->constrained('periode')
-                ->cascadeOnDelete()
-                ->comment('Periode di mana pemetaan ini berlaku');
+                ->cascadeOnDelete();
             $table->foreignId('created_by')
-                ->nullable()
                 ->constrained('users')
-                ->nullOnDelete()
+                ->cascadeOnDelete()
                 ->comment('Super Admin yang membuat pemetaan');
             $table->timestamps();
 
-            // Satu dosen tidak bisa diampu dua kali untuk matkul yang sama di periode yang sama
             $table->unique(
                 ['dosen_id', 'mata_kuliah_id', 'periode_id'],
-                'dosen_mk_unique_per_periode'
+                'dosen_mk_unique_mapping'
             );
         });
     }

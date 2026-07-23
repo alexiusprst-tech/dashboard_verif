@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->string('kode_dosen', 30)->unique();
+            $table->string('kode_dosen', 30)->unique()->comment('format huruf, contoh: DSN-SI-001');
             $table->string('nama_lengkap', 150);
             $table->string('email', 150)->unique();
             $table->string('password');
@@ -19,6 +19,10 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('program_studi')
                 ->nullOnDelete();
+            $table->enum('tipe_dosen', ['biasa', 'lb'])->default('biasa');
+            $table->enum('semester_lb', ['ganjil', 'genap'])
+                ->nullable()
+                ->comment('hanya diisi jika tipe_dosen = lb, menentukan periode jenis apa dosen ini aktif');
             $table->boolean('is_super_admin')->default(false);
             $table->boolean('is_coordinator')->default(false);
             $table->boolean('status_aktif')->default(true);
@@ -28,14 +32,12 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        // Tabel bawaan Laravel untuk reset password (tetap dipakai standar)
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
-        // Tabel bawaan Laravel untuk session
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();

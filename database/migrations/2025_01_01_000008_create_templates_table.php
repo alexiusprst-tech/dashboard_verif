@@ -14,7 +14,7 @@ return new class extends Migration
                 ->constrained('categories')
                 ->cascadeOnDelete();
             $table->string('nama_file', 255);
-            $table->text('file_path');
+            $table->text('file_path')->comment('wajib PDF, divalidasi di Form Request saat upload');
             $table->string('versi', 20)->default('1.0');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
