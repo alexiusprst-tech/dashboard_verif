@@ -27,5 +27,6 @@ export interface BeritaAcara {
 
 export interface GenerateBaFormData {
     periode_id: number | '';
+    verifier_id: number | '';
     regenerate?: boolean;
 }

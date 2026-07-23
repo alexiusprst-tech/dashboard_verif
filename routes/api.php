@@ -58,30 +58,30 @@ Route::middleware('auth:sanctum')->group(function () {
     // Periode
     Route::get('/periode', [PeriodeController::class, 'index']);
     Route::get('/periode/{id}', [PeriodeController::class, 'show']);
-    Route::post('/periode', [PeriodeController::class, 'store'])->middleware('super_admin');
-    Route::put('/periode/{id}', [PeriodeController::class, 'update'])->middleware('super_admin');
-    Route::delete('/periode/{id}', [PeriodeController::class, 'destroy'])->middleware('super_admin');
-    Route::patch('/periode/{id}/activate', [PeriodeController::class, 'activate'])->middleware('super_admin');
+    Route::post('/periode', [PeriodeController::class, 'store'])->middleware('coordinator');
+    Route::put('/periode/{id}', [PeriodeController::class, 'update'])->middleware('coordinator');
+    Route::delete('/periode/{id}', [PeriodeController::class, 'destroy'])->middleware('coordinator');
+    Route::patch('/periode/{id}/activate', [PeriodeController::class, 'activate'])->middleware('coordinator');
 
     // Kategori & Template
     Route::get('/kategori', [KategoriController::class, 'index']);
     Route::get('/kategori/{id}', [KategoriController::class, 'show']);
-    Route::post('/kategori', [KategoriController::class, 'store'])->middleware('super_admin');
-    Route::put('/kategori/{id}', [KategoriController::class, 'update'])->middleware('super_admin');
-    Route::delete('/kategori/{id}', [KategoriController::class, 'destroy'])->middleware('super_admin');
+    Route::post('/kategori', [KategoriController::class, 'store'])->middleware('coordinator');
+    Route::put('/kategori/{id}', [KategoriController::class, 'update'])->middleware('coordinator');
+    Route::delete('/kategori/{id}', [KategoriController::class, 'destroy'])->middleware('coordinator');
 
     Route::get('/templates', [TemplateController::class, 'index']);
-    Route::post('/templates', [TemplateController::class, 'store'])->middleware('super_admin');
-    Route::delete('/templates/{id}', [TemplateController::class, 'destroy'])->middleware('super_admin');
+    Route::post('/templates', [TemplateController::class, 'store'])->middleware('coordinator');
+    Route::delete('/templates/{id}', [TemplateController::class, 'destroy'])->middleware('coordinator');
 
     // Soal
     Route::apiResource('soal', SoalController::class);
 
     // Penugasan PIC
     Route::get('/penugasan', [PenugasanController::class, 'index']);
-    Route::post('/penugasan', [PenugasanController::class, 'store'])->middleware('super_admin');
-    Route::delete('/penugasan/{id}', [PenugasanController::class, 'destroy'])->middleware('super_admin');
-    Route::get('/dosen/search', [DosenController::class, 'search'])->middleware('super_admin');
+    Route::post('/penugasan', [PenugasanController::class, 'store'])->middleware('coordinator');
+    Route::delete('/penugasan/{id}', [PenugasanController::class, 'destroy'])->middleware('coordinator');
+    Route::get('/dosen/search', [DosenController::class, 'search'])->middleware('coordinator');
 
     // Verifikasi
     Route::get('/verifikasi/tugas-saya', [VerifikasiController::class, 'tugasSaya'])->middleware('pic_periode');
@@ -90,13 +90,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Berita Acara
     Route::get('/berita-acara', [BeritaAcaraController::class, 'index']);
-    Route::post('/berita-acara/generate', [BeritaAcaraController::class, 'generate'])->middleware('pic_periode');
+    Route::post('/berita-acara/generate', [BeritaAcaraController::class, 'generate'])->middleware('coordinator');
     Route::get('/berita-acara/{id}/print', [BeritaAcaraController::class, 'print']);
 
     // Broadcast
     Route::get('/broadcast', [BroadcastController::class, 'index']);
-    Route::post('/broadcast', [BroadcastController::class, 'store'])->middleware('super_admin');
-    Route::patch('/broadcast/{id}/publish', [BroadcastController::class, 'publish'])->middleware('super_admin');
+    Route::post('/broadcast', [BroadcastController::class, 'store'])->middleware('coordinator');
+    Route::patch('/broadcast/{id}/publish', [BroadcastController::class, 'publish'])->middleware('coordinator');
     Route::get('/broadcast/feed', [BroadcastController::class, 'feed']);
 
     // Notifikasi
@@ -105,8 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/notifikasi/read-all', [NotifikasiController::class, 'readAll']);
 
     // Dashboard
-    Route::get('/dashboard/super-admin', [DashboardController::class, 'superAdmin'])->middleware('super_admin');
+    Route::get('/dashboard/coordinator', [DashboardController::class, 'superAdmin'])->middleware('coordinator');
     Route::get('/dashboard/dosen', [DashboardController::class, 'dosen']);
     Route::get('/dashboard/pic', [DashboardController::class, 'pic'])->middleware('pic_periode');
-    Route::get('/dashboard/coordinator', [DashboardController::class, 'coordinator'])->middleware('coordinator');
 });

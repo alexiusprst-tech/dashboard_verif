@@ -86,7 +86,7 @@ function PublishBadge({ publishedAt }: { publishedAt: string | null }) {
 export function BroadcastPage() {
     const { toast } = useToast();
     const { role } = useAuth();
-    const isSuperAdmin = role === 'super_admin';
+    const isSuperAdmin = role === 'coordinator';
 
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);

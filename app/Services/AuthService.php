@@ -53,6 +53,12 @@ class AuthService
         // Ambil periode_id di mana user berperan PIC (dari user_roles)
         $activePicPeriodes = $this->userRoleRepository->getActivePicPeriodes($user->id);
 
+        // Set virtual attribute is_pic_active berdasarkan periode aktif
+        $activePeriode = $this->periodeRepository->findActive();
+        $user->is_pic_active = $activePeriode
+            ? $activePicPeriodes->contains($activePeriode->id)
+            : false;
+
         $this->activityLogService->log('User melakukan login', 'Auth', $user->id);
 
         return [
@@ -72,6 +78,12 @@ class AuthService
     {
         // Ambil periode_id di mana user berperan PIC (dari user_roles)
         $activePicPeriodes = $this->userRoleRepository->getActivePicPeriodes($user->id);
+
+        // Set virtual attribute is_pic_active berdasarkan periode aktif
+        $activePeriode = $this->periodeRepository->findActive();
+        $user->is_pic_active = $activePeriode
+            ? $activePicPeriodes->contains($activePeriode->id)
+            : false;
 
         return [
             'user'               => $user,

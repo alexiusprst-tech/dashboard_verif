@@ -2,12 +2,20 @@
 
 namespace App\Http\Middleware;
 
+use App\Repositories\Contracts\PeriodeRepositoryContract;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureIsCoordinator
 {
+    protected PeriodeRepositoryContract $periodeRepository;
+
+    public function __construct(PeriodeRepositoryContract $periodeRepository)
+    {
+        $this->periodeRepository = $periodeRepository;
+    }
+
     /**
      * Handle an incoming request.
      */
@@ -30,11 +38,18 @@ class EnsureIsCoordinator
             return $next($request);
         }
 
-        // Hanya Coordinator yang diizinkan
-        if (!$user->isCoordinator()) {
-            abort(403, 'Anda tidak memiliki hak akses sebagai Coordinator.');
+        // Coordinator permanen diizinkan
+        if ($user->isCoordinator()) {
+            return $next($request);
         }
 
-        return $next($request);
+        // Dosen yang sedang bertugas sebagai PIC di periode aktif
+        // juga mendapatkan akses fitur coordinator
+        $activePeriode = $this->periodeRepository->findActive();
+        if ($activePeriode && $user->isPicOnPeriode($activePeriode->id)) {
+            return $next($request);
+        }
+
+        abort(403, 'Anda tidak memiliki hak akses sebagai Coordinator.');
     }
 }

@@ -44,20 +44,8 @@ class VerifikasiService
             throw new BusinessException('Soal sudah disetujui (Approved) dan tidak dapat diverifikasi kembali.', 422);
         }
 
-        $tipeVerifikator = $data['tipe_verifikator']; // 'pic' atau 'coordinator'
+        $tipeVerifikator = 'pic';
         $status = VerifikasiStatus::from($data['status']);
-
-        if ($tipeVerifikator === TipeVerifikator::Coordinator->value) {
-            if (!$verifier->is_coordinator) {
-                throw new BusinessException('Anda tidak memiliki hak akses sebagai Koordinator.', 403);
-            }
-            
-            // Verifikasi Koordinator hanya bisa jika status PIC sebelumnya adalah 'approved'
-            $latestPicVerif = $this->verificationRepository->findLatestBySoal($soal->id);
-            if (!$latestPicVerif || $latestPicVerif->status !== VerifikasiStatus::Approved) {
-                throw new BusinessException('Verifikasi Koordinator hanya dapat dilakukan setelah soal disetujui oleh PIC.', 422);
-            }
-        }
 
         $verification = DB::transaction(function () use ($soal, $verifier, $tipeVerifikator, $status, $data) {
             // Save verification
@@ -79,7 +67,7 @@ class VerifikasiService
         });
 
         // Kirim notifikasi ke dosen pembuat soal
-        $tipeVerifLabel = $tipeVerifikator === TipeVerifikator::Pic->value ? 'PIC' : 'Koordinator';
+        $tipeVerifLabel = 'PIC';
         $statusLabel = $status->label();
         
         $this->notifikasiService->kirim(

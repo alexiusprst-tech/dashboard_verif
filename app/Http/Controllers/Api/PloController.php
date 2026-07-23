@@ -28,6 +28,13 @@ class PloController extends Controller
         $perPage = $request->query('per_page', 15);
 
         if (!$prodiId) {
+            $siProdi = \App\Models\ProgramStudi::where('kode_prodi', 'SI')
+                ->orWhere('nama_prodi', 'like', '%Sistem Informasi%')
+                ->first();
+            $prodiId = $siProdi ? $siProdi->id : \App\Models\ProgramStudi::value('id');
+        }
+
+        if (!$prodiId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Prodi ID wajib ditentukan.'

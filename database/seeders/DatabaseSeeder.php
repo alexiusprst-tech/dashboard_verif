@@ -26,29 +26,16 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 2. Users
-        // Super Admin
+        // Coordinator (previously Super Admin)
         $admin = User::create([
             'uuid' => (string) \Illuminate\Support\Str::uuid(),
             'kode_dosen' => 'ADM001',
-            'nama_lengkap' => 'Administrator Utama',
-            'email' => 'admin@telkomuniversity.ac.id',
+            'nama_lengkap' => 'Koordinator Utama',
+            'email' => 'coordinator@telkomuniversity.ac.id',
             'password' => 'password',
             'prodi_id' => $if->id,
             'is_super_admin' => true,
             'is_coordinator' => false,
-            'status_aktif' => true,
-        ]);
-
-        // Coordinator
-        $koor = User::create([
-            'uuid' => (string) \Illuminate\Support\Str::uuid(),
-            'kode_dosen' => 'KOR001',
-            'nama_lengkap' => 'Koor Prodi IF',
-            'email' => 'coordinator@telkomuniversity.ac.id',
-            'password' => 'password',
-            'prodi_id' => $if->id,
-            'is_super_admin' => false,
-            'is_coordinator' => true,
             'status_aktif' => true,
         ]);
 

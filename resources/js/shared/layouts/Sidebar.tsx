@@ -26,7 +26,7 @@ interface NavItem {
     href: string;
     icon: React.ElementType;
     badge?: number;
-    roles?: Array<'super_admin' | 'coordinator' | 'dosen' | 'pic'>;
+    roles?: Array<'coordinator' | 'dosen' | 'pic'>;
 }
 
 interface NavSection {
@@ -60,13 +60,12 @@ const ADMIN_ITEMS: NavItem[] = [
     { label: 'Penugasan PIC', href: '/penugasan-pic', icon: Users },
     { label: 'Broadcast', href: '/broadcast', icon: Megaphone },
     { label: 'Semua Soal', href: '/soal/semua', icon: FileText },
-    { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
 ];
 
 /* ── Build sections berdasarkan role + is_pic_active ───────── */
 
 function buildNavSections(
-    role: 'super_admin' | 'coordinator' | 'dosen',
+    role: 'coordinator' | 'pic' | 'dosen',
     isPicActive: boolean,
     picPendingCount?: number,
 ): NavSection[] {
@@ -74,29 +73,41 @@ function buildNavSections(
         { items: COMMON_ITEMS },
     ];
 
-    if (role === 'super_admin') {
-        sections.push({ title: 'Manajemen', items: ADMIN_ITEMS });
-    }
-
     if (role === 'coordinator') {
-        sections.push({ title: 'Koordinator', items: COORDINATOR_ITEMS });
-    }
-
-    // Semua dosen (termasuk admin/koordinator) bisa upload soal
-    if (role !== 'super_admin') {
-        sections.push({ title: 'Soal', items: DOSEN_ITEMS });
-    }
-
-    // PIC section — hanya muncul jika user sedang ditugaskan sebagai PIC
-    if (isPicActive) {
-        sections.push({
-            title: 'Tugas Verifikasi',
-            items: PIC_ITEMS.map((item) =>
+        // Coordinator (ex-Super Admin): menggabungkan seluruh fitur manajemen, monitoring, & verifikasi ke satu section
+        const coordinatorManagementItems = [
+            ...ADMIN_ITEMS,
+            ...COORDINATOR_ITEMS,
+            ...PIC_ITEMS.map((item) =>
                 item.href === '/verifikasi' && picPendingCount
                     ? { ...item, badge: picPendingCount }
                     : item,
             ),
+        ];
+
+        sections.push({ title: 'Manajemen', items: coordinatorManagementItems });
+        
+        return sections;
+    }
+
+    // PIC / Verifikator atau Dosen biasa
+    if (role === 'pic' || isPicActive) {
+        const picItemsWithBadge = PIC_ITEMS.map((item) =>
+            item.href === '/verifikasi' && picPendingCount
+                ? { ...item, badge: picPendingCount }
+                : item,
+        );
+
+        sections.push({
+            title: 'Soal',
+            items: [
+                ...DOSEN_ITEMS,
+                ...picItemsWithBadge,
+            ],
         });
+    } else {
+        // Dosen biasa hanya bisa upload soal
+        sections.push({ title: 'Soal', items: DOSEN_ITEMS });
     }
 
     return sections;
@@ -166,15 +177,15 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                     collapsed ? 'justify-center' : 'gap-3',
                 )}
             >
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)]">
-                    <GraduationCap size={18} className="text-white" />
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white p-1 shadow-sm">
+                    <img src="/images/logo-telkom.png" alt="Telkom University Logo" className="h-full w-full object-contain" />
                 </div>
                 {!collapsed && (
                     <div>
-                        <p className="text-xs font-semibold leading-tight text-white">
+                        <p className="text-xs font-bold leading-tight text-white">
                             Sistem Verifikasi
                         </p>
-                        <p className="text-[10px] text-gray-400">Soal Ujian</p>
+                        <p className="text-[10px] text-gray-300 font-medium">Soal Ujian · Tel-U</p>
                     </div>
                 )}
             </div>

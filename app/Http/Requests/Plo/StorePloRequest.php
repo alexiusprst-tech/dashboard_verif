@@ -11,6 +11,17 @@ class StorePloRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (!$this->has('prodi_id') || !$this->prodi_id) {
+            $siProdi = \App\Models\ProgramStudi::where('kode_prodi', 'SI')
+                ->orWhere('nama_prodi', 'like', '%Sistem Informasi%')
+                ->first();
+            $prodiId = $siProdi ? $siProdi->id : \App\Models\ProgramStudi::value('id');
+            $this->merge(['prodi_id' => $prodiId]);
+        }
+    }
+
     public function rules(): array
     {
         return [

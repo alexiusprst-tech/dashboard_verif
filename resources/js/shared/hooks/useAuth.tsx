@@ -8,7 +8,7 @@ import {
 
 /* ── Types ─────────────────────────────────────────────────── */
 
-export type UserRole = 'super_admin' | 'coordinator' | 'dosen';
+export type UserRole = 'coordinator' | 'pic' | 'dosen';
 
 export interface AuthUser {
     id: number;
@@ -32,6 +32,8 @@ interface AuthContextValue {
     role: UserRole;
     login: (token: string, user: AuthUser) => void;
     logout: () => void;
+    /** Update data user (mis. setelah fetch /auth/me) tanpa re-login */
+    updateUser: (user: AuthUser) => void;
 }
 
 /* ── Context ───────────────────────────────────────────────── */
@@ -41,8 +43,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /* ── Helper: derive role ───────────────────────────────────── */
 
 function deriveRole(user: AuthUser): UserRole {
-    if (user.is_super_admin) return 'super_admin';
-    if (user.is_coordinator) return 'coordinator';
+    if (user.is_super_admin) return 'coordinator';
+    if (user.is_pic_active) return 'pic';
     return 'dosen';
 }
 
@@ -77,6 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
     }, []);
 
+    const updateUser = useCallback((updatedUser: AuthUser) => {
+        localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+    }, []);
+
     const role: UserRole = user ? deriveRole(user) : 'dosen';
 
     return (
@@ -88,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 role,
                 login,
                 logout,
+                updateUser,
             }}
         >
             {children}

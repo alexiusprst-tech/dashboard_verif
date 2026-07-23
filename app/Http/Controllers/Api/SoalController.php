@@ -36,7 +36,7 @@ class SoalController extends Controller
         $perPage = $request->query('per_page', 15);
 
         // Otorisasi list: Dosen hanya boleh melihat soal miliknya sendiri
-        if (!$user->isSuperAdmin() && !$user->isCoordinator()) {
+        if (!$user->isSuperAdmin()) {
             $filters['dosen_id'] = $user->id;
         }
 
@@ -74,9 +74,9 @@ class SoalController extends Controller
             ], 404);
         }
 
-        // Otorisasi detail: Dosen sendiri, PIC penugasan, Coordinator, atau Super Admin
+        // Otorisasi detail: Dosen sendiri, PIC penugasan, atau Coordinator (Super Admin)
         $hasAccess = false;
-        if ($user->isSuperAdmin() || $user->isCoordinator()) {
+        if ($user->isSuperAdmin()) {
             $hasAccess = true;
         } elseif ($soal->isOwnedBy($user->id)) {
             $hasAccess = true;

@@ -239,13 +239,13 @@ function QuickActions({ actions }: { actions: QuickAction[] }) {
    Dashboard Views per Role
 ══════════════════════════════════════════════════════════════ */
 
-/* ── Super Admin Dashboard ─────────────────────────────────── */
+/* ── Coordinator Dashboard ─────────────────────────────────── */
 
-function SuperAdminDashboard() {
+function CoordinatorDashboard() {
     const { data, isLoading } = useQuery({
-        queryKey: ['dashboard', 'super-admin'],
+        queryKey: ['dashboard', 'coordinator'],
         queryFn: async (): Promise<SuperAdminData> => {
-            const res = await api.get('/dashboard/super-admin');
+            const res = await api.get('/dashboard/coordinator');
             return res.data.data;
         },
     });
@@ -481,79 +481,6 @@ function PicDashboard() {
     );
 }
 
-/* ── Coordinator Dashboard ────────────────────────────────── */
-
-function CoordinatorDashboard() {
-    const { data, isLoading } = useQuery({
-        queryKey: ['dashboard', 'coordinator'],
-        queryFn: async (): Promise<CoordinatorData> => {
-            const res = await api.get('/dashboard/coordinator');
-            return res.data.data;
-        },
-    });
-
-    const prodiList = data?.progress_by_prodi ?? [];
-    const totalApproved = prodiList.reduce((a, b) => a + b.approved, 0);
-    const totalAll = prodiList.reduce((a, b) => a + b.total, 0);
-    const overallPct = totalAll > 0 ? Math.round((totalApproved / totalAll) * 100) : 0;
-
-    return (
-        <div className="flex flex-col gap-5">
-            <PeriodeBanner periode={data?.periode ?? null} />
-
-            <div className="grid grid-cols-3 gap-4">
-                <StatCard label="Total Program Studi" value={isLoading ? '…' : prodiList.length} icon={<Users size={18} />} color="text-[var(--color-primary)]" bg="bg-[var(--color-primary-light)]" />
-                <StatCard label="Total Soal Disetujui" value={isLoading ? '…' : totalApproved} icon={<CheckCircle2 size={18} />} color="text-green-600" bg="bg-green-50" border="border-green-100" />
-                <StatCard label="Progress Keseluruhan" value={isLoading ? '…' : `${overallPct}%`} icon={<TrendingUp size={18} />} color="text-indigo-600" bg="bg-indigo-50" />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                        <BarChart3 size={16} className="text-[var(--color-primary)]" />
-                        <h3 className="text-sm font-bold text-gray-700">Progress per Program Studi</h3>
-                    </div>
-
-                    {isLoading ? (
-                        <div className="space-y-4">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="space-y-1.5">
-                                    <div className="flex justify-between">
-                                        <div className="h-3 w-36 animate-pulse rounded bg-gray-200" />
-                                        <div className="h-3 w-12 animate-pulse rounded bg-gray-200" />
-                                    </div>
-                                    <div className="h-2 animate-pulse rounded-full bg-gray-100" />
-                                </div>
-                            ))}
-                        </div>
-                    ) : prodiList.length === 0 ? (
-                        <p className="text-sm text-gray-400 py-8 text-center">Belum ada data progress prodi.</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {prodiList.map((p) => (
-                                <ProgressBar
-                                    key={p.prodi}
-                                    label={p.prodi}
-                                    value={p.approved}
-                                    total={p.total}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <QuickActions
-                    actions={[
-                        { label: 'Monitoring', desc: 'Pantau detail per prodi', icon: <TrendingUp size={16} />, to: '/monitoring', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
-                        { label: 'PLO & CLO', desc: 'Kelola capaian pembelajaran', icon: <BookOpen size={16} />, to: '/plo-clo', color: 'text-purple-600', bg: 'bg-purple-50' },
-                        { label: 'Semua Soal', desc: 'Lihat seluruh soal dosen', icon: <Layers size={16} />, to: '/soal/semua', color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { label: 'Pengumuman', desc: 'Lihat broadcast terbaru', icon: <Megaphone size={16} />, to: '/broadcast', color: 'text-green-600', bg: 'bg-green-50' },
-                    ]}
-                />
-            </div>
-        </div>
-    );
-}
 
 /* ══════════════════════════════════════════════════════════════
    Main DashboardPage — role switcher
@@ -570,10 +497,8 @@ export function DashboardPage() {
         return 'Selamat malam';
     };
 
-    const roleLabel = role === 'super_admin'
-        ? 'Super Admin'
-        : role === 'coordinator'
-        ? 'Koordinator'
+    const roleLabel = role === 'coordinator'
+        ? 'Coordinator'
         : user?.is_pic_active
         ? 'PIC Verifikator'
         : 'Dosen';
@@ -592,19 +517,18 @@ export function DashboardPage() {
                     </p>
                 </div>
                 <Link
-                    to={role === 'super_admin' ? '/monitoring' : '/soal'}
+                    to={role === 'coordinator' ? '/monitoring' : '/soal'}
                     className="hidden sm:flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-[var(--color-primary-dark)]"
                 >
-                    {role === 'super_admin' ? 'Lihat Monitoring' : 'Lihat Soal Saya'}
+                    {role === 'coordinator' ? 'Lihat Monitoring' : 'Lihat Soal Saya'}
                     <ArrowRight size={15} />
                 </Link>
             </div>
 
             {/* ── Role-based Dashboard ─────────────────────────── */}
-            {role === 'super_admin' && <SuperAdminDashboard />}
             {role === 'coordinator' && <CoordinatorDashboard />}
-            {role === 'dosen' && user?.is_pic_active && <PicDashboard />}
-            {role === 'dosen' && !user?.is_pic_active && <DosenDashboard />}
+            {role === 'pic' && <PicDashboard />}
+            {role === 'dosen' && <DosenDashboard />}
         </div>
     );
 }
