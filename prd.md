@@ -2,7 +2,7 @@
 
 # Dashboard Verifikasi Soal Ujian
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Project Name:** Dashboard Verifikasi Soal Ujian  
 **Organization:** Telkom University Jakarta  
 **Last Updated:** Juli 2026  
@@ -120,21 +120,28 @@ Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seor
 
 ---
 
-## 6. Non-Functional Requirements (Kebutuhan Non-Fungsional)
+## 6. Non-Functional Requirements (Kebutuhan Non-Fungsional & Performa)
 
 ### 6.1 Usability & Interface
-- **NFR-UI-01 (Modern Aesthetic):** Antarmuka web dibangun menggunakan React + Inertia.js / Tailwind / HSL design system modern yang mendukung visualisasi data bersih, dark mode, serta responsive layout untuk perangkat desktop dan tablet.
-- **NFR-UI-02 (User Experience):** Waktu respon antarmuka cepat (< 100ms untuk aksi lokal) dengan indikator pemuatan (*loading state*) yang intuitif.
+- **NFR-UI-01 (Modern Aesthetic):** Antarmuka web dibangun menggunakan React + TypeScript + Tailwind v4 HSL design system modern yang mendukung visualisasi data bersih, dark mode, serta responsive layout.
+- **NFR-UI-02 (User Experience):** Waktu respon antarmuka lokal cepat (< 100ms untuk aksi lokal) dengan indikator Skeleton Loader yang intuitif.
 
 ### 6.2 Security & Authentication
 - **NFR-SEC-01 (Authentication):** Menggunakan **Laravel Sanctum** berbasis Bearer Token yang terenkripsi aman.
 - **NFR-SEC-02 (Role-Based Access Control):** Setiap endpoint diproteksi oleh middleware spesifik (`auth:sanctum`, `coordinator`, `super_admin`, `pic_periode`).
-- **NFR-SEC-03 (Data Protection & Input Validation):** Seluruh masukan API divalidasi ketat via Form Request. Password di-hash menggunakan algoritma Bcrypt / Argon2ID.
+- **NFR-SEC-03 (Data Protection & Input Validation):** Seluruh masukan API divalidasi ketat via Form Request. Password di-hash menggunakan Bcrypt / Argon2ID.
 - **NFR-SEC-04 (File Upload Security):** Validasi tipe MIME file (PDF/DOCX), pembatasan ukuran berkas maksimum (10MB), dan pengacakan nama berkas tersimpan di storage terproteksi.
 
-### 6.3 Performance & Scalability
-- **NFR-PRF-01 (Database Engine):** Menggunakan **PostgreSQL** dengan indeks komposit pada kolom yang sering di-query (`periode_id`, `status`, `user_id`, `soal_id`).
-- **NFR-PRF-02 (API Latency):** Response time REST API rata-rata di bawah 300ms untuk query standar dan di bawah 2 detik untuk operasi berat (seperti PDF generation).
+### 6.3 Performance, Scalability & Throughput (SLA Performa)
+- **NFR-PRF-01 (Database Indexing Strategy):** PostgreSQL dilengkapi dengan B-Tree Composite Indexes pada kolom `(periode_id, status)`, Partial Unique Index untuk periode aktif, dan Full-Text Search GIN Index.
+- **NFR-PRF-02 (API Latency SLA):** Response time REST API wajib memenuhi standar latensi berikut:
+  - Read Queries (`GET /soal`, `/dashboard`): Latensi p95 < **150ms**.
+  - Write Operations (`POST /soal`, `POST /verifikasi`): Latensi p95 < **300ms**.
+  - Sync Report Generation (PDF/DOCX): Latensi < **2.5 detik**.
+- **NFR-PRF-03 (Concurrent Active Capacity):** Sistem harus mampu menangani minimal **500+ pengguna aktif bersamaan** (*concurrent active faculty users*) tanpa penurunan kinerja (*zero degradation*) pada puncak periode unggah soal.
+- **NFR-PRF-04 (Asynchronous Job Queue):** Pemrosesan berat seperti penggenerasian Berita Acara massal dan pengiriman notifikasi broadcast dilakukan secara asynchronous menggunakan **Laravel Queue Workers** (`202 Accepted`).
+- **NFR-PRF-05 (API Rate Limiting & Throttling):** Perlindungan endpoint menggunakan Laravel Rate Limiter (`5 req/min` untuk auth/report generation, `120 req/min` untuk API umum).
+- **NFR-PRF-06 (HTTP & Static Asset Caching):** Endpoint data master dilengkapi header HTTP `ETag` dan `Cache-Control: max-age=300` untuk meminimalkan transmisi jaringan berulang.
 
 ### 6.4 Reliability & Auditability
 - **NFR-REL-01 (Audit Trail):** Semua aksi krusial (login, verifikasi, ubah status, generate BA) dicatat dalam `activity_logs` dan `verifications` untuk keperluan audit akademik.
@@ -160,7 +167,7 @@ Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seor
 - [x] **Penugasan PIC:** Coordinator dapat menugaskan verifikator tanpa konflik/duplikasi penugasan.
 - [x] **Verifikasi & Revisi:** PIC dapat menyetujui atau mengembalikan soal dengan catatan revisi. Dosen menerima notifikasi real-time dan dapat mengunggah versi revisi baru.
 - [x] **Generasi Berita Acara:** Berita Acara ter-generate otomatis lengkap dengan nomor BA unik, daftar soal approved, dan berkas PDF/DOCX yang dapat diunduh.
-- [x] **Dashboard Real-Time:** Dashboard Koordinator menampilkan persentase progres verifikasi dan statistik yang akurat.
+- [x] **Dashboard Real-Time & High Performance:** Dashboard Koordinator menampilkan statistik real-time dengan latensi API < 150ms.
 
 ---
 
@@ -170,3 +177,5 @@ Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seor
 2. **Efisiensi Waktu Verifikasi:** Memangkas durasi verifikasi soal dari rata-rata 7 hari menjadi maksimum 2-3 hari.
 3. **Zero Lost Documents:** 0% kasus berkas soal tertukar, hilang, atau tidak memiliki versi yang jelas.
 4. **Otomatisasi Berita Acara 100%:** 100% Berita Acara Verifikasi Soal dihasilkan secara otomatis oleh sistem tanpa rekap manual spreadsheet.
+5. **High Throughput & SLA Adherence:** Latensi p95 REST API konsisten di bawah 150ms dan daya tampung 500+ pengguna aktif simultan tanpa bottleneck.
+

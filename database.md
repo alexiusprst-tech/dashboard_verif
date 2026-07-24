@@ -332,32 +332,61 @@ erDiagram
 
 ---
 
-## 5. Indeks & Optimalisasi Performa Query
+## 5. Optimalisasi Performa Basis Data (Performance & Indexing Strategy)
 
-Untuk mendukung kecepatan query dashboard dan pencarian data berkapasitas besar, indeks berikut diimplementasikan di PostgreSQL:
+Untuk menjamin latensi query rendah (< 50ms) dan mendukung 500+ pengguna simultan pada puncak periode unggah soal, skema PostgreSQL diperkuat dengan strategi indeks dan konfigurasi berikut:
 
-1. **`users` Table:**
-   - Index `users_email_unique` pada `email`
-   - Index `users_kode_dosen_unique` pada `kode_dosen`
-   - Index `users_prodi_id_index` pada `prodi_id`
-2. **`soal` Table:**
-   - Composite Index `soal_periode_status_index` pada `(periode_id, status)`
-   - Composite Index `soal_dosen_periode_index` pada `(dosen_id, periode_id)`
-   - Index `soal_uuid_unique` pada `uuid`
-3. **`penugasan` Table:**
-   - Composite Unique Index `penugasan_unique_assignment` pada `(periode_id, verifier_id, target_dosen_id)`
-4. **`verifications` Table:**
-   - Index `verifications_soal_id_index` pada `soal_id`
-   - Index `verifications_verifier_id_index` pada `verifier_id`
-5. **`berita_acara` Table:**
-   - Index `berita_acara_nomor_ba_unique` pada `nomor_ba`
-   - Index `berita_acara_periode_id_index` pada `periode_id`
+### 5.1 Indeks Komposit & Spesifik (High-Performance Indexes)
+
+1. **`soal` Table:**
+   - `CREATE INDEX idx_soal_periode_status ON soal (periode_id, status);`
+     *Manfaat:* Mempercepat agregasi statistik dashboard koordinator & filter ketersediaan soal untuk Berita Acara.
+   - `CREATE INDEX idx_soal_dosen_periode_status ON soal (dosen_id, periode_id, status);`
+     *Manfaat:* Mengoptimalkan query daftar soal dosen pengampu.
+   - `CREATE INDEX idx_soal_mk_periode ON soal (mata_kuliah_id, periode_id);`
+     *Manfaat:* Mempercepat validasi kesesuaian soal per mata kuliah.
+
+2. **`verifications` Table:**
+   - `CREATE INDEX idx_verifications_soal_verifier ON verifications (soal_id, verifier_id);`
+     *Manfaat:* Pencarian audit trail verifikasi per verifikator tanpa full table scan.
+
+3. **`notifikasi` Table:**
+   - `CREATE INDEX idx_notifikasi_user_unread ON notifikasi (user_id, is_read) WHERE is_read = false;`
+     *Manfaat:* Partial index khusus notifikasi yang belum dibaca untuk mempercepat render badge notifikasi di topbar.
+
+4. **`periode` Partial Unique Index:**
+   - `CREATE UNIQUE INDEX idx_single_active_periode ON periode (status) WHERE status = true;`
+     *Manfaat:* Menjamin secara mutlak pada level engine database bahwa hanya ada 1 periode akademik aktif pada 1 waktu (**BR-001**).
+
+### 5.2 Full-Text Search (FTS) Indexing
+Pencarian judul soal dan mata kuliah tidak menggunakan `ILIKE '%query%'` (yang memicu Sequential Scan), melainkan menggunakan PostgreSQL GIN Index:
+```sql
+CREATE INDEX idx_soal_judul_fts ON soal USING GIN (to_tsvector('indonesian', judul_soal));
+CREATE INDEX idx_courses_nama_fts ON courses USING GIN (to_tsvector('indonesian', nama_mk));
+```
+
+### 5.3 Connection Pooling & Resource Tuning (PostgreSQL Config)
+- **Connection Pooler:** Menggunakan **pgBouncer** dalam mode *Transaction Pooling* untuk mengelola hingga 500+ koneksi HTTP dari Laravel tanpa kehabisan *RAM shared buffers*.
+- **Tuning Memory PostgreSQL:**
+  - `shared_buffers = 1GB` (25% total RAM server)
+  - `work_mem = 16MB` (mencegah disk spill saat sorting `ORDER BY created_at DESC`)
+  - `maintenance_work_mem = 256MB`
+  - `effective_cache_size = 3GB`
+
+### 5.4 Partitioning & Maintenance Strategy
+- **Table Partitioning:** Tabel `activity_logs` di-partitioning menggunakan *Range Partitioning* berdasarkan kolom `created_at` (per tahun akademik) untuk menjaga ukuran indeks tabel utama tetap kecil.
+- **Autovacuum Tuning:**
+  ```sql
+  ALTER TABLE verifications SET (autovacuum_vacuum_scale_factor = 0.05);
+  ALTER TABLE soal SET (autovacuum_vacuum_scale_factor = 0.05);
+  ```
 
 ---
 
 ## 6. Constraints & Database Business Rules
 
 1. **Self-Verification Integrity Check:** Database & validation service memastikan `penugasan.verifier_id != penugasan.target_dosen_id` dan `verifications.verifier_id != soal.dosen_id`.
-2. **Single Active Period Constraint:** Logika aplikasi menjamin hanya ada 1 baris di tabel `periode` yang memiliki `status = true`.
+2. **Single Active Period Constraint:** Engine DB & partial index menjamin hanya ada 1 baris di tabel `periode` yang memiliki `status = true`.
 3. **Single Active BA Template:** Hanya 1 template di tabel `berita_acara_templates` yang berstatus `is_active = true`.
 4. **Cascading Safety:** Pengapusan data master seperti `users` atau `soal` tidak menghapus log secara permanen melainkan menggunakan soft delete (`deleted_at`).
+
