@@ -46,14 +46,28 @@ class KategoriApiTest extends TestCase
 
         $file = UploadedFile::fake()->create('template.docx', 120, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/templates', [
+        $response = $this->actingAs($user, 'sanctum')->post('/api/templates', [
             'kategori_id' => $category->id,
             'file_template' => $file,
             'versi' => '1.0',
-        ]);
+        ], ['Accept' => 'application/json']);
 
         $response->assertCreated();
         $response->assertJsonPath('data.kategori_id', $category->id);
         $response->assertJsonPath('data.versi', '1.0');
+    }
+
+    public function test_template_index_returns_ok_without_kategori_id(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/templates');
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'data' => [],
+            'success',
+            'message',
+        ]);
     }
 }

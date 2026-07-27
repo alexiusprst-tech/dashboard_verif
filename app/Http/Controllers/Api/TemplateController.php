@@ -26,14 +26,11 @@ class TemplateController extends Controller
     public function index(Request $request): JsonResponse
     {
         $kategoriId = $request->query('kategori_id');
-        if (!$kategoriId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kategori ID wajib ditentukan.'
-            ], 422);
+        if ($kategoriId) {
+            $templates = $this->templateRepository->findByKategori((int) $kategoriId);
+        } else {
+            $templates = $this->templateRepository->all();
         }
-
-        $templates = $this->templateRepository->findByKategori((int) $kategoriId);
 
         return TemplateResource::collection($templates)->additional([
             'success' => true,

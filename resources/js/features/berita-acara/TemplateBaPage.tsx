@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import {
     Upload, FileText, CheckCircle2, Trash2, Download, AlertTriangle,
-    Star, StarOff, Clock, Info,
+    Star, StarOff, Clock,
 } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
@@ -133,27 +133,6 @@ export function TemplateBaPage() {
                     { label: 'Template Berita Acara' },
                 ]}
             />
-
-            {/* Info Banner */}
-            <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 flex items-start gap-3">
-                <Info size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                    <p className="font-semibold text-blue-700">Panduan Placeholder Template</p>
-                    <p className="text-blue-600 mt-1">
-                        Gunakan placeholder berikut di dalam file .docx Anda:
-                        {' '}
-                        <code className="font-mono bg-blue-100 px-1 rounded">{'${nomor_ba}'}</code>,{' '}
-                        <code className="font-mono bg-blue-100 px-1 rounded">{'${periode}'}</code>,{' '}
-                        <code className="font-mono bg-blue-100 px-1 rounded">{'${nama_pic}'}</code>,{' '}
-                        <code className="font-mono bg-blue-100 px-1 rounded">{'${tanggal}'}</code>.
-                        Untuk baris tabel data soal, gunakan{' '}
-                        <code className="font-mono bg-blue-100 px-1 rounded">{'${nama_dosen}'}</code>,{' '}
-                        <code className="font-mono bg-blue-100 px-1 rounded">{'${status}'}</code>,{' '}
-                        <code className="font-mono bg-blue-100 px-1 rounded">{'${catatan}'}</code>{' '}
-                        dalam satu baris tabel agar otomatis diklon per soal.
-                    </p>
-                </div>
-            </div>
 
             {/* Active Template Stat */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

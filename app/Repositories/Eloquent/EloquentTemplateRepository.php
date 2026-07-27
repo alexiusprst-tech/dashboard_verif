@@ -13,9 +13,17 @@ class EloquentTemplateRepository implements TemplateRepositoryContract
         return Template::with('kategori')->find($id);
     }
 
+    public function all(): Collection
+    {
+        return Template::with('kategori')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
     public function findByKategori(int $kategoriId): Collection
     {
-        return Template::where('kategori_id', $kategoriId)
+        return Template::with('kategori')
+            ->where('kategori_id', $kategoriId)
             ->orderByDesc('created_at')
             ->get();
     }

@@ -85,11 +85,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Soal
     Route::apiResource('soal', SoalController::class);
 
-    // Penugasan PIC
+    // Penugasan PIC & Dosen Management
+    Route::get('/dosen/search', [DosenController::class, 'search'])->middleware('coordinator');
+    Route::apiResource('dosen', DosenController::class)->middleware('coordinator');
     Route::get('/penugasan', [PenugasanController::class, 'index']);
     Route::post('/penugasan', [PenugasanController::class, 'store'])->middleware('coordinator');
     Route::delete('/penugasan/{id}', [PenugasanController::class, 'destroy'])->middleware('coordinator');
-    Route::get('/dosen/search', [DosenController::class, 'search'])->middleware('coordinator');
 
     // Verifikasi
     Route::get('/verifikasi/tugas-saya', [VerifikasiController::class, 'tugasSaya'])->middleware('pic_periode');

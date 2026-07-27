@@ -52,4 +52,44 @@ class EloquentUserRepository implements UserRepositoryContract
     {
         User::where('id', $userId)->update(['last_login_at' => now()]);
     }
+
+    public function paginateDosen(?string $search = null, ?int $prodiId = null, ?string $tipeDosen = null, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = User::with('prodi')->where('is_super_admin', false);
+
+        if ($search) {
+            $lower = strtolower($search);
+            $query->where(function ($q) use ($lower) {
+                $q->whereRaw('lower(nama_lengkap) like ?', ["%{$lower}%"])
+                  ->orWhereRaw('lower(kode_dosen) like ?', ["%{$lower}%"])
+                  ->orWhereRaw('lower(email) like ?', ["%{$lower}%"]);
+            });
+        }
+
+        if ($prodiId) {
+            $query->where('prodi_id', $prodiId);
+        }
+
+        if ($tipeDosen) {
+            $query->where('tipe_dosen', $tipeDosen);
+        }
+
+        return $query->orderBy('nama_lengkap')->paginate($perPage);
+    }
+
+    public function create(array $data): User
+    {
+        return User::create($data);
+    }
+
+    public function update(User $user, array $data): User
+    {
+        $user->update($data);
+        return $user->fresh();
+    }
+
+    public function delete(User $user): bool
+    {
+        return (bool) $user->delete();
+    }
 }
