@@ -125,4 +125,24 @@ class SoalController extends Controller
             'message' => 'Soal berhasil dihapus.'
         ]);
     }
+
+    public function timeline(Request $request, int $id): JsonResponse
+    {
+        $events = $this->soalService->getTimeline($id, $request->user());
+
+        return \App\Http\Resources\SoalTimelineResource::collection($events)->additional([
+            'success' => true,
+            'message' => 'Timeline riwayat verifikasi berhasil diambil.'
+        ])->response();
+    }
+
+    public function revisionHistory(Request $request, int $id): JsonResponse
+    {
+        $history = $this->soalService->getRevisionHistory($id, $request->user());
+
+        return \App\Http\Resources\RevisionHistoryResource::collection($history)->additional([
+            'success' => true,
+            'message' => 'Detail catatan revisi berhasil diambil.'
+        ])->response();
+    }
 }

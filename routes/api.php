@@ -83,6 +83,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/template-ba/{id}/download', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'download'])->middleware('super_admin');
 
     // Soal
+    Route::get('/soal/{id}/timeline', [SoalController::class, 'timeline']);
+    Route::get('/soal/{id}/revision-history', [SoalController::class, 'revisionHistory']);
+    Route::get('/questions/{id}/revision-history', [SoalController::class, 'revisionHistory']);
     Route::apiResource('soal', SoalController::class);
 
     // Penugasan PIC & Dosen Management
@@ -117,5 +120,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard/coordinator', [DashboardController::class, 'superAdmin'])->middleware('coordinator');
     Route::get('/dashboard/dosen', [DashboardController::class, 'dosen']);
+    Route::get('/dashboard/upload-progress', [DashboardController::class, 'uploadProgress']);
     Route::get('/dashboard/pic', [DashboardController::class, 'pic'])->middleware('pic_periode');
 });

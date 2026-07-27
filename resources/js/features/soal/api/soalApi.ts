@@ -42,3 +42,13 @@ export async function updateSoal(id: number, payload: FormData): Promise<Soal> {
 export async function deleteSoal(id: number): Promise<void> {
     await api.delete(`${BASE}/${id}`);
 }
+
+export async function getSoalTimeline(id: number) {
+    const { data } = await api.get(`${BASE}/${id}/timeline`);
+    return data.data;
+}
+
+export async function getRevisionHistory(id: number) {
+    const { data } = await api.get(`${BASE}/${id}/revision-history`);
+    return data.data;
+}

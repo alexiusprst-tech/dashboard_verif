@@ -16,6 +16,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 
 class SoalService
 {
@@ -217,5 +218,151 @@ class SoalService
         $this->soalRepository->softDelete($soal);
 
         $this->activityLogService->log("Menghapus draft soal ID {$id}", 'Soal', $user->id);
+    }
+
+    public function getTimeline(int $id, User $user): array
+    {
+        $soal = $this->soalRepository->findById($id);
+        if (!$soal) {
+            throw new BusinessException('Soal tidak ditemukan.', 404);
+        }
+
+        $events = [];
+
+        // 1. Soal dibuat / diunggah
+        $createdTime = $soal->uploaded_at ?? $soal->created_at;
+        $events[] = [
+            'id'           => 'evt-1',
+            'status'       => $soal->status === SoalStatus::Draft->value ? 'draft' : 'submitted',
+            'status_label' => $soal->status === SoalStatus::Draft->value ? 'Draft Dibuat' : 'Soal Diunggah',
+            'icon_status'  => 'file-text',
+            'color'        => 'blue',
+            'actor_name'   => $soal->dosen?->nama_lengkap ?? 'Dosen',
+            'actor_role'   => 'Dosen Pengampu',
+            'description'  => "Soal '{$soal->judul_soal}' berhasil diunggah (Versi 1).",
+            'date'         => $createdTime ? Carbon::parse($createdTime)->translatedFormat('d F Y') : '',
+            'time'         => $createdTime ? Carbon::parse($createdTime)->format('H:i') : '',
+            'created_at'   => $createdTime ? Carbon::parse($createdTime)->toIso8601String() : null,
+        ];
+
+        // 2. Verifikasi & Revisi History
+        $verifications = DB::table('verifications')
+            ->join('users', 'verifications.verifier_id', '=', 'users.id')
+            ->where('verifications.soal_id', $soal->id)
+            ->whereNull('verifications.deleted_at')
+            ->select('verifications.*', 'users.nama_lengkap as verifier_name')
+            ->orderBy('verifications.created_at', 'asc')
+            ->get();
+
+        $revisions = DB::table('revisi_history')
+            ->join('users', 'revisi_history.uploaded_by', '=', 'users.id')
+            ->where('revisi_history.soal_id', $soal->id)
+            ->select('revisi_history.*', 'users.nama_lengkap as uploader_name')
+            ->orderBy('revisi_history.created_at', 'asc')
+            ->get();
+
+        $counter = 2;
+        foreach ($verifications as $v) {
+            $vTime = Carbon::parse($v->created_at);
+            $statusStr = $v->status;
+            $color = $statusStr === 'approved' ? 'green' : ($statusStr === 'revisi' ? 'amber' : 'red');
+            $label = $statusStr === 'approved' ? 'Soal Disetujui' : ($statusStr === 'revisi' ? 'Revisi Diminta' : 'Soal Ditolak');
+
+            $events[] = [
+                'id'           => 'evt-' . $counter++,
+                'status'       => $statusStr === 'revisi' ? 'revision_requested' : $statusStr,
+                'status_label' => $label,
+                'icon_status'  => $statusStr === 'approved' ? 'check-circle' : ($statusStr === 'revisi' ? 'alert-triangle' : 'x-circle'),
+                'color'        => $color,
+                'actor_name'   => "PIC - {$v->verifier_name}",
+                'actor_role'   => 'PIC Verifikator',
+                'description'  => $v->catatan ? "Catatan PIC: {$v->catatan}" : "PIC me-review dan memproses soal dengan hasil: {$label}.",
+                'date'         => $vTime->translatedFormat('d F Y'),
+                'time'         => $vTime->format('H:i'),
+                'created_at'   => $vTime->toIso8601String(),
+            ];
+        }
+
+        foreach ($revisions as $r) {
+            $rTime = Carbon::parse($r->created_at);
+            $events[] = [
+                'id'           => 'evt-' . $counter++,
+                'status'       => 'revision_uploaded',
+                'status_label' => "Revisi Versi {$r->versi} Diunggah",
+                'icon_status'  => 'upload-cloud',
+                'color'        => 'indigo',
+                'actor_name'   => $r->uploader_name,
+                'actor_role'   => 'Dosen Pengampu',
+                'description'  => "Dosen mengunggah ulang berkas revisi soal (Versi {$r->versi}).",
+                'date'         => $rTime->translatedFormat('d F Y'),
+                'time'         => $rTime->format('H:i'),
+                'created_at'   => $rTime->toIso8601String(),
+            ];
+        }
+
+        // 3. Berita Acara
+        $baItem = DB::table('berita_acara_items')
+            ->join('berita_acara', 'berita_acara_items.berita_acara_id', '=', 'berita_acara.id')
+            ->where('berita_acara_items.soal_id', $soal->id)
+            ->select('berita_acara_items.*', 'berita_acara.nomor_ba', 'berita_acara.created_at as ba_created_at')
+            ->first();
+
+        if ($baItem) {
+            $baTime = Carbon::parse($baItem->ba_created_at);
+            $events[] = [
+                'id'           => 'evt-' . $counter++,
+                'status'       => 'berita_acara_generated',
+                'status_label' => 'Berita Acara Dibuat',
+                'icon_status'  => 'file-check',
+                'color'        => 'purple',
+                'actor_name'   => 'Sistem Auto-Generate',
+                'actor_role'   => 'Berita Acara',
+                'description'  => "Berita Acara resmi ({$baItem->nomor_ba}) berhasil dibuat.",
+                'date'         => $baTime->translatedFormat('d F Y'),
+                'time'         => $baTime->format('H:i'),
+                'created_at'   => $baTime->toIso8601String(),
+            ];
+        }
+
+        // Sort events chronologically
+        usort($events, fn($a, $b) => strtotime($a['created_at']) <=> strtotime($b['created_at']));
+
+        return $events;
+    }
+
+    public function getRevisionHistory(int $id, User $user): array
+    {
+        $soal = $this->soalRepository->findById($id);
+        if (!$soal) {
+            throw new BusinessException('Soal tidak ditemukan.', 404);
+        }
+
+        $verifications = DB::table('verifications')
+            ->join('users', 'verifications.verifier_id', '=', 'users.id')
+            ->where('verifications.soal_id', $soal->id)
+            ->where('verifications.status', 'revisi')
+            ->whereNull('verifications.deleted_at')
+            ->select('verifications.*', 'users.nama_lengkap as verifier_name')
+            ->orderBy('verifications.created_at', 'asc')
+            ->get();
+
+        $history = [];
+        $revNum = 1;
+
+        foreach ($verifications as $v) {
+            $vTime = Carbon::parse($v->created_at);
+            $history[] = [
+                'id'            => $v->id,
+                'revision'      => $revNum++,
+                'status'        => 'revisi',
+                'notes'         => $v->catatan ?? 'Terdapat bagian yang perlu diperbaiki.',
+                'version'       => 'v' . ($revNum - 1),
+                'file_soal'     => $soal->file_soal,
+                'verifier_name' => $v->verifier_name,
+                'created_at'    => $vTime->translatedFormat('d F Y, H:i'),
+            ];
+        }
+
+        return $history;
     }
 }

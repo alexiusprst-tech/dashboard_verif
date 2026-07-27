@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { formatDate } from '@/shared/lib/utils';
 import api from '@/shared/lib/api';
+import { UploadProgressWidget } from './components/UploadProgressWidget';
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -392,6 +393,11 @@ function DosenDashboard() {
                         { label: 'Berita Acara', desc: 'Unduh berita acara verifikasi', icon: <ShieldCheck size={16} />, to: '/berita-acara', color: 'text-blue-600', bg: 'bg-blue-50' },
                     ]}
                 />
+            </div>
+
+            {/* Progress Upload per Mata Kuliah (Enhancement FEATURE 3) */}
+            <div className="mt-2">
+                <UploadProgressWidget />
             </div>
         </div>
     );

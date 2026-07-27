@@ -87,4 +87,105 @@ class DashboardService
             'progress_by_prodi' => $this->dashboardRepository->progressByProdi($activePeriode->id)
         ];
     }
+
+    public function uploadProgress(User $user): array
+    {
+        $activePeriode = $this->periodeRepository->findActive();
+        if (!$activePeriode) {
+            return [];
+        }
+
+        // Fetch courses assigned to user in active period
+        $assignedCourses = \Illuminate\Support\Facades\DB::table('dosen_mata_kuliah')
+            ->join('courses', 'dosen_mata_kuliah.mata_kuliah_id', '=', 'courses.id')
+            ->where('dosen_mata_kuliah.dosen_id', $user->id)
+            ->where('dosen_mata_kuliah.periode_id', $activePeriode->id)
+            ->select('courses.id as course_id', 'courses.kode_mk', 'courses.nama_mk')
+            ->get();
+
+        // Fallback: If no explicit mapping found for active period, get courses in user's prodi or limit 5
+        if ($assignedCourses->isEmpty()) {
+            $query = \App\Models\Course::query();
+            if ($user->prodi_id) {
+                $query->where('prodi_id', $user->prodi_id);
+            }
+            $assignedCourses = $query->take(10)->get()->map(function ($c) {
+                return (object) [
+                    'course_id' => $c->id,
+                    'kode_mk'   => $c->kode_mk,
+                    'nama_mk'   => $c->nama_mk,
+                ];
+            });
+        }
+
+        $now = \Illuminate\Support\Carbon::now();
+        $deadlineCarbon = \Illuminate\Support\Carbon::parse($activePeriode->tanggal_deadline ?? $activePeriode->tgl_selesai);
+        $daysRemaining = (int) ceil($now->diffInDays($deadlineCarbon, false));
+        if ($daysRemaining < 0) {
+            $daysRemaining = 0;
+        }
+
+        $result = [];
+
+        foreach ($assignedCourses as $course) {
+            $soal = \App\Models\Soal::where('dosen_id', $user->id)
+                ->where('periode_id', $activePeriode->id)
+                ->where('mata_kuliah_id', $course->course_id)
+                ->latest()
+                ->first();
+
+            $status = 'belum_upload';
+            $statusLabel = 'Belum Upload';
+            $progress = 0;
+
+            if ($soal) {
+                $statusVal = $soal->status instanceof \BackedEnum ? $soal->status->value : (string) $soal->status;
+                switch ($statusVal) {
+                    case 'draft':
+                        $status = 'draft';
+                        $statusLabel = 'Draft';
+                        $progress = 25;
+                        break;
+                    case 'submitted':
+                        $status = 'submitted';
+                        $statusLabel = 'Submitted';
+                        $progress = 50;
+                        break;
+                    case 'revisi':
+                        $status = 'revisi';
+                        $statusLabel = 'Perlu Revisi';
+                        $progress = 70;
+                        break;
+                    case 'approved':
+                        $status = 'approved';
+                        $statusLabel = 'Approved';
+                        $progress = 100;
+                        break;
+                    case 'rejected':
+                        $status = 'rejected';
+                        $statusLabel = 'Rejected';
+                        $progress = 0;
+                        break;
+                }
+            }
+
+            $isCritical = ($daysRemaining <= 3 && $daysRemaining >= 0 && $status !== 'approved');
+
+            $result[] = [
+                'course_id'            => $course->course_id,
+                'course'               => $course->nama_mk,
+                'kode_mk'              => $course->kode_mk,
+                'status'               => $status,
+                'status_label'         => $statusLabel,
+                'progress'             => $progress,
+                'deadline'             => $deadlineCarbon->format('Y-m-d'),
+                'deadline_formatted'   => $deadlineCarbon->translatedFormat('d F Y'),
+                'days_remaining'       => $daysRemaining,
+                'is_critical_deadline' => $isCritical,
+                'soal_id'              => $soal?->id,
+            ];
+        }
+
+        return $result;
+    }
 }
