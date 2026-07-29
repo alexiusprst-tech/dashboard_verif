@@ -220,7 +220,7 @@ export function TemplateSection({ kategori }: TemplateSectionProps) {
                                                 href={t.file_url}
                                                 download
                                                 className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
-                                                title="Download"
+                                                title="Unduh"
                                             >
                                                 <Download size={15} />
                                             </a>
@@ -229,7 +229,7 @@ export function TemplateSection({ kategori }: TemplateSectionProps) {
                                                 href={`/storage/${t.file_path}`}
                                                 download
                                                 className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
-                                                title="Download"
+                                                title="Unduh"
                                             >
                                                 <Download size={15} />
                                             </a>

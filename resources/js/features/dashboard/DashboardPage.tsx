@@ -386,7 +386,7 @@ function DosenDashboard() {
                 {/* Quick Actions */}
                 <QuickActions
                     actions={[
-                        { label: 'Upload Soal', desc: 'Kirim soal baru ke sistem', icon: <FileText size={16} />, to: '/soal', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
+                        { label: 'Unggah Soal', desc: 'Kirim soal baru ke sistem', icon: <FileText size={16} />, to: '/soal', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
                         { label: 'Lihat PLO & CLO', desc: 'Referensi capaian pembelajaran', icon: <BookOpen size={16} />, to: '/plo-clo', color: 'text-purple-600', bg: 'bg-purple-50' },
                         { label: 'Pengumuman', desc: 'Lihat broadcast terbaru', icon: <Megaphone size={16} />, to: '/broadcast', color: 'text-green-600', bg: 'bg-green-50' },
                         { label: 'Berita Acara', desc: 'Unduh berita acara verifikasi', icon: <ShieldCheck size={16} />, to: '/berita-acara', color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -498,7 +498,7 @@ export function DashboardPage() {
     };
 
     const roleLabel = role === 'coordinator'
-        ? 'Coordinator'
+        ? 'Koordinator'
         : user?.is_pic_active
         ? 'PIC Verifikator'
         : 'Dosen';

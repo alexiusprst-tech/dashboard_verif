@@ -430,14 +430,14 @@ export function PloCloPage() {
                                                 <button
                                                     onClick={() => handleOpenEditPlo(r)}
                                                     className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
-                                                    title="Edit"
+                                                    title="Ubah"
                                                 >
                                                     <Edit2 size={15} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleOpenDelete('plo', r.id)}
                                                     className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
-                                                    title="Delete"
+                                                    title="Hapus"
                                                 >
                                                     <MinusCircle size={15} />
                                                 </button>
@@ -483,14 +483,14 @@ export function PloCloPage() {
                                                 <button
                                                     onClick={() => handleOpenEditClo(r)}
                                                     className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
-                                                    title="Edit"
+                                                    title="Ubah"
                                                 >
                                                     <Edit2 size={15} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleOpenDelete('clo', r.id)}
                                                     className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
-                                                    title="Delete"
+                                                    title="Hapus"
                                                 >
                                                     <MinusCircle size={15} />
                                                 </button>

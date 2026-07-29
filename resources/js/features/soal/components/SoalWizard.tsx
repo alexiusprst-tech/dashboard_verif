@@ -82,8 +82,8 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
         { title: 'Mata Kuliah', desc: 'Pilih mata kuliah yang diampu' },
         { title: 'Kompetensi CLO', desc: 'Pilih CLO yang diukur' },
         { title: 'Kategori & Template', desc: 'Pilih kategori dan unduh template' },
-        { title: 'Upload File', desc: 'Unggah file soal ujian' },
-        { title: 'Preview & Submit', desc: 'Review kelengkapan berkas' },
+        { title: 'Unggah Berkas', desc: 'Unggah file soal ujian' },
+        { title: 'Pratinjau & Kirim', desc: 'Review kelengkapan berkas' },
     ];
 
     const nextStep = () => {
@@ -167,7 +167,7 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
             {/* Header */}
             <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
                 <div>
-                    <h2 className="text-lg font-bold text-gray-800">Wizard Upload Soal</h2>
+                    <h2 className="text-lg font-bold text-gray-800">Panduan Unggah Soal</h2>
                     <p className="text-xs text-gray-500">Ikuti 6 langkah mudah untuk mengunggah soal ujian Anda</p>
                 </div>
                 <button
