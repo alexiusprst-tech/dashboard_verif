@@ -190,7 +190,7 @@ export function KategoriModal({
                         {/* Header */}
                         <div className="flex items-center gap-2">
                             <Upload size={15} className="text-[var(--color-primary)]" />
-                            <span className="text-sm font-semibold text-gray-700">Upload Template</span>
+                            <span className="text-sm font-semibold text-gray-700">Unggah Template</span>
                             <span className="ml-auto rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-500 uppercase tracking-wide">
                                 Opsional
                             </span>

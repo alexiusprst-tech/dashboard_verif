@@ -133,9 +133,9 @@ export function SoalPage() {
         return (
             <div className="flex flex-col gap-6">
                 <PageHeader
-                    title="Upload Soal Baru"
+                    title="Unggah Soal Baru"
                     description="Gunakan fitur wizard untuk mempermudah pengunggahan soal ujian secara bertahap."
-                    breadcrumb={[{ label: 'Soal', href: '/soal' }, { label: 'Upload' }]}
+                    breadcrumb={[{ label: 'Soal', href: '/soal' }, { label: 'Unggah Soal' }]}
                 />
                 <SoalWizard
                     onClose={handleCloseWizard}
@@ -158,7 +158,7 @@ export function SoalPage() {
                         className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)]"
                     >
                         <Plus size={16} />
-                        Upload Soal
+                        Unggah Soal
                     </button>
                 }
             />

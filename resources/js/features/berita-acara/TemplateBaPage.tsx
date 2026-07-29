@@ -166,7 +166,7 @@ export function TemplateBaPage() {
                 <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
                     <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                         <Upload size={16} className="text-[var(--color-primary)]" />
-                        Upload Template Baru
+                        Unggah Template Baru
                     </h2>
                     <p className="text-xs text-gray-500 mt-0.5">Template baru yang diunggah akan otomatis menjadi template aktif.</p>
                 </div>
@@ -254,7 +254,7 @@ export function TemplateBaPage() {
                             ) : (
                                 <Upload size={15} />
                             )}
-                            {uploadMutation.isPending ? 'Mengunggah...' : 'Upload & Aktifkan'}
+                            {uploadMutation.isPending ? 'Mengunggah...' : 'Unggah & Aktifkan'}
                         </button>
                     </div>
                 </div>
@@ -275,8 +275,8 @@ export function TemplateBaPage() {
                                 <th className="px-6 py-4 w-12">No</th>
                                 <th className="px-6 py-4">Nama Template</th>
                                 <th className="px-6 py-4 w-36 text-center">Status</th>
-                                <th className="px-6 py-4 w-44">Diupload Oleh</th>
-                                <th className="px-6 py-4 w-44">Tanggal Upload</th>
+                                <th className="px-6 py-4 w-44">Diunggah Oleh</th>
+                                <th className="px-6 py-4 w-44">Tanggal Unggah</th>
                                 <th className="px-6 py-4 w-44 text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -322,7 +322,7 @@ export function TemplateBaPage() {
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="rounded-lg p-1.5 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition"
-                                                title="Download template"
+                                                title="Unduh template"
                                             >
                                                 <Download size={15} />
                                             </a>

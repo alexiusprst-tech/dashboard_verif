@@ -262,7 +262,7 @@ export function BeritaAcaraPage() {
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-green-600 transition"
-                                                        title="Download DOCX"
+                                                        title="Unduh DOCX"
                                                     >
                                                         <Download size={15} />
                                                     </a>
@@ -335,7 +335,7 @@ export function BeritaAcaraPage() {
                                     download
                                     className="flex items-center gap-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 text-sm font-semibold transition"
                                 >
-                                    <Download size={15} /> Download PDF
+                                    <Download size={15} /> Unduh PDF
                                 </a>
                             )}
                             <a
