@@ -8,10 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Tabel snapshot: dibuat SEKALI saat berita_acara digenerate.
-        // status_snapshot & catatan_snapshot adalah salinan data pada
-        // saat itu, sehingga BA yang sudah dicetak tidak ikut berubah
-        // meskipun soal terkait direvisi lagi setelahnya.
+        // Snapshot dibuat SEKALI saat berita_acara digenerate, sehingga
+        // BA yang sudah dicetak tidak ikut berubah meskipun soal terkait
+        // direvisi lagi setelahnya.
         Schema::create('berita_acara_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('berita_acara_id')

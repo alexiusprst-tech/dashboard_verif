@@ -30,7 +30,7 @@ class EnsureIsPicForPeriode
         $user = $request->user();
 
         if (!$user) {
-            return redirect()->route('login');
+            abort(401, 'Unauthenticated.');
         }
 
         // Cek apakah akun masih aktif

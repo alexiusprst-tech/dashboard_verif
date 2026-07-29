@@ -6,18 +6,15 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureIsSuperAdmin
+class AuthenticateQueryToken
 {
+    /**
+     * Handle an incoming request.
+     */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
-
-        if (!$user) {
-            abort(401, 'Unauthenticated.');
-        }
-
-        if (!$user->isSuperAdmin()) {
-            abort(403, 'Anda tidak memiliki hak akses sebagai Coordinator.');
+        if ($request->has('token') && !$request->headers->has('Authorization')) {
+            $request->headers->set('Authorization', 'Bearer ' . $request->query('token'));
         }
 
         return $next($request);

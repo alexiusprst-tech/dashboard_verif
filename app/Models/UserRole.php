@@ -15,6 +15,7 @@ class UserRole extends Model
         'periode_id',
         'assigned_by',
         'assigned_at',
+        'is_active',
     ];
 
     protected function casts(): array

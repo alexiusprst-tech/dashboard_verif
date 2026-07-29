@@ -17,7 +17,6 @@ return new class extends Migration
             $table->text('pesan')->nullable();
             $table->enum('tipe', ['info', 'warning', 'deadline', 'verifikasi', 'broadcast']);
             $table->boolean('is_read')->default(false);
-            // Polymorphic reference: soal / broadcast / verifikasi / berita_acara
             $table->string('reference_type', 50)->nullable();
             $table->unsignedBigInteger('reference_id')->nullable();
             $table->timestamp('created_at')->useCurrent();

@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama_role', 50)->unique()->comment('saat ini hanya berisi 1 baris: pic');
-            $table->timestamps();
+        Schema::table('berita_acara', function (Blueprint $table) {
+            $table->text('file_docx')->nullable()->after('file_pdf');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::table('berita_acara', function (Blueprint $table) {
+            $table->dropColumn('file_docx');
+        });
     }
 };

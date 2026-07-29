@@ -13,6 +13,7 @@ import { PenugasanPicPage } from '@/features/penugasan-pic/PenugasanPicPage';
 import { PeriodePage } from '@/features/periode/PeriodePage';
 import { KategoriPage } from '@/features/kategori/KategoriPage';
 import { BroadcastPage } from '@/features/broadcast/BroadcastPage';
+import { TemplateBaPage } from '@/features/berita-acara/TemplateBaPage';
 import { MonitoringPage } from '@/features/monitoring/MonitoringPage';
 
 /**
@@ -90,6 +91,11 @@ export const router = createBrowserRouter([
             {
                 path: 'kategori',
                 element: <KategoriPage />,
+            },
+
+            {
+                path: 'template-ba',
+                element: <TemplateBaPage />,
             },
 
             {

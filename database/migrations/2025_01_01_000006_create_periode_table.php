@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('periode', function (Blueprint $table) {
             $table->id();
             $table->string('nama_periode', 100);
-            $table->string('semester', 20)->nullable();
+            $table->enum('semester', ['ganjil', 'genap']);
             $table->string('tahun_akademik', 20)->nullable();
             $table->date('tanggal_mulai');
             $table->date('tanggal_deadline');

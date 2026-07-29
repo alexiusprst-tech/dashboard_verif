@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
-            $table->string('kode_mk', 30)->unique();
+            $table->string('kode_mk', 30)->unique()->comment('format huruf, contoh: SI-301');
             $table->string('nama_mk', 200);
             $table->foreignId('prodi_id')
                 ->nullable()

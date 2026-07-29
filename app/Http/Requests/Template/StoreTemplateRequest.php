@@ -23,6 +23,18 @@ class StoreTemplateRequest extends FormRequest
                 // Terima format Word (.docx dan .doc)
                 'mimes:docx,doc,vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'max:20480', // Maks 20MB
+            'kategori_id' => 'required|exists:categories,id',
+            'file_template' => [
+                'required',
+                'file',
+                'max:51200', // Max 50MB
+                function ($attribute, $value, $fail) {
+                    if (!$value) return;
+                    $extension = strtolower($value->getClientOriginalExtension());
+                    if (!in_array($extension, ['docx', 'doc'])) {
+                        $fail('File harus berformat Word Document (.docx atau .doc).');
+                    }
+                },
             ],
             'versi' => 'required|string|max:20',
         ];
@@ -39,6 +51,13 @@ class StoreTemplateRequest extends FormRequest
             'file_template.max'      => 'Ukuran file template maksimal 20MB.',
             'versi.required'         => 'Versi template wajib diisi.',
             'versi.max'              => 'Versi template maksimal 20 karakter.',
+            'kategori_id.required' => 'Kategori wajib dipilih.',
+            'kategori_id.exists'   => 'Kategori tidak valid.',
+            'file_template.required' => 'File template wajib diunggah.',
+            'file_template.file'     => 'File yang diunggah harus berupa file.',
+            'file_template.max'      => 'Ukuran file template maksimal 10MB.',
+            'versi.required' => 'Versi template wajib diisi.',
+            'versi.max'      => 'Versi template maksimal 20 karakter.',
         ];
     }
 
@@ -49,12 +68,11 @@ class StoreTemplateRequest extends FormRequest
     {
         try {
             Log::error('Template upload validation failed', [
-                'input' => $this->all(),
+                'input'     => $this->except(['file_template']),
                 'file_keys' => array_keys($this->allFiles()),
-                'errors' => $validator->errors()->toArray(),
+                'errors'    => $validator->errors()->toArray(),
             ]);
         } catch (\Throwable $e) {
-            // ensure we don't break the normal validation flow
             Log::error('Failed logging template upload validation details', ['exception' => $e->getMessage()]);
         }
 

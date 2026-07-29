@@ -90,6 +90,11 @@ class RepositoryServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\DashboardRepositoryContract::class,
             \App\Repositories\Eloquent\EloquentDashboardRepository::class
         );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\BeritaAcaraTemplateRepositoryContract::class,
+            \App\Repositories\Eloquent\EloquentBeritaAcaraTemplateRepository::class
+        );
     }
 
     /**

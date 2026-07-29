@@ -8,20 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Dosen dengan entry role "pic" di tabel ini mendapat SEMUA fitur PIC
+        // (verifikasi soal) + fitur yang dulu disebut "Coordinator" (monitoring
+        // progres verifikasi). Dosen tanpa entry di sini untuk periode aktif
+        // hanya mendapat fitur dosen biasa.
         Schema::create('user_roles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')
                 ->constrained('users')
-                ->cascadeOnDelete()
-                ->comment('Dosen yang diberi role');
+                ->cascadeOnDelete();
             $table->foreignId('role_id')
                 ->constrained('roles')
-                ->cascadeOnDelete()
-                ->comment('Role yang diberikan (e.g. pic)');
+                ->cascadeOnDelete();
             $table->foreignId('periode_id')
                 ->constrained('periode')
-                ->cascadeOnDelete()
-                ->comment('Periode di mana role ini berlaku');
+                ->cascadeOnDelete();
             $table->foreignId('assigned_by')
                 ->constrained('users')
                 ->cascadeOnDelete()
@@ -29,11 +30,7 @@ return new class extends Migration
             $table->timestamp('assigned_at')->nullable();
             $table->timestamps();
 
-            // Satu user hanya bisa punya satu role yang sama dalam satu periode
-            $table->unique(
-                ['user_id', 'role_id', 'periode_id'],
-                'user_roles_unique_assignment'
-            );
+            $table->unique(['user_id', 'role_id', 'periode_id'], 'user_roles_unique_assignment');
         });
     }
 

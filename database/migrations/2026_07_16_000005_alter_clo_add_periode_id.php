@@ -18,7 +18,7 @@ return new class extends Migration
                 ->comment('Periode di mana CLO ini berlaku');
 
             // Drop unique constraint lama, ganti dengan yang baru
-            $table->dropUnique(['kode', 'mata_kuliah_id']);
+            $table->dropUnique('clo_unique_kode_mata_kuliah');
             $table->unique(['kode', 'mata_kuliah_id', 'periode_id'], 'clo_kode_mk_periode_unique');
         });
     }
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->dropColumn('periode_id');
 
             // Restore unique constraint lama
-            $table->unique(['kode', 'mata_kuliah_id']);
+            $table->unique(['kode', 'mata_kuliah_id'], 'clo_unique_kode_mata_kuliah');
         });
     }
 };

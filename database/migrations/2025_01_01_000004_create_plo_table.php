@@ -22,7 +22,7 @@ return new class extends Migration
                 ->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['kode', 'prodi_id']);
+            $table->unique(['kode', 'prodi_id'], 'plo_unique_kode_prodi');
         });
     }
 

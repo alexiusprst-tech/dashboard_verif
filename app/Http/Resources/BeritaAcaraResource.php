@@ -19,6 +19,8 @@ class BeritaAcaraResource extends JsonResource
             'verifier' => new UserResource($this->whenLoaded('verifier')),
             'file_pdf' => $this->file_pdf,
             'file_url' => $this->file_pdf ? Storage::disk('public')->url($this->file_pdf) : null,
+            'file_docx' => $this->file_docx,
+            'file_docx_url' => $this->file_docx ? url("/api/berita-acara/{$this->id}/download") : null,
             'generated_at' => $this->generated_at?->toIso8601String(),
             'items' => BeritaAcaraItemResource::collection($this->whenLoaded('items')),
         ];

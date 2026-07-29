@@ -24,7 +24,10 @@ return new class extends Migration
                 ->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['kode', 'mata_kuliah_id']);
+            $table->unique(
+                ['kode', 'mata_kuliah_id'],
+                'clo_unique_kode_mata_kuliah'
+            );
         });
     }
 
