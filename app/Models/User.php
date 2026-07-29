@@ -55,6 +55,11 @@ class User extends Authenticatable
         return $this->belongsTo(ProgramStudi::class, 'prodi_id');
     }
 
+    public function prodi(): BelongsTo
+    {
+        return $this->belongsTo(ProgramStudi::class, 'prodi_id');
+    }
+
     /** Soal yang diupload oleh dosen ini */
     public function soal(): HasMany
     {

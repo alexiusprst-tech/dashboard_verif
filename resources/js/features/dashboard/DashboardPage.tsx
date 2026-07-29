@@ -37,6 +37,7 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { formatDate } from '@/shared/lib/utils';
 import api from '@/shared/lib/api';
+import { UploadProgressWidget } from './components/UploadProgressWidget';
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -621,6 +622,11 @@ function DosenDashboard() {
                         ]}
                     />
                 </div>
+            </div>
+
+            {/* Progress Upload per Mata Kuliah (Enhancement FEATURE 3) */}
+            <div className="mt-2">
+                <UploadProgressWidget />
             </div>
         </div>
     );

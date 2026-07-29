@@ -17,6 +17,8 @@ import type { Soal } from './types/soal.types';
 import type { Periode } from '@/features/periode/types/periode.types';
 import { useSoalList, useUploadSoal, useDeleteSoal } from './hooks/useSoal';
 import { SoalWizard } from './components/SoalWizard';
+import { TimelineCard } from './components/TimelineCard';
+import { RevisionHistoryAccordion } from './components/RevisionHistoryAccordion';
 
 export function SoalPage() {
     const { toast } = useToast();
@@ -362,37 +364,10 @@ export function SoalPage() {
                             </div>
                         </div>
 
-                        {/* History Timeline */}
-                        <div className="border-t border-gray-100 pt-4">
-                            <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Timeline Riwayat Verifikasi</h4>
-                            {history.length === 0 ? (
-                                <p className="text-xs text-gray-400">Belum ada riwayat verifikasi untuk soal ini.</p>
-                            ) : (
-                                <div className="relative border-l border-gray-200 pl-4 space-y-4">
-                                    {history.map((h, idx) => (
-                                        <div key={idx} className="relative">
-                                            {/* Bullet dot */}
-                                            <span className="absolute -left-[21px] top-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-[var(--color-primary)] ring-4 ring-white" />
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-gray-800">
-                                                        {h.verifier_name || 'Verifikator'}
-                                                    </span>
-                                                    <span className="inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
-                                                        {h.status_verifikasi}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-gray-400 mt-0.5">{formatDate(h.created_at)}</p>
-                                                {h.catatan && (
-                                                    <p className="mt-1 text-xs text-gray-600 bg-gray-50 rounded p-2 italic border border-gray-100">
-                                                        "{h.catatan}"
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                        {/* Enhancements: Timeline Riwayat Verifikasi & Detail Catatan Revisi */}
+                        <div className="border-t border-gray-100 pt-4 space-y-4">
+                            <TimelineCard soalId={selectedSoal.id} />
+                            <RevisionHistoryAccordion soalId={selectedSoal.id} />
                         </div>
                     </div>
                 )}

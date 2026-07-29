@@ -59,4 +59,15 @@ class DashboardController extends Controller
             'data' => $data
         ]);
     }
+
+    public function uploadProgress(Request $request): JsonResponse
+    {
+        $data = $this->dashboardService->uploadProgress($request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Progress upload per mata kuliah berhasil diambil.',
+            'data' => $data
+        ]);
+    }
 }

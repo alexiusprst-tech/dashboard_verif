@@ -54,40 +54,52 @@ const COORDINATOR_ITEMS: NavItem[] = [
     { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [
+const SUPER_ADMIN_ITEMS: NavItem[] = [
+    { label: 'Manajemen Dosen', href: '/dosen', icon: GraduationCap },
     { label: 'Periode & Deadline', href: '/periode', icon: Calendar },
     { label: 'Kategori & Template', href: '/kategori', icon: Tag },
     { label: 'Template Berita Acara', href: '/template-ba', icon: Scroll },
     { label: 'Penugasan PIC', href: '/penugasan-pic', icon: Users },
     { label: 'Broadcast', href: '/broadcast', icon: Megaphone },
     { label: 'Semua Soal', href: '/soal/semua', icon: FileText },
+    { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
 ];
 
-/* ── Build sections berdasarkan role + is_pic_active ───────── */
+const COORDINATOR_MANAGEMENT_ITEMS: NavItem[] = [
+    { label: 'Manajemen Dosen', href: '/dosen', icon: GraduationCap },
+];
+
+/* ── Build sections berdasarkan role + is_pic_active + is_super_admin ─ */
 
 function buildNavSections(
     role: 'coordinator' | 'pic' | 'dosen',
     isPicActive: boolean,
+    isSuperAdmin: boolean,
     picPendingCount?: number,
 ): NavSection[] {
     const sections: NavSection[] = [
         { items: COMMON_ITEMS },
     ];
 
-    if (role === 'coordinator') {
-        // Coordinator (ex-Super Admin): menggabungkan seluruh fitur manajemen, monitoring, & verifikasi ke satu section
-        const coordinatorManagementItems = [
-            ...ADMIN_ITEMS,
-            ...COORDINATOR_ITEMS,
-            ...PIC_ITEMS.map((item) =>
-                item.href === '/verifikasi' && picPendingCount
-                    ? { ...item, badge: picPendingCount }
-                    : item,
-            ),
-        ];
+    if (isSuperAdmin) {
+        sections.push({ title: 'Soal', items: DOSEN_ITEMS });
+        sections.push({ title: 'Manajemen', items: SUPER_ADMIN_ITEMS });
+        return sections;
+    }
 
-        sections.push({ title: 'Manajemen', items: coordinatorManagementItems });
-        
+    if (role === 'coordinator') {
+        const soalItems = [
+            ...DOSEN_ITEMS,
+            ...(isPicActive
+                ? PIC_ITEMS.map((item) =>
+                      item.href === '/verifikasi' && picPendingCount
+                          ? { ...item, badge: picPendingCount }
+                          : item,
+                  )
+                : []),
+        ];
+        sections.push({ title: 'Soal', items: soalItems });
+        sections.push({ title: 'Manajemen', items: COORDINATOR_MANAGEMENT_ITEMS });
         return sections;
     }
 
@@ -164,6 +176,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     const sections = buildNavSections(
         role,
         user?.is_pic_active ?? false,
+        user?.is_super_admin ?? false,
         /* picPendingCount — nanti bisa diambil via TanStack Query */
         undefined,
     );

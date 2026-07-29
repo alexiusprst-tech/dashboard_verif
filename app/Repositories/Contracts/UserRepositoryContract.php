@@ -21,5 +21,13 @@ interface UserRepositoryContract
     /** Semua dosen aktif (untuk blast notifikasi) */
     public function findAllActiveDosen(): Collection;
 
+    public function paginateDosen(?string $search = null, ?int $prodiId = null, ?string $tipeDosen = null, int $perPage = 15): LengthAwarePaginator;
+
+    public function create(array $data): User;
+
+    public function update(User $user, array $data): User;
+
+    public function delete(User $user): bool;
+
     public function updateLastLogin(int $userId): void;
 }

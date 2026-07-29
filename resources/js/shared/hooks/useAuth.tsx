@@ -43,7 +43,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /* ── Helper: derive role ───────────────────────────────────── */
 
 function deriveRole(user: AuthUser): UserRole {
-    if (user.is_super_admin) return 'coordinator';
+    if (user.is_super_admin || user.is_coordinator) return 'coordinator';
     if (user.is_pic_active) return 'pic';
     return 'dosen';
 }

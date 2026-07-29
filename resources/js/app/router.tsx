@@ -15,6 +15,7 @@ import { KategoriPage } from '@/features/kategori/KategoriPage';
 import { BroadcastPage } from '@/features/broadcast/BroadcastPage';
 import { TemplateBaPage } from '@/features/berita-acara/TemplateBaPage';
 import { MonitoringPage } from '@/features/monitoring/MonitoringPage';
+import { DosenPage } from '@/features/dosen/DosenPage';
 
 /**
  * Router aplikasi Sistem Verifikasi Soal.
@@ -106,6 +107,11 @@ export const router = createBrowserRouter([
             {
                 path: 'monitoring',
                 element: <MonitoringPage />,
+            },
+
+            {
+                path: 'dosen',
+                element: <DosenPage />,
             },
         ],
     },

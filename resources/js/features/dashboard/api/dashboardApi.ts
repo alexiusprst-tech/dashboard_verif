@@ -1,0 +1,7 @@
+import api from '@/shared/lib/api';
+import type { CourseUploadProgress } from '../types/uploadProgress.types';
+
+export async function getUploadProgress(): Promise<CourseUploadProgress[]> {
+    const { data } = await api.get('/dashboard/upload-progress');
+    return data.data;
+}

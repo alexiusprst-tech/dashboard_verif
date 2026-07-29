@@ -3,13 +3,18 @@ import type { TemplateSoal } from '../types/kategori.types';
 
 const BASE = '/templates';
 
-export async function getTemplateList(kategoriId: number | string): Promise<TemplateSoal[]> {
-    const { data } = await api.get(BASE, { params: { kategori_id: kategoriId } });
+export async function getTemplateList(kategoriId?: number | string): Promise<TemplateSoal[]> {
+    const params = kategoriId ? { kategori_id: kategoriId } : {};
+    const { data } = await api.get(BASE, { params });
     return data.data;
 }
 
 export async function uploadTemplate(payload: FormData): Promise<TemplateSoal> {
-    const { data } = await api.post(BASE, payload);
+    const { data } = await api.post(BASE, payload, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return data.data;
 }
 

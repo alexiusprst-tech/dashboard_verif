@@ -9,6 +9,8 @@ interface TemplateRepositoryContract
 {
     public function findById(int $id): ?Template;
 
+    public function all(): Collection;
+
     public function findByKategori(int $kategoriId): Collection;
 
     public function findActiveByKategori(int $kategoriId): ?Template;

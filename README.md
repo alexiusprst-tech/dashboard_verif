@@ -370,6 +370,14 @@ verifikasi-soal/
 
 ---
 
+## 7.1 Endpoint API Enhancement Dosen
+
+- `GET /api/soal/{id}/timeline` — Mengambil timeline riwayat perjalanan dokumen soal dari unggah hingga disetujui/berita acara
+- `GET /api/soal/{id}/revision-history` & `GET /api/questions/{id}/revision-history` — Mengambil seluruh riwayat catatan revisi dari verifikator
+- `GET /api/dashboard/upload-progress` — Mengambil progress pengumpulan soal per mata kuliah yang diampu dosen pada periode aktif (lengkap dengan indikator deadline kritis < 3 hari)
+
+---
+
 ## 8. Entitas Data Utama
 
 ```

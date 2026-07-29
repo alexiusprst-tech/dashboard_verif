@@ -54,6 +54,7 @@ class DatabaseSeeder extends Seeder
             'nama_prodi' => 'Sistem Informasi',
         ]);
 
+        // 2. Users
         /*
         |--------------------------------------------------------------------------
         | USER
