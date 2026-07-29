@@ -271,7 +271,7 @@ export function Topbar({ onMobileMenuToggle, notificationCount = 0 }: TopbarProp
     const [notifOpen, setNotifOpen] = useState(false);
 
     return (
-        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[var(--color-gray-200)] bg-white px-4 md:px-6">
+        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[var(--color-gray-200)] bg-white px-4 shadow-sm md:px-6">
 
             {/* ── Left: hamburger (mobile) + breadcrumb ── */}
             <div className="flex items-center gap-4">

@@ -127,11 +127,15 @@ h1, h2, h3, h4, h5, h6 {
    Utility Helpers
    ============================================================ */
 
-/* Sidebar active item accent line */
+/* Sidebar active item — light theme (CeLOE-style) */
 .sidebar-active-item {
-    border-left: 3px solid var(--color-primary);
-    background-color: rgba(200, 16, 46, 0.12);
-    color: var(--color-primary-light);
+    background-color: var(--color-primary-light);
+    color: var(--color-primary) !important;
+    font-weight: 600;
+}
+
+.sidebar-active-item svg {
+    color: var(--color-primary);
 }
 
 /* Focus ring menggunakan warna primary */
