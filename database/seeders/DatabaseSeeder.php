@@ -54,14 +54,6 @@ class DatabaseSeeder extends Seeder
             'nama_prodi' => 'Sistem Informasi',
         ]);
 
-        // 2. Users
-        // Coordinator (previously Super Admin)
-        $admin = User::create([
-            'uuid' => (string) \Illuminate\Support\Str::uuid(),
-            'kode_dosen' => 'ADM001',
-            'nama_lengkap' => 'Koordinator Utama',
-            'email' => 'coordinator@telkomuniversity.ac.id',
-            'password' => 'password',
         /*
         |--------------------------------------------------------------------------
         | USER
