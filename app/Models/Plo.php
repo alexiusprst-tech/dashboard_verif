@@ -12,6 +12,7 @@ class Plo extends Model
 
     protected $fillable = [
         'kode',
+        'nama_plo',
         'deskripsi',
         'prodi_id',
         'periode_id',

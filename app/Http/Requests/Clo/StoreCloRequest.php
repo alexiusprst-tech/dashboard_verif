@@ -14,10 +14,12 @@ class StoreCloRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'kode' => 'required|string|max:30|unique:clo,kode,NULL,id,mata_kuliah_id,' . $this->mata_kuliah_id,
-            'deskripsi' => 'nullable|string',
-            'mata_kuliah_id' => 'required|exists:courses,id',
-            'plo_id' => 'required|exists:plo,id',
+            'kode'          => 'required|string|max:30|unique:clo,kode,NULL,id,mata_kuliah_id,' . $this->mata_kuliah_id,
+            'nama_clo'      => 'nullable|string|max:255',
+            'deskripsi'     => 'nullable|string',
+            'mata_kuliah_id'=> 'required|exists:courses,id',
+            'plo_id'        => 'required|exists:plo,id',
+            'periode_id'    => 'nullable|exists:periode,id',
         ];
     }
 

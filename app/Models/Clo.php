@@ -12,6 +12,7 @@ class Clo extends Model
 
     protected $fillable = [
         'kode',
+        'nama_clo',
         'deskripsi',
         'mata_kuliah_id',
         'plo_id',

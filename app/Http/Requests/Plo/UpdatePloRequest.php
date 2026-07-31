@@ -27,9 +27,11 @@ class UpdatePloRequest extends FormRequest
         $id = $this->route('plo');
 
         return [
-            'kode' => 'required|string|max:30|unique:plo,kode,' . $id . ',id,prodi_id,' . $this->prodi_id,
-            'deskripsi' => 'nullable|string',
-            'prodi_id' => 'required|exists:program_studi,id',
+            'kode'       => 'required|string|max:30|unique:plo,kode,' . $id . ',id,prodi_id,' . $this->prodi_id,
+            'nama_plo'   => 'nullable|string|max:255',
+            'deskripsi'  => 'nullable|string',
+            'prodi_id'   => 'required|exists:program_studi,id',
+            'periode_id' => 'nullable|exists:periode,id',
         ];
     }
 

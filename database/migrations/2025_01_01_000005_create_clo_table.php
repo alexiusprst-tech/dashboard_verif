@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('clo', function (Blueprint $table) {
             $table->id();
             $table->string('kode', 30);
+            $table->string('nama_clo', 255)->nullable();
             $table->text('deskripsi')->nullable();
             $table->foreignId('mata_kuliah_id')
                 ->constrained('courses')
