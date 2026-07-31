@@ -23,11 +23,11 @@ Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara
 
 ## 1. Ringkasan Sistem
 
-Sistem ini dibangun untuk mendigitalkan proses verifikasi soal ujian di lingkungan akademik, khususnya Program Studi Sistem Informasi. Setiap periode (semester ganjil/genap), dosen mengunggah soal (format PDF) sesuai kategori dan template yang ditentukan, sesuai mata kuliah yang diampunya pada periode tersebut. Sejumlah dosen ditunjuk oleh Super Admin untuk memegang **role PIC**, yang memverifikasi soal dan memantau progres verifikasi. Hasil verifikasi didokumentasikan secara otomatis dalam bentuk **Berita Acara (BA)** yang bisa dicetak.
+Sistem ini dibangun untuk mendigitalkan proses verifikasi soal ujian di lingkungan akademik, khususnya Program Studi Sistem Informasi. Setiap periode (semester ganjil/genap), dosen mengunggah soal (format PDF) sesuai kategori dan template yang ditentukan, sesuai mata kuliah yang diampunya pada periode tersebut. Sejumlah dosen ditunjuk oleh **PIC (Person in Charge)** untuk memegang **role PIC**, yang memverifikasi soal dan memantau progres verifikasi. Hasil verifikasi didokumentasikan secara otomatis dalam bentuk **Berita Acara (BA)** yang bisa dicetak.
 
 Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
 
-- **Hanya ada 3 tingkat akses**: Super Admin, Dosen (base), dan Dosen yang diberi **role PIC**. Tidak ada role Coordinator terpisah — seluruh fitur yang sebelumnya dianggap "milik Coordinator" (monitoring/dashboard progres) sudah melebur menjadi bagian dari role PIC.
+- **Hanya ada 3 tingkat akses**: PIC, Dosen (base), dan Dosen yang diberi **role PIC**. Tidak ada role PIC terpisah — seluruh fitur yang sebelumnya dianggap "milik PIC" (monitoring/dashboard progres) sudah melebur menjadi bagian dari role PIC.
 - **PIC bukan role permanen.** Status PIC adalah *penugasan role* yang berlaku untuk satu periode tertentu saja (disimpan di tabel `user_roles`), bisa berbeda-beda setiap periode. Seorang dosen bisa jadi PIC di periode ini, dan jadi dosen biasa di periode berikutnya.
 - **Dosen yang diberi role PIC dapat memverifikasi SEMUA soal** yang diupload dosen dalam periode aktif tempat dia bertugas — tidak dibatasi ke target dosen tertentu, karena scope aplikasi ini memang fokus untuk satu prodi (Sistem Informasi).
 - **Ada dua tipe dosen**: Dosen Biasa (aktif di semua periode) dan Dosen LB/Luar Biasa (hanya aktif di satu jenis periode — ganjil atau genap sesuai penugasannya).
@@ -41,16 +41,16 @@ Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
 
 | Role | Sifat | Deskripsi Singkat |
 |---|---|---|
-| **Super Admin** | Permanen | Mengelola keseluruhan sistem: user, periode, deadline, pemetaan dosen↔matkul, pemberian role PIC, broadcast, dan monitoring semua data |
+| **Coordinator** | Permanen | Mengelola keseluruhan sistem: user, periode, deadline, pemetaan dosen↔matkul, pemberian role PIC, broadcast, dan monitoring semua data |
 | **Dosen (Biasa)** | Permanen (base role) | Role dasar, aktif di semua periode. Berhak CRUD PLO/CLO dan upload soal |
 | **Dosen (LB / Luar Biasa)** | Permanen (base role, dengan batasan) | Sama seperti Dosen Biasa, tapi **hanya aktif di satu jenis periode** (ganjil **atau** genap) sesuai penugasan |
-| **Dosen dengan role PIC** | Dinamis (assignment per periode, melekat pada akun dosen) | Diberikan Super Admin untuk satu periode tertentu. Mendapat **seluruh fitur dosen**, ditambah **verifikasi soal** dan **monitoring/dashboard progres** (fitur yang sebelumnya disebut "Coordinator" sudah melebur ke sini) |
+| **Dosen dengan role PIC** | Dinamis (assignment per periode, melekat pada akun dosen) | Diberikan Coordinator untuk satu periode tertentu. Mendapat **seluruh fitur dosen**, ditambah **verifikasi soal** dan **monitoring/dashboard progres** (fitur yang sebelumnya disebut "Coordinator" sudah melebur ke sini) |
 
 > **Catatan penting:** karena PIC adalah assignment dinamis, secara teknis disimpan di tabel `user_roles` (kombinasi `user_id`, `role_id`, `periode_id`), bukan sebagai kolom `role` tetap di tabel `users`. Tidak ada lagi kolom `is_coordinator` — role Coordinator sudah dihapus sepenuhnya dari desain.
 
 ### Matriks Hak Akses
 
-| Fitur | Super Admin | Dosen (tanpa role PIC) | Dosen (dengan role PIC) |
+| Fitur | Coordinator | Dosen (tanpa role PIC) | Dosen (dengan role PIC) |
 |---|:---:|:---:|:---:|
 | CRUD PLO & CLO (per periode) | ✅ | ✅ | ✅ |
 | Upload Soal (PDF, sesuai matkul yang diampu) | ❌ | ✅ | ✅ |
@@ -67,11 +67,11 @@ Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
 
 ## 3. Proses Bisnis
 
-### Tahap 1 — Persiapan Periode (Super Admin)
-1. Super Admin membuat **Periode** baru (tentukan jenis semester: ganjil/genap) beserta **tenggat waktu (deadline)** upload soal.
-2. Super Admin menyiapkan/memilih **Kategori & Template** soal (format PDF) yang berlaku untuk periode tersebut.
-3. Super Admin membuat **pemetaan dosen ↔ mata kuliah** untuk periode ini (menentukan dosen mana mengampu mata kuliah apa) — pemetaan ini fleksibel dan bisa diedit kapan saja oleh Super Admin.
-4. Super Admin mengirim **Broadcast** pemberitahuan ke seluruh dosen terkait pembukaan periode dan deadline.
+### Tahap 1 — Persiapan Periode (Coordinator)
+1. Coordinator membuat **Periode** baru (tentukan jenis semester: ganjil/genap) beserta **tenggat waktu (deadline)** upload soal.
+2. Coordinator menyiapkan/memilih **Kategori & Template** soal (format PDF) yang berlaku untuk periode tersebut.
+3. Coordinator membuat **pemetaan dosen ↔ mata kuliah** untuk periode ini (menentukan dosen mana mengampu mata kuliah apa) — pemetaan ini fleksibel dan bisa diedit kapan saja oleh Coordinator.
+4. Coordinator mengirim **Broadcast** pemberitahuan ke seluruh dosen terkait pembukaan periode dan deadline.
 
 ### Tahap 2 — Upload Soal (Dosen)
 5. Dosen login. Jika Dosen LB, sistem otomatis mengecek apakah jenis semester periode aktif sesuai dengan penugasannya — jika tidak sesuai, menu upload tidak tersedia.
@@ -79,8 +79,8 @@ Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
 7. Dosen mengunduh template (PDF), menyusun soal dalam format PDF, lalu mengunggahnya ke sistem sebelum deadline — hanya bisa memilih mata kuliah yang sesuai dengan pemetaan dosen↔matkul miliknya di periode ini.
 8. Status soal otomatis menjadi `submitted`.
 
-### Tahap 3 — Pemberian Role PIC (Super Admin)
-9. Menjelang/setelah deadline, Super Admin memberikan **role PIC** kepada 4–5 dosen terpilih untuk periode tersebut — pencarian dosen dilakukan berdasarkan **kode dosen** dan **nama lengkap**.
+### Tahap 3 — Pemberian Role PIC (Coordinator)
+9. Menjelang/setelah deadline, Coordinator memberikan **role PIC** kepada 4–5 dosen terpilih untuk periode tersebut — pencarian dosen dilakukan berdasarkan **kode dosen** dan **nama lengkap**.
 10. Dosen yang diberi role ini otomatis mendapat akses penuh: verifikasi seluruh soal dalam periode tersebut + dashboard monitoring progres.
 
 ### Tahap 4 — Verifikasi (Dosen dengan role PIC)
@@ -99,7 +99,7 @@ Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
 
 ## 4. Fitur per Role
 
-### Super Admin
+### Coordinator
 - Dashboard ringkasan progres upload & verifikasi seluruh periode
 - Manajemen akun dosen (kode dosen, nama, tipe dosen Biasa/LB, prodi)
 - Manajemen Periode & Deadline (dengan jenis semester ganjil/genap)
@@ -114,7 +114,7 @@ Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
 - CRUD CLO (Course Learning Outcome) khusus periode aktif, terhubung ke PLO dan mata kuliah
 - Upload soal (PDF) sesuai kategori, template, dan mata kuliah yang diampu, sebelum deadline
 - Melihat status soal sendiri (draft/submitted/in review/revisi/approved/rejected)
-- Menerima notifikasi broadcast dari Super Admin
+- Menerima notifikasi broadcast dari Coordinator
 - *(Khusus Dosen LB)* akses upload/interaksi soal hanya tersedia saat periode aktif sesuai jenis semester penugasannya
 
 ### Dosen dengan Role PIC (Muncul sebagai menu tambahan saat role aktif di periode berjalan)
@@ -203,7 +203,7 @@ verifikasi-soal/
 │   │   │   │   └── BeritaAcaraResource.php
 │   │   │   │
 │   │   │   └── Middleware/
-│   │   │       ├── EnsureIsSuperAdmin.php
+│   │   │       ├── EnsureIsCoordinator.php
 │   │   │       └── EnsureIsPicForPeriode.php   # cek dinamis ke tabel user_roles
 │   │   │
 │   │   ├── Services/
@@ -280,7 +280,7 @@ verifikasi-soal/
 │   │   │   │   ├── useAuth.ts
 │   │   │   │   └── useDebounce.ts
 │   │   │   ├── layouts/
-│   │   │   │   ├── SuperAdminLayout.tsx
+│   │   │   │   ├── CoordinatorLayout.tsx
 │   │   │   │   ├── DosenLayout.tsx
 │   │   │   │   └── PicLayout.tsx               # dipakai juga untuk fitur monitoring
 │   │   │   ├── types/common.types.ts
@@ -355,7 +355,7 @@ verifikasi-soal/
 │   │       └── dashboard/
 │   │           ├── api/dashboardApi.ts
 │   │           ├── components/
-│   │           │   ├── SuperAdminDashboard.tsx
+│   │           │   ├── CoordinatorDashboard.tsx
 │   │           │   ├── DosenDashboard.tsx
 │   │           │   └── PicDashboard.tsx        # gabungan verifikasi + monitoring progres
 │   │           └── pages/DashboardPage.tsx
@@ -386,7 +386,7 @@ User
 - prodi_id (FK)
 - tipe_dosen: enum('biasa','lb')
 - semester_lb: enum('ganjil','genap') nullable   // hanya untuk Dosen LB
-- is_super_admin (bool)
+- is_coordinator (bool)
 - status_aktif (bool)
 - deleted_at (soft delete)
 

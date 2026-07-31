@@ -16,6 +16,7 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('program_studi')
                 ->nullOnDelete();
+            $table->integer('sks')->default(3)->nullable();
             $table->timestamps();
         });
     }

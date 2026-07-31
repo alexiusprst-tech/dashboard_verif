@@ -14,6 +14,7 @@ class KategoriApiTest extends TestCase
 
     public function test_category_index_returns_paginated_categories_without_error(): void
     {
+        /** @var User $user */
         $user = User::factory()->create();
         Category::create([
             'nama_kategori' => 'UTS',
@@ -38,6 +39,7 @@ class KategoriApiTest extends TestCase
 
     public function test_template_upload_accepts_word_file(): void
     {
+        /** @var User $user */
         $user = User::factory()->create(['is_super_admin' => true]);
         $category = Category::create([
             'nama_kategori' => 'UAS',
@@ -59,6 +61,7 @@ class KategoriApiTest extends TestCase
 
     public function test_template_index_returns_ok_without_kategori_id(): void
     {
+        /** @var User $user */
         $user = User::factory()->create();
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/templates');

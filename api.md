@@ -50,7 +50,7 @@ Semua respon REST API menggunakan amplop JSON tersentralisasi demi menjamin kons
 | `202 Accepted` | Request diterima untuk diproses secara async. | Pemrosesan background job (Generate PDF/DOCX Berita Acara). |
 | `400 Bad Request` | Pelanggaran aturan bisnis. | Contoh: Mencoba verifikasi soal buatan sendiri, generate BA saat soal belum approved. |
 | `401 Unauthorized` | Token autentikasi hilang/invalid. | Header Authorization Bearer tidak dikirim atau sudah kadaluarsa. |
-| `403 Forbidden` | Peran pengguna tidak diizinkan. | Dosen mencoba mengakses fitur Coordinator/Super Admin. |
+| `403 Forbidden` | Peran pengguna tidak diizinkan. | Dosen mencoba mengakses fitur Coordinator. |
 | `404 Not Found` | Resource tidak ditemukan. | ID Soal, Periode, atau User tidak ada di database. |
 | `422 Unprocessable` | Failure pada input validation. | Input form request tidak memenuhi aturan (format email, file wajib PDF). |
 | `429 Too Many Requests` | Rate limit terlampaui. | Jumlah request melebihi batas yang diizinkan per menit. |
@@ -85,7 +85,7 @@ Semua respon REST API menggunakan amplop JSON tersentralisasi demi menjamin kons
       "nama_lengkap": "Dr. Dosen Contoh, S.T., M.T.",
       "email": "dosen@telkomuniversity.ac.id",
       "prodi_id": 1,
-      "is_super_admin": false,
+      "is_coordinator": false,
       "is_coordinator": true,
       "status_aktif": true,
       "roles": ["coordinator", "dosen"]
@@ -122,7 +122,7 @@ Semua respon REST API menggunakan amplop JSON tersentralisasi demi menjamin kons
       "kode_prodi": "SI",
       "nama_prodi": "S1 Sistem Informasi"
     },
-    "is_super_admin": false,
+    "is_coordinator": false,
     "is_coordinator": true
   }
 }

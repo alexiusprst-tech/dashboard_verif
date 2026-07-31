@@ -89,7 +89,7 @@ Sistem mengadopsi **Service-Repository Pattern** untuk memastikan pemisahan tang
 
 ### 2. API & Middleware Layer (Backend - Laravel)
 - **Routes (`routes/api.php`):** Mendefinisikan endpoint REST API bersarang yang diproteksi oleh middleware.
-- **Middleware (`app/Http/Middleware/`):** Memeriksa token autentikasi Sanctum dan hak akses peran (`super_admin`, `coordinator`, `pic_periode`).
+- **Middleware (`app/Http/Middleware/`):** Memeriksa token autentikasi Sanctum dan hak akses peran (`coordinator`, `coordinator`, `pic_periode`).
 - **Form Requests (`app/Http/Requests/`):** Menangani seluruh validasi data masuk sebelum menyentuh Controller.
 
 ### 3. Controller Layer (Backend)
@@ -168,7 +168,7 @@ resources/js/
 ## 5. Keamanan & Kontrol Akses (Security Architecture)
 
 1. **Role-Based Access Control (RBAC):**
-   - Peran Utama: `Super Admin`, `Coordinator`, `Dosen`, `PIC (Verifikator)`.
+   - Peran Utama: `Coordinator`, `Coordinator`, `Dosen`, `PIC (Verifikator)`.
    - Seorang Dosen dapat berperan ganda sebagai `PIC Verifikator` pada `periode` tertentu melalui pemetaan di `user_roles` dan `penugasan`.
 2. **Sanctum Bearer Token:**
    - Seluruh endpoint API terproteksi mewajibkan header `Authorization: Bearer <token>`.

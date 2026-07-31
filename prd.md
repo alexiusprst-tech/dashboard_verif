@@ -51,7 +51,7 @@ Sistem ini dirancang untuk melayani 4 kelompok pengguna utama di Telkom Universi
 
 Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seorang pengguna (misal: Dosen) dapat memiliki peran tambahan (misal: PIC Verifikator) sesuai periode akademik berjalan.
 
-| Modul / Fitur | Super Admin | Coordinator | Dosen | PIC Verifikator |
+| Modul / Fitur | Coordinator | Coordinator | Dosen | PIC Verifikator |
 | :--- | :---: | :---: | :---: | :---: |
 | **Manajemen User & Role** | Full Control (CRUD) | Read-only | No Access | No Access |
 | **Manajemen Prodi & Courses** | Full Control (CRUD) | Full Control (CRUD) | Read-only | Read-only |
@@ -86,10 +86,10 @@ Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seor
 ### 5.3 Manajemen Template & Kategori
 - **FR-TPL-01:** CRUD Kategori Soal (misal: UTS, UAS, Quiz, Remedial).
 - **FR-TPL-02:** Upload dan aktivasi Template Soal resmi (format DOCX/PDF) untuk diunduh Dosen.
-- **FR-TPL-03:** Upload dan pengelolaan Template Berita Acara (format DOCX/Blade template) oleh Super Admin.
+- **FR-TPL-03:** Upload dan pengelolaan Template Berita Acara (format DOCX/Blade template) oleh Coordinator.
 
 ### 5.4 Penugasan PIC (Assignment Management)
-- **FR-ASN-01:** Coordinator/Super Admin menetapkan Dosen Verifikator (PIC) untuk memverifikasi soal dari Dosen Target tertentu pada periode aktif.
+- **FR-ASN-01:** Coordinator/Coordinator menetapkan Dosen Verifikator (PIC) untuk memverifikasi soal dari Dosen Target tertentu pada periode aktif.
 - **FR-ASN-02:** Sistem mencatat penugasan dan mencegah pengulangan penugasan ganda (*duplicate assignment*) pada periode yang sama.
 - **FR-ASN-03:** Pencarian dosen pengampu berbasis autokomplit untuk kemudahan penugasan.
 
@@ -115,7 +115,7 @@ Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seor
 - **FR-BAC-04:** Pratinjau (*Print Preview*) dan pengunduhan berkas Berita Acara via REST API.
 
 ### 5.8 Broadcast & System Notification
-- **FR-BRD-01:** Super Admin dan Coordinator dapat membuat pesan pengumuman/broadcast untuk seluruh Dosen.
+- **FR-BRD-01:** Coordinator dan Coordinator dapat membuat pesan pengumuman/broadcast untuk seluruh Dosen.
 - **FR-BRD-02:** Sistem mengirimkan notifikasi in-app kepada Dosen saat ada pengumuman baru, penugasan PIC baru, atau pengembalian catatan revisi soal.
 
 ---
@@ -128,7 +128,7 @@ Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seor
 
 ### 6.2 Security & Authentication
 - **NFR-SEC-01 (Authentication):** Menggunakan **Laravel Sanctum** berbasis Bearer Token yang terenkripsi aman.
-- **NFR-SEC-02 (Role-Based Access Control):** Setiap endpoint diproteksi oleh middleware spesifik (`auth:sanctum`, `coordinator`, `super_admin`, `pic_periode`).
+- **NFR-SEC-02 (Role-Based Access Control):** Setiap endpoint diproteksi oleh middleware spesifik (`auth:sanctum`, `coordinator`, `coordinator`, `pic_periode`).
 - **NFR-SEC-03 (Data Protection & Input Validation):** Seluruh masukan API divalidasi ketat via Form Request. Password di-hash menggunakan Bcrypt / Argon2ID.
 - **NFR-SEC-04 (File Upload Security):** Validasi tipe MIME file (PDF/DOCX), pembatasan ukuran berkas maksimum (10MB), dan pengacakan nama berkas tersimpan di storage terproteksi.
 
@@ -157,7 +157,7 @@ Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seor
 - **BR-004 (Approval Prerequisite for Minutes):** Berita Acara hanya dapat digenerasi untuk daftar soal yang **SELURUHNYA** telah mendapat status `approved`. Jika ada 1 soal yang masih `draft`, `submitted`, `in_review`, atau `revisi`, proses generate BA akan ditolak.
 - **BR-005 (Active BA Template Required):** Penggenerasian Berita Acara mewajibkan adanya minimal 1 **Template Berita Acara** yang berstatus aktif dalam sistem.
 - **BR-006 (Period-Scoped Assignment):** Penugasan PIC bersifat spesifik per Periode Akademik. Penugasan di semester ganjil tidak berlaku otomatis di semester genap.
-- **BR-007 (Strict Status Flow):** Perubahan status soal wajib mengikuti alur baku: `draft` -> `submitted` -> `in_review` -> (`approved` | `revisi` | `rejected`). Status yang sudah `approved` tidak dapat diubah kembali kecuali oleh Super Admin melalui override reset.
+- **BR-007 (Strict Status Flow):** Perubahan status soal wajib mengikuti alur baku: `draft` -> `submitted` -> `in_review` -> (`approved` | `revisi` | `rejected`). Status yang sudah `approved` tidak dapat diubah kembali kecuali oleh Coordinator melalui override reset.
 
 ---
 

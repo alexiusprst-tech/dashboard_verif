@@ -24,7 +24,7 @@ Dokumen ini berisi spesifikasi lengkap mengenai arsitektur basis data, struktur 
 ## 2. Definisi Tabel Master (Master Tables)
 
 ### 2.1 `users`
-Menyimpan data pengguna, dosen, coordinator, dan super admin.
+Menyimpan data pengguna, dosen, coordinator, dan coordinator.
 
 | Nama Kolom | Tipe Data | Constraint | Deskripsi |
 | :--- | :--- | :--- | :--- |
@@ -34,10 +34,10 @@ Menyimpan data pengguna, dosen, coordinator, dan super admin.
 | `nama_lengkap` | VARCHAR(150) | Not Null | Nama lengkap beserta gelar akademik |
 | `email` | VARCHAR(150) | Unique, Not Null | Email resmi Telkom University |
 | `password` | VARCHAR(255) | Not Null | Password terenkripsi Bcrypt / Argon2ID |
-| `prodi_id` | BIGINT | FK -> `program_studi(id)` | Foreign Key Prodi (Null untuk Super Admin) |
+| `prodi_id` | BIGINT | FK -> `program_studi(id)` | Foreign Key Prodi (Null untuk Coordinator) |
 | `tipe_dosen` | ENUM | `'biasa'`, `'lb'` | Tipe Dosen (`biasa` = Tetap, `lb` = Luar Biasa) |
 | `semester_lb` | ENUM | `'ganjil'`, `'genap'`, Null | Menentukan periode keaktifan Dosen LB |
-| `is_super_admin` | BOOLEAN | Default: `false` | Status Super Admin Fakultas |
+| `is_coordinator` | BOOLEAN | Default: `false` | Status Coordinator Fakultas |
 | `is_coordinator` | BOOLEAN | Default: `false` | Status Coordinator Prodi / Fakultas |
 | `status_aktif` | BOOLEAN | Default: `true` | Status keaktifan akun pengguna |
 | `last_login_at` | TIMESTAMP | Nullable | Timestamp login terakhir pengguna |
@@ -55,7 +55,7 @@ Definisi peran (*roles*) dan relasi *many-to-many* antara `users` dan `roles`.
 | Nama Kolom | Tipe Data | Constraint | Deskripsi |
 | :--- | :--- | :--- | :--- |
 | `id` | BIGINT | PK, Auto Increment | ID Role |
-| `nama_role` | VARCHAR(50) | Unique, Not Null | Nama Role (`super_admin`, `coordinator`, `dosen`, `pic`) |
+| `nama_role` | VARCHAR(50) | Unique, Not Null | Nama Role (`coordinator`, `coordinator`, `dosen`, `pic`) |
 
 #### Tabel `user_roles`
 | Nama Kolom | Tipe Data | Constraint | Deskripsi |
@@ -216,7 +216,7 @@ Menyimpan penugasan Dosen PIC Verifikator terhadap Dosen Target per Periode.
 | `periode_id` | BIGINT | FK -> `periode(id)` | Foreign Key Periode Akademik |
 | `verifier_id` | BIGINT | FK -> `users(id)` | Foreign Key Dosen PIC Verifikator |
 | `target_dosen_id`| BIGINT | FK -> `users(id)` | Foreign Key Dosen Target |
-| `assigned_by` | BIGINT | FK -> `users(id)` | Foreign Key Super Admin / Coordinator Penugas |
+| `assigned_by` | BIGINT | FK -> `users(id)` | Foreign Key Coordinator / Coordinator Penugas |
 | `assigned_at` | TIMESTAMP | Nullable | Waktu Penugasan Dibuat |
 
 *Composite Unique Index:* `penugasan_unique_assignment` pada `(periode_id, verifier_id, target_dosen_id)`.
@@ -348,7 +348,7 @@ export interface User {
   prodi_id: number | null;
   tipe_dosen: TipeDosen;
   semester_lb: SemesterType | null;
-  is_super_admin: boolean;
+  is_coordinator: boolean;
   is_coordinator: boolean;
   status_aktif: boolean;
 }

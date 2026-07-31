@@ -21,7 +21,7 @@
 ## 2. Tabel Master (Master Tables)
 
 ### 2.1 `users`
-Menyimpan informasi data akun pengguna, dosen, coordinator, dan super admin.
+Menyimpan informasi data akun pengguna, dosen, coordinator, dan coordinator.
 
 | Nama Kolom | Tipe Data | Constraint | Deskripsi |
 | :--- | :--- | :--- | :--- |
@@ -31,10 +31,10 @@ Menyimpan informasi data akun pengguna, dosen, coordinator, dan super admin.
 | `nama_lengkap` | VARCHAR(150) | Not Null | Nama lengkap beserta gelar akademik |
 | `email` | VARCHAR(150) | Unique, Not Null | Email resmi Telkom University |
 | `password` | VARCHAR(255) | Not Null | Password terenkripsi Bcrypt / Argon2ID |
-| `prodi_id` | BIGINT | FK -> `program_studi(id)` | Nullable jika Super Admin Fakultas |
+| `prodi_id` | BIGINT | FK -> `program_studi(id)` | Nullable jika Coordinator Fakultas |
 | `tipe_dosen` | ENUM | 'biasa', 'lb' | Tipe Dosen (Biasa = Tetap, LB = Luar Biasa) |
 | `semester_lb` | ENUM | 'ganjil', 'genap', Nullable | Menentukan periode keaktifan Dosen LB |
-| `is_super_admin` | BOOLEAN | Default: `false` | Flag Super Admin |
+| `is_coordinator` | BOOLEAN | Default: `false` | Flag Coordinator |
 | `is_coordinator` | BOOLEAN | Default: `false` | Flag Coordinator Prodi/Fakultas |
 | `status_aktif` | BOOLEAN | Default: `true` | Status keaktifan akun pengguna |
 | `last_login_at` | TIMESTAMP | Nullable | Timestamp login terakhir pengguna |
@@ -52,7 +52,7 @@ Menyimpan definisi peran (*roles*) tambahan dan pemetaan hubungan *many-to-many*
 | Nama Kolom | Tipe Data | Constraint | Deskripsi |
 | :--- | :--- | :--- | :--- |
 | `id` | BIGINT | PK, Auto Increment | ID Role |
-| `nama_role` | VARCHAR(50) | Unique, Not Null | Nama Role (`super_admin`, `coordinator`, `dosen`, `pic`) |
+| `nama_role` | VARCHAR(50) | Unique, Not Null | Nama Role (`coordinator`, `coordinator`, `dosen`, `pic`) |
 
 #### Tabel `user_roles`
 | Nama Kolom | Tipe Data | Constraint | Deskripsi |
@@ -210,7 +210,7 @@ Menyimpan penugasan Dosen PIC Verifikator terhadap Dosen Target dalam periode te
 | `periode_id` | BIGINT | FK -> `periode(id)` | Periode Akademik terkait |
 | `verifier_id` | BIGINT | FK -> `users(id)` | Dosen yang menjadi PIC Verifikator |
 | `target_dosen_id`| BIGINT | FK -> `users(id)` | Dosen yang soalnya akan diverifikasi |
-| `assigned_by` | BIGINT | FK -> `users(id)` | Super Admin / Coordinator penugas |
+| `assigned_by` | BIGINT | FK -> `users(id)` | Coordinator / Coordinator penugas |
 | `assigned_at` | TIMESTAMP | Nullable | Waktu penugasan dibuat |
 
 *Constraint Unik:* Composite Unique Index `(periode_id, verifier_id, target_dosen_id)` bernama `penugasan_unique_assignment`.

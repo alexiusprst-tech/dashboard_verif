@@ -13,6 +13,8 @@ return new class extends Migration
             $table->foreignId('kategori_id')
                 ->constrained('categories')
                 ->cascadeOnDelete();
+            $table->foreignId('category_id')->nullable();
+            $table->string('nama_template', 255)->nullable();
             $table->string('nama_file', 255);
             $table->text('file_path')->comment('wajib PDF, divalidasi di Form Request saat upload');
             $table->string('versi', 20)->default('1.0');
