@@ -62,8 +62,7 @@ export function BeritaAcaraPage() {
                 // Deduplicate
                 const unique = pics.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
                 setPicList(unique);
-                if (unique.length > 0) setSelectedVerifierId(String(unique[0].id));
-                else setSelectedVerifierId('');
+                setSelectedVerifierId('');
             })
             .catch(() => setPicList([]));
     }, [user?.is_super_admin, selectedPeriodeId]);
@@ -77,6 +76,7 @@ export function BeritaAcaraPage() {
 
     const { data: response, isLoading, refetch } = useBaList({
         periode_id: selectedPeriodeId || undefined,
+        verifier_id: selectedVerifierId || undefined,
         page,
         per_page: perPage,
     });
@@ -91,9 +91,9 @@ export function BeritaAcaraPage() {
             toast.error('Pilih Periode terlebih dahulu.');
             return;
         }
-        // Super Admin harus pilih PIC; PIC langsung pakai id sendiri
+        // Super Admin harus pilih PIC spesifik di filter PIC; PIC biasa langsung pakai id sendiri
         if (user?.is_super_admin && !selectedVerifierId) {
-            toast.error('Pilih PIC terlebih dahulu.');
+            toast.error('Pilih PIC tertentu pada filter PIC untuk meng-generate Berita Acara.');
             return;
         }
         const payload: Record<string, any> = {
@@ -190,12 +190,13 @@ export function BeritaAcaraPage() {
                         </div>
                         <select
                             value={selectedVerifierId}
-                            onChange={(e) => setSelectedVerifierId(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedVerifierId(e.target.value);
+                                setPage(1);
+                            }}
                             className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
                         >
-                            {picList.length === 0 && (
-                                <option value="">— Tidak ada PIC —</option>
-                            )}
+                            <option value="">— Semua PIC —</option>
                             {picList.map((pic) => (
                                 <option key={pic.id} value={pic.id}>
                                     {pic.nama_lengkap}{pic.kode_dosen ? ` (${pic.kode_dosen})` : ''}

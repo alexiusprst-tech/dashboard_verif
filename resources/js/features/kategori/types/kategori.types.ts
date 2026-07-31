@@ -19,6 +19,7 @@ export interface TemplateSoal {
     kategori_id: number;
     nama_file: string;
     file_path: string;
+    file_url?: string;
     versi: string;
     is_active: boolean;
     created_at: string;
