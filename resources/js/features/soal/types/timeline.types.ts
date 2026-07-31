@@ -26,6 +26,7 @@ export interface RevisionHistoryItem {
     id: number;
     revision: number;
     status: string;
+    status_label?: string;
     notes: string;
     version: string;
     file_soal?: string | null;

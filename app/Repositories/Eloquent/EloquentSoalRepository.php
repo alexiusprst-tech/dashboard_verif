@@ -95,14 +95,19 @@ class EloquentSoalRepository implements SoalRepositoryContract
         return $results;
     }
 
-    public function findForVerifier(int $verifierId, int $periodeId, int $perPage = 15): LengthAwarePaginator
+    public function findForVerifier(int $verifierId, int $periodeId, int $perPage = 15, ?string $status = null): LengthAwarePaginator
     {
-        // PIC memverifikasi semua soal dalam periode aktif (scope: Prodi Sistem Informasi).
-        // Tidak ada filter target_dosen_id — sesuai keputusan final (bagian 2.5 Revision Notes).
-        return Soal::with(['dosen', 'mataKuliah', 'clo', 'template.kategori'])
-            ->where('periode_id', $periodeId)
-            ->whereIn('status', ['submitted', 'in_review', 'revisi'])
-            ->orderByDesc('uploaded_at')
-            ->paginate($perPage);
+        $query = Soal::with(['dosen', 'mataKuliah', 'clo', 'template.kategori'])
+            ->where('periode_id', $periodeId);
+
+        if ($status && $status !== 'all') {
+            if ($status === 'pending') {
+                $query->whereIn('status', ['submitted', 'in_review', 'revisi']);
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        return $query->orderByDesc('uploaded_at')->paginate($perPage);
     }
 }

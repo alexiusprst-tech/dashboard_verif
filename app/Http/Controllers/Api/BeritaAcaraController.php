@@ -45,16 +45,22 @@ class BeritaAcaraController extends Controller
 
     public function generate(GenerateBeritaAcaraRequest $request): JsonResponse
     {
-        $data = $request->validated();
+        $data      = $request->validated();
+        $authUser  = $request->user();
 
-        // Super Admin menentukan PIC (verifier) yang BA-nya digenerate
-        $verifier = \App\Models\User::findOrFail((int) $data['verifier_id']);
+        // Super Admin menentukan PIC (verifier) yang BA-nya digenerate via verifier_id.
+        // PIC generate Berita Acara miliknya sendiri — verifier otomatis = diri sendiri.
+        if ($authUser->isSuperAdmin()) {
+            $verifier = \App\Models\User::findOrFail((int) $data['verifier_id']);
+        } else {
+            $verifier = $authUser;
+        }
 
         // Cek jika sudah ada BA untuk PIC ini di periode ini.
         $existing = $this->beritaAcaraRepository->findByVerifierAndPeriode($verifier->id, (int)$data['periode_id']);
 
         if ($existing && $request->has('regenerate')) {
-            $ba = $this->beritaAcaraService->regenerate($existing->id, $request->user());
+            $ba = $this->beritaAcaraService->regenerate($existing->id, $authUser);
             $message = 'Berita Acara berhasil diregenerasi dengan data verifikasi terbaru.';
         } else {
             $ba = $this->beritaAcaraService->generate((int)$data['periode_id'], $verifier);

@@ -52,7 +52,8 @@ class VerifikasiController extends Controller
             ], 422);
         }
 
-        $paginator = $this->soalRepository->findForVerifier($user->id, (int)$periodeId, $perPage);
+        $status = $request->query('status');
+        $paginator = $this->soalRepository->findForVerifier($user->id, (int)$periodeId, $perPage, $status);
 
         return SoalResource::collection($paginator)->additional([
             'success' => true,

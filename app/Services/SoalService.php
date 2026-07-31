@@ -51,6 +51,11 @@ class SoalService
      */
     public function validateUploadEligibility(User $user, int $mataKuliahId, Periode $periode): void
     {
+        // Super Admin tidak perlu dicek — boleh upload untuk semua mata kuliah
+        if ($user->isSuperAdmin()) {
+            return;
+        }
+
         // ── Aturan 1: Dosen LB hanya aktif di semester yang sesuai ────────────────
         if ($user->isLbDosen()) {
             if (!$user->isAktifDiPeriode($periode)) {
@@ -64,6 +69,13 @@ class SoalService
         }
 
         // ── Aturan 2: Mata kuliah harus ada di pemetaan dosen periode ini ─────────
+        // Jika pemetaan dosen_mata_kuliah belum diatur sama sekali untuk periode ini,
+        // lewati validasi agar dosen tetap bisa upload (mode setup awal).
+        $totalMapping = \App\Models\DosenMataKuliah::where('periode_id', $periode->id)->count();
+        if ($totalMapping === 0) {
+            return; // Pemetaan belum dikonfigurasi — izinkan upload
+        }
+
         if (!$this->dosenMataKuliahRepository->isDosenAmpu($user->id, $mataKuliahId, $periode->id)) {
             throw new BusinessException(
                 'Mata kuliah yang dipilih tidak termasuk dalam penugasan mengajar Anda pada periode ini. ' .
@@ -340,7 +352,6 @@ class SoalService
         $verifications = DB::table('verifications')
             ->join('users', 'verifications.verifier_id', '=', 'users.id')
             ->where('verifications.soal_id', $soal->id)
-            ->where('verifications.status', 'revisi')
             ->whereNull('verifications.deleted_at')
             ->select('verifications.*', 'users.nama_lengkap as verifier_name')
             ->orderBy('verifications.created_at', 'asc')
@@ -351,11 +362,13 @@ class SoalService
 
         foreach ($verifications as $v) {
             $vTime = Carbon::parse($v->created_at);
+            $statusLabel = $v->status === 'approved' ? 'Disetujui' : ($v->status === 'revisi' ? 'Perlu Revisi' : 'Ditolak');
             $history[] = [
                 'id'            => $v->id,
                 'revision'      => $revNum++,
-                'status'        => 'revisi',
-                'notes'         => $v->catatan ?? 'Terdapat bagian yang perlu diperbaiki.',
+                'status'        => $v->status,
+                'status_label'  => $statusLabel,
+                'notes'         => $v->catatan ?? '-',
                 'version'       => 'v' . ($revNum - 1),
                 'file_soal'     => $soal->file_soal,
                 'verifier_name' => $v->verifier_name,

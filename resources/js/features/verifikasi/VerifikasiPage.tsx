@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { CheckSquare, Calendar, Eye, FileText, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { CheckSquare, Calendar, Eye, FileText, CheckCircle2, AlertTriangle, RefreshCw, History, Filter } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
-import { SearchBar } from '@/shared/components/ui/SearchBar';
 import { Pagination } from '@/shared/components/ui/Pagination';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { SkeletonTable } from '@/shared/components/ui/Skeleton';
 import { StatusBadge } from '@/shared/components/ui/StatusBadge';
+import { Modal } from '@/shared/components/ui/Modal';
 import { useToast } from '@/shared/hooks/useToast';
 import { formatDate } from '@/shared/lib/utils';
 import api from '@/shared/lib/api';
@@ -15,21 +15,24 @@ import type { Soal } from '@/features/soal/types/soal.types';
 import type { Periode } from '@/features/periode/types/periode.types';
 import { useTugasSaya, useSubmitVerifikasi } from './hooks/useVerifikasi';
 import { VerifikasiModal } from './components/VerifikasiModal';
+import { TimelineCard } from '@/features/soal/components/TimelineCard';
+import { RevisionHistoryAccordion } from '@/features/soal/components/RevisionHistoryAccordion';
 
 export function VerifikasiPage() {
     const { toast } = useToast();
 
     // Filters
-    const [search, setSearch] = useState('');
     const [periodes, setPeriodes] = useState<Periode[]>([]);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('');
 
     // Pagination
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
 
-    // Modal
+    // Modals
     const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [selectedSoal, setSelectedSoal] = useState<Soal | null>(null);
 
     // Load Periodes on mount
@@ -48,6 +51,7 @@ export function VerifikasiPage() {
         refetch,
     } = useTugasSaya({
         periode_id: selectedPeriodeId || undefined,
+        status: selectedStatus || undefined,
         page,
         per_page: perPage,
     });
@@ -55,7 +59,7 @@ export function VerifikasiPage() {
     const submitMutation = useSubmitVerifikasi();
 
     const handleReset = () => {
-        setSearch('');
+        setSelectedStatus('');
         const active = periodes.find((p) => p.status === 'aktif');
         if (active) setSelectedPeriodeId(String(active.id));
         setPage(1);
@@ -64,6 +68,11 @@ export function VerifikasiPage() {
     const handleOpenVerify = (soal: Soal) => {
         setSelectedSoal(soal);
         setVerifyModalOpen(true);
+    };
+
+    const handleOpenDetail = (soal: Soal) => {
+        setSelectedSoal(soal);
+        setDetailModalOpen(true);
     };
 
     const handleSaveVerification = async (data: any) => {
@@ -108,6 +117,27 @@ export function VerifikasiPage() {
                         </option>
                     ))}
                 </select>
+
+                <div className="flex items-center gap-2 ml-3">
+                    <Filter size={16} className="text-gray-400" />
+                    <span className="text-xs font-semibold text-gray-500 uppercase">Status:</span>
+                </div>
+                <select
+                    value={selectedStatus}
+                    onChange={(e) => {
+                        setSelectedStatus(e.target.value);
+                        setPage(1);
+                    }}
+                    className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
+                >
+                    <option value="">— Semua Status —</option>
+                    <option value="pending">Perlu Verifikasi (Submitted / Review / Revisi)</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="in_review">Dalam Review</option>
+                    <option value="revisi">Perlu Revisi</option>
+                    <option value="approved">Disetujui</option>
+                    <option value="rejected">Ditolak</option>
+                </select>
             </FilterBar>
 
             <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
@@ -128,7 +158,7 @@ export function VerifikasiPage() {
                                 <th className="px-6 py-4 w-40">Mata Kuliah</th>
                                 <th className="px-6 py-4 w-28">CLO Relasi</th>
                                 <th className="px-6 py-4 w-20 text-center">Versi</th>
-                                <th className="px-6 py-4 w-32 text-center">Action</th>
+                                <th className="px-6 py-4 w-36 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -177,9 +207,17 @@ export function VerifikasiPage() {
                                         </td>
                                         <td className="px-6 py-4 text-center font-medium">{r.versi}</td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center">
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <button
+                                                    onClick={() => handleOpenDetail(r)}
+                                                    title="Lihat Riwayat & Detail"
+                                                    className="flex items-center gap-1 rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-2 py-1.5 text-xs font-medium shadow-xs transition"
+                                                >
+                                                    <Eye size={13} /> Riwayat
+                                                </button>
                                                 <button
                                                     onClick={() => handleOpenVerify(r)}
+                                                    title="Proses Verifikasi"
                                                     className="flex items-center gap-1 rounded bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white px-2.5 py-1.5 text-xs font-semibold shadow-sm transition"
                                                 >
                                                     <CheckSquare size={13} /> Verify
@@ -210,6 +248,7 @@ export function VerifikasiPage() {
                 )}
             </div>
 
+            {/* Verifikasi Modal */}
             <VerifikasiModal
                 open={verifyModalOpen}
                 onClose={() => setVerifyModalOpen(false)}
@@ -217,6 +256,44 @@ export function VerifikasiPage() {
                 soal={selectedSoal}
                 loading={submitMutation.isPending}
             />
+
+            {/* Detail & Riwayat Modal */}
+            <Modal
+                open={detailModalOpen}
+                onClose={() => setDetailModalOpen(false)}
+                title={selectedSoal ? `Riwayat & Detail Verifikasi — ${selectedSoal.judul_soal}` : 'Riwayat Verifikasi'}
+                size="xl"
+            >
+                {selectedSoal && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase">Informasi Soal</h4>
+                                <p className="mt-1 text-sm font-bold text-gray-900">{selectedSoal.judul_soal}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Dosen: <strong className="text-gray-700">{selectedSoal.dosen?.nama_lengkap || selectedSoal.dosen_name || '—'}</strong>
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase">Mata Kuliah & Status</h4>
+                                <p className="mt-1 text-xs text-gray-700">
+                                    <strong>MK:</strong> {selectedSoal.mata_kuliah?.kode_mk} - {selectedSoal.mata_kuliah?.nama_mk}
+                                </p>
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Status:</span>
+                                    <StatusBadge status={selectedSoal.status} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <TimelineCard soalId={selectedSoal.id} />
+                            <RevisionHistoryAccordion soalId={selectedSoal.id} />
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }
+

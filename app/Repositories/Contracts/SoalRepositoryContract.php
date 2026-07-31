@@ -34,5 +34,5 @@ interface SoalRepositoryContract
      * Soal yang perlu diverifikasi oleh PIC tertentu.
      * Diambil berdasarkan assignment di tabel penugasan.
      */
-    public function findForVerifier(int $verifierId, int $periodeId, int $perPage = 15): LengthAwarePaginator;
+    public function findForVerifier(int $verifierId, int $periodeId, int $perPage = 15, ?string $status = null): LengthAwarePaginator;
 }
