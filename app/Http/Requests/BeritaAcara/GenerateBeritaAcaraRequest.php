@@ -13,9 +13,15 @@ class GenerateBeritaAcaraRequest extends FormRequest
 
     public function rules(): array
     {
+        // verifier_id wajib diisi oleh Super Admin (untuk memilih PIC yang di-generate).
+        // Untuk PIC biasa, verifier otomatis = diri sendiri → field bersifat opsional.
+        $verifierRule = $this->user()?->isSuperAdmin()
+            ? 'required|exists:users,id'
+            : 'nullable|exists:users,id';
+
         return [
-            'periode_id'   => 'required|exists:periode,id',
-            'verifier_id'  => 'required|exists:users,id',
+            'periode_id'  => 'required|exists:periode,id',
+            'verifier_id' => $verifierRule,
         ];
     }
 

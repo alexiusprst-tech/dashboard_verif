@@ -5,6 +5,7 @@ import type { PaginatedResponse } from '@/features/plo-clo/types/plo.types';
 
 export async function getTugasSaya(params: {
     periode_id?: number | string;
+    status?: string;
     page: number;
     per_page: number;
 }): Promise<PaginatedResponse<Soal>> {

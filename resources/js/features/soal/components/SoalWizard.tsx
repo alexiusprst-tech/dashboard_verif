@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, FileText, Check, Upload, HelpCircle, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Check, Upload, HelpCircle, Download, AlertCircle } from 'lucide-react';
 import { useToast } from '@/shared/hooks/useToast';
 import api from '@/shared/lib/api';
 import type { Periode } from '@/features/periode/types/periode.types';

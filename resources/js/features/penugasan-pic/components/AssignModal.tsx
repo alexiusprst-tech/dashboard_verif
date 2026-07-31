@@ -2,18 +2,19 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Search, X, UserCheck } from 'lucide-react';
+import { Search, X, UserCheck, ChevronDown } from 'lucide-react';
 import { Modal } from '@/shared/components/ui/Modal';
+import { cn } from '@/shared/lib/utils';
 import type { PenugasanFormData } from '../types/penugasan.types';
 import type { Periode } from '@/features/periode/types/periode.types';
 import api from '@/shared/lib/api';
 
 const schema = z.object({
     periode_id: z.coerce
-        .number({ invalid_type_error: 'Periode wajib dipilih' })
+        .number()
         .min(1, 'Periode wajib dipilih'),
     pic_dosen_id: z.coerce
-        .number({ invalid_type_error: 'Dosen PIC wajib dipilih' })
+        .number()
         .min(1, 'Dosen PIC wajib dipilih'),
 });
 
@@ -83,7 +84,7 @@ export function AssignModal({
             const filtered = allDosen.filter(
                 (d) =>
                     d.nama_lengkap.toLowerCase().includes(query) ||
-                    d.kode_dosen.toLowerCase().includes(query)
+                    (d.kode_dosen && d.kode_dosen.toLowerCase().includes(query))
             );
             setPicResults(filtered);
         }
@@ -106,7 +107,7 @@ export function AssignModal({
             open={open}
             onClose={onClose}
             title="Tugaskan Dosen sebagai PIC"
-            size="md"
+            size="lg"
             footer={
                 <>
                     <button
@@ -132,7 +133,7 @@ export function AssignModal({
                 </>
             }
         >
-            <form id="assign-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <form id="assign-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5 min-h-[340px]">
                 {/* Periode */}
                 <div>
                     <label htmlFor="assign-periode" className="block text-sm font-medium text-gray-700">
@@ -155,7 +156,7 @@ export function AssignModal({
                     )}
                 </div>
 
-                {/* Dosen PIC — Autocomplete */}
+                {/* Dosen PIC — Autocomplete / Dropdown Combobox */}
                 <div className="relative">
                     <label className="block text-sm font-medium text-gray-700">
                         Dosen yang Ditugaskan sebagai PIC <span className="text-red-500">*</span>
@@ -165,56 +166,91 @@ export function AssignModal({
                     </p>
 
                     {selectedPic ? (
-                        <div className="mt-2 flex items-center justify-between rounded-lg border border-[var(--color-primary-light)] bg-[var(--color-primary-light)]/20 px-3 py-2.5 text-sm">
+                        <div className="mt-2 flex items-center justify-between rounded-lg border border-[var(--color-primary-light)] bg-[var(--color-primary-light)]/20 px-3.5 py-2.5 text-sm">
                             <div>
                                 <span className="font-semibold text-gray-800">
-                                    {selectedPic.kode_dosen} — {selectedPic.nama_lengkap}
+                                    {selectedPic.nama_lengkap}
                                 </span>
+                                {selectedPic.kode_dosen && (
+                                    <span className="ml-2 rounded bg-white/80 px-1.5 py-0.5 text-xs font-mono font-medium text-gray-700 border border-gray-200">
+                                        {selectedPic.kode_dosen}
+                                    </span>
+                                )}
                                 {selectedPic.email && (
-                                    <p className="text-xs text-gray-500">{selectedPic.email}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{selectedPic.email}</p>
                                 )}
                             </div>
                             <button
                                 type="button"
                                 onClick={handleClearPic}
-                                className="ml-2 text-gray-400 hover:text-gray-600"
+                                className="ml-2 rounded-md p-1 text-gray-400 hover:bg-white hover:text-gray-600 transition-colors"
                                 title="Ganti dosen"
                             >
-                                <X size={15} />
+                                <X size={16} />
                             </button>
                         </div>
                      ) : (
                         <div className="relative mt-1.5">
                             <Search
-                                size={14}
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={15}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                             />
                             <input
                                 id="assign-pic-search"
                                 type="text"
                                 value={picSearch}
-                                onChange={(e) => setPicSearch(e.target.value)}
+                                onChange={(e) => {
+                                    setPicSearch(e.target.value);
+                                    setShowDropdown(true);
+                                }}
                                 onFocus={() => setShowDropdown(true)}
                                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                                placeholder="Cari atau pilih dosen..."
-                                className="block h-10 w-full rounded-lg border border-gray-300 pl-9 pr-3 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+                                placeholder="Cari nama atau klik panah untuk melihat daftar dosen..."
+                                className="block h-10 w-full rounded-lg border border-gray-300 pl-9 pr-10 text-sm focus:border-[var(--color-primary)] focus:outline-none"
                             />
+                            <button
+                                type="button"
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setShowDropdown((prev) => !prev);
+                                }}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                                title="Lihat semua dosen"
+                            >
+                                <ChevronDown
+                                    size={16}
+                                    className={cn("transition-transform duration-200", showDropdown && "rotate-180")}
+                                />
+                            </button>
                         </div>
                     )}
 
                     {/* Dropdown hasil pencarian */}
-                    {showDropdown && picResults.length > 0 && (
-                        <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg divide-y divide-gray-100">
-                            {picResults.map((d) => (
-                                <li
-                                    key={d.id}
-                                    onClick={() => handleSelectPic(d)}
-                                    className="cursor-pointer px-4 py-2.5 text-xs hover:bg-gray-50 text-gray-700"
-                                >
-                                    <strong>{d.kode_dosen}</strong> — {d.nama_lengkap}
-                                    {d.email && <span className="ml-1 text-gray-400">({d.email})</span>}
+                    {showDropdown && !selectedPic && (
+                        <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl divide-y divide-gray-100">
+                            {picResults.length > 0 ? (
+                                picResults.map((d) => (
+                                    <li
+                                        key={d.id}
+                                        onMouseDown={() => handleSelectPic(d)}
+                                        className="cursor-pointer px-3.5 py-2.5 hover:bg-gray-50 text-gray-700 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-semibold text-sm text-gray-900">{d.nama_lengkap}</span>
+                                            {d.kode_dosen && (
+                                                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-mono font-medium text-gray-600">
+                                                    {d.kode_dosen}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {d.email && <p className="mt-0.5 text-xs text-gray-400">{d.email}</p>}
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="px-4 py-3 text-center text-xs text-gray-400">
+                                    Tidak ada dosen yang sesuai dengan kata kunci "{picSearch}"
                                 </li>
-                            ))}
+                            )}
                         </ul>
                     )}
 

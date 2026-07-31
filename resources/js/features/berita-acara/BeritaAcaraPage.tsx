@@ -68,6 +68,13 @@ export function BeritaAcaraPage() {
             .catch(() => setPicList([]));
     }, [user?.is_super_admin, selectedPeriodeId]);
 
+    // Untuk PIC: verifier_id otomatis = diri sendiri
+    useEffect(() => {
+        if (!user?.is_super_admin && user?.id) {
+            setSelectedVerifierId(String(user.id));
+        }
+    }, [user?.is_super_admin, user?.id]);
+
     const { data: response, isLoading, refetch } = useBaList({
         periode_id: selectedPeriodeId || undefined,
         page,
@@ -76,21 +83,26 @@ export function BeritaAcaraPage() {
 
     const generateMutation = useGenerateBa();
 
+    // Koordinator/PIC bisa generate BA
+    const canGenerate = user?.is_super_admin || user?.is_coordinator || (!user?.is_super_admin && !user?.is_coordinator);
+
     const handleGenerate = async (regenerate = false) => {
         if (!selectedPeriodeId) {
             toast.error('Pilih Periode terlebih dahulu.');
             return;
         }
-        if (!selectedVerifierId) {
+        // Super Admin harus pilih PIC; PIC langsung pakai id sendiri
+        if (user?.is_super_admin && !selectedVerifierId) {
             toast.error('Pilih PIC terlebih dahulu.');
             return;
         }
+        const payload: Record<string, any> = {
+            periode_id: Number(selectedPeriodeId),
+        };
+        if (user?.is_super_admin) payload.verifier_id = Number(selectedVerifierId);
+        if (regenerate) payload.regenerate = true;
         try {
-            await generateMutation.mutateAsync({
-                periode_id: Number(selectedPeriodeId),
-                verifier_id: Number(selectedVerifierId),
-                regenerate,
-            });
+            await generateMutation.mutateAsync(payload as any);
             toast.success(regenerate ? 'Berita Acara berhasil diregenerasi.' : 'Berita Acara berhasil digenerate.');
             refetch();
         } catch (e: any) {
@@ -124,11 +136,11 @@ export function BeritaAcaraPage() {
                 description="Generate dan download Berita Acara resmi hasil verifikasi soal ujian per periode pelaksanaan."
                 breadcrumb={[{ label: 'Berita Acara' }]}
                 action={
-                    user?.is_super_admin ? (
+                    canGenerate ? (
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => handleGenerate(false)}
-                                disabled={generateMutation.isPending || !selectedPeriodeId || !selectedVerifierId}
+                                disabled={generateMutation.isPending || !selectedPeriodeId || (user?.is_super_admin && !selectedVerifierId)}
                                 className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
                             >
                                 {generateMutation.isPending ? (
@@ -140,7 +152,7 @@ export function BeritaAcaraPage() {
                             </button>
                             <button
                                 onClick={() => handleGenerate(true)}
-                                disabled={generateMutation.isPending || !selectedPeriodeId || !selectedVerifierId}
+                                disabled={generateMutation.isPending || !selectedPeriodeId || (user?.is_super_admin && !selectedVerifierId)}
                                 className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
                             >
                                 <RefreshCw size={15} />
@@ -231,7 +243,7 @@ export function BeritaAcaraPage() {
                                             {r.periode?.nama_periode ?? '—'}
                                         </td>
                                         <td className="px-6 py-4 text-gray-700">
-                                            {r.verifier?.name ?? r.verifier?.nama_lengkap ?? '—'}
+                                            {r.verifier?.name ?? '—'}
                                         </td>
                                         <td className="px-6 py-4 text-gray-400 text-xs">
                                             {r.generated_at ? formatDate(r.generated_at) : '—'}
@@ -319,7 +331,7 @@ export function BeritaAcaraPage() {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-gray-400 uppercase mb-1">Verifikator PIC</p>
-                                <p className="text-gray-700">{selectedBa.verifier?.name ?? selectedBa.verifier?.nama_lengkap}</p>
+                                <p className="text-gray-700">{selectedBa.verifier?.name ?? '—'}</p>
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-gray-400 uppercase mb-1">Tanggal Generate</p>

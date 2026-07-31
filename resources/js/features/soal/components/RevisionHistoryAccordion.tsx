@@ -56,24 +56,36 @@ export function RevisionHistoryAccordion({ soalId }: RevisionHistoryAccordionPro
                     <div className="space-y-3">
                         {history.map((item: RevisionHistoryItem, idx: number) => {
                             const isOpen = openIndex === idx;
+                            const isApproved = item.status === 'approved';
+                            const isRejected = item.status === 'rejected';
+
+                            const badgeBg = isApproved
+                                ? 'bg-green-100 border-green-200 text-green-800'
+                                : isRejected
+                                ? 'bg-red-100 border-red-200 text-red-800'
+                                : 'bg-amber-100 border-amber-200 text-amber-800';
+
+                            const circleBg = isApproved ? 'bg-green-500' : isRejected ? 'bg-red-500' : 'bg-amber-500';
+                            const label = item.status_label || (isApproved ? 'Disetujui' : isRejected ? 'Ditolak' : 'Perlu Revisi');
+
                             return (
                                 <div
                                     key={item.id || idx}
-                                    className="overflow-hidden rounded-xl border border-amber-200/80 bg-amber-50/30"
+                                    className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50/50"
                                 >
                                     {/* Accordion Header */}
                                     <button
                                         type="button"
                                         onClick={() => toggleAccordion(idx)}
-                                        className="flex w-full items-center justify-between p-3.5 text-left transition hover:bg-amber-100/40"
+                                        className="flex w-full items-center justify-between p-3.5 text-left transition hover:bg-gray-100/60"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white shadow-xs">
+                                            <span className={`flex h-7 w-7 items-center justify-center rounded-full ${circleBg} text-xs font-bold text-white shadow-xs`}>
                                                 {item.revision}
                                             </span>
                                             <div>
                                                 <h4 className="text-xs font-bold text-gray-900">
-                                                    Revisi #{item.revision} ({item.version})
+                                                    Verifikasi #{item.revision} ({item.version})
                                                 </h4>
                                                 <div className="flex items-center gap-3 text-[11px] text-gray-500 mt-0.5">
                                                     <span className="flex items-center gap-1">
@@ -89,8 +101,8 @@ export function RevisionHistoryAccordion({ soalId }: RevisionHistoryAccordionPro
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <span className="rounded-full bg-amber-100 border border-amber-200 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                                                Perlu Revisi
+                                            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${badgeBg}`}>
+                                                {label}
                                             </span>
                                             {isOpen ? (
                                                 <ChevronUp className="h-4 w-4 text-gray-400" />

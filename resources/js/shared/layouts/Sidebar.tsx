@@ -63,6 +63,7 @@ const SUPER_ADMIN_ITEMS: NavItem[] = [
     { label: 'Broadcast', href: '/broadcast', icon: Megaphone },
     { label: 'Semua Soal', href: '/soal/semua', icon: FileText },
     { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
+    { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
 ];
 
 const COORDINATOR_MANAGEMENT_ITEMS: NavItem[] = [
@@ -99,7 +100,14 @@ function buildNavSections(
                 : []),
         ];
         sections.push({ title: 'Soal', items: soalItems });
-        sections.push({ title: 'Manajemen', items: COORDINATOR_MANAGEMENT_ITEMS });
+        sections.push({
+            title: 'Manajemen',
+            items: [
+                ...COORDINATOR_MANAGEMENT_ITEMS,
+                { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
+                { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
+            ],
+        });
         return sections;
     }
 
@@ -139,6 +147,7 @@ function SidebarNavItem({ item, collapsed }: NavItemProps) {
     return (
         <NavLink
             to={item.href}
+            end={item.href === '/soal'}
             title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
                 cn(

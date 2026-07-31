@@ -102,7 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Berita Acara
     Route::get('/berita-acara', [BeritaAcaraController::class, 'index']);
-    Route::post('/berita-acara/generate', [BeritaAcaraController::class, 'generate'])->middleware('coordinator');
+    Route::post('/berita-acara/generate', [BeritaAcaraController::class, 'generate']);
     Route::get('/berita-acara/{id}/print', [BeritaAcaraController::class, 'print']);
     Route::get('/berita-acara/{id}/download', [BeritaAcaraController::class, 'download']);
 
