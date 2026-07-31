@@ -213,17 +213,19 @@ Semua respon REST API menggunakan amplop JSON tersentralisasi demi menjamin kons
 
 ## 6. Berita Acara Endpoints (Async Queue Enabled)
 
-### 6.1 Generate Berita Acara (Async Job)
+### 6.1 Generate Berita Acara
 - **URL:** `POST /berita-acara/generate`
-- **Auth:** `auth:sanctum`, Middleware: `coordinator`
+- **Auth:** `auth:sanctum` (Super Admin & PIC)
 - **Rate Limit:** `throttle:5,1`
 - **Request Body:**
 ```json
 {
   "periode_id": 2,
-  "verifier_id": 5
+  "verifier_id": 5,
+  "regenerate": false
 }
 ```
+*Catatan:* `verifier_id` wajib dispesifikasikan oleh Super Admin (untuk menentukan PIC mana yang di-generate). Bagi pengguna dengan role PIC, `verifier_id` bersifat opsional karena otomatis menggunakan ID pengguna yang sedang login.
 - **Response `202 Accepted` (Background Queue Processing):**
 ```json
 {

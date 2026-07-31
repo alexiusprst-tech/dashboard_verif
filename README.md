@@ -462,21 +462,29 @@ Berita Acara dirancang sebagai dokumen yang di-generate otomatis (bukan diketik 
 
 ---
 
-## 10. Catatan Pengembangan
+## 10. Catatan Pengembangan & Pembaruan Terkini
 
-Hal-hal yang sudah difinalisasi melalui diskusi sebelumnya:
+Hal-hal yang sudah difinalisasi dan diimplementasikan:
 
-- ✅ Role Coordinator dihapus, seluruh fiturnya melebur ke role PIC
-- ✅ Dosen LB dibatasi aktif hanya di satu jenis semester (ganjil/genap)
-- ✅ Format kode dosen & kode mata kuliah menggunakan huruf, pemetaan per periode dan editable oleh Super Admin
-- ✅ Soal dan template wajib PDF
-- ✅ Sistem role menggunakan pendekatan hybrid: boolean (`is_super_admin`) untuk role permanen, tabel `user_roles` untuk role dinamis (`pic`)
-- ✅ Scope verifikasi PIC: seluruh soal dalam periode aktif (tanpa filter prodi, karena aplikasi memang fokus untuk Prodi Sistem Informasi)
-- ✅ PLO dan CLO di-scope per periode
+- ✅ **Penyederhanaan Role & Akses**: Role Coordinator dilebur ke PIC; PIC dinamis per periode (disimpan di `user_roles`).
+- ✅ **Berita Acara per Role**:
+  - Dosen dengan role **PIC** dapat meng-generate Berita Acara untuk tugas verifikasinya sendiri secara mandiri.
+  - **Super Admin** dapat memfilter daftar Berita Acara dengan opsi **"— Semua PIC —"** (menampilkan Berita Acara seluruh PIC secara bersamaan) atau memilih PIC spesifik.
+- ✅ **Riwayat Verifikasi Lengkap (Full Verification Audit Trail)**:
+  - Mengembalikan seluruh rekam jejak keputusan verifikasi (`Disetujui`, `Perlu Revisi`, dan `Ditolak`) beserta nama verifikator, timestamp, dan catatan lengkap.
+  - Komponen Accordion & Timeline menampilkan badge indikator warna dinamis (🟢 Disetujui, 🟡 Perlu Revisi, 🔴 Ditolak).
+  - Halaman Verifikasi Soal dilengkapi **Filter Status** (*Semua Status*, *Submitted*, *Dalam Review*, *Perlu Revisi*, *Disetujui*, *Ditolak*) serta tombol **Riwayat** untuk peninjauan mendalam.
+- ✅ **Aturan Upload & Eligibilitas Soal**:
+  - Super Admin dibebaskan dari pembatasan pemetaan mata kuliah.
+  - Mode Setup Awal: Jika pemetaan `dosen_mata_kuliah` belum diisi pada periode aktif, validasi dilewati sementara agar pengujian/upload awal tetap berjalan lancar.
+- ✅ **Kualitas Antarmuka (UX/UI)**:
+  - Overlay backdrop modal disesuaikan tanpa efek blur berlebihan (`backdrop-blur`) agar latar belakang tetap jernih dan nyaman dibaca.
+  - Navigasi sidebar menggunakan pencocokan rute presisi (`end={item.href === '/soal'}`) untuk mencegah sorotan menu ganda.
+- ✅ **Format Berkas**: Soal dan template wajib berformat PDF.
+- ✅ **Scope PLO & CLO**: Di-scope khusus per periode akademik.
 
-Hal yang masih bisa didiskusikan lebih lanjut ke depannya (opsional, bukan blocker):
+Hal yang dapat dikembangkan lebih lanjut di masa depan (opsional):
 
-1. Apakah perlu fitur **duplikasi PLO/CLO dari periode sebelumnya** supaya dosen tidak input dari nol tiap semester?
-2. Format pasti `kode_dosen` dan `kode_mk` (pola huruf seperti apa) — saat ini kolom dibuat fleksibel (`varchar`, tanpa regex ketat) sampai format resmi dari institusi tersedia.
-3. Validasi jumlah PIC per periode (4–5 dosen) — apakah perlu hard-block di sistem, atau cukup warning ke Super Admin jika belum terpenuhi?
-4. Mode autentikasi Sanctum — SPA (cookie-based) atau token-based, tergantung apakah frontend dan backend di-deploy pada domain yang sama atau berbeda. Perlu dipastikan konfigurasi `SANCTUM_STATEFUL_DOMAINS` dan CORS sejak awal.
+1. Fitur **duplikasi PLO/CLO dari periode sebelumnya** untuk efisiensi input dosen.
+2. Validasi kuota jumlah PIC per periode (misal: 4–5 dosen) jika disyaratkan oleh kebijakan akademik.
+3. Konfigurasi `SANCTUM_STATEFUL_DOMAINS` dan CORS untuk deployment produksi lintas domain.
