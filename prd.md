@@ -100,16 +100,16 @@ Sistem menerapkan *Role-Based Access Control* (RBAC) yang fleksibel di mana seor
 - **FR-SOL-04:** Dosen dapat mengunggah ulang revisi soal jika statusnya `revisi`. Sistem mencatat nomor versi (`versi 1`, `versi 2`, dst.) dan menyimpannya di riwayat revisi (`revisi_history`).
 
 ### 5.6 Workflow Verifikasi Soal (PIC Verifikator Workflow)
-- **FR-VRF-01:** PIC dapat melihat daftar penugasan verifikasi soal dosen target melalui endpoint `/verifikasi/tugas-saya`.
+- **FR-VRF-01:** PIC dapat melihat daftar penugasan verifikasi soal melalui endpoint `/verifikasi/tugas-saya` dengan filter status (*Semua Status*, *Submitted*, *Dalam Review*, *Perlu Revisi*, *Disetujui*, *Ditolak*).
 - **FR-VRF-02:** PIC meninjau berkas soal, kesesuaian template, serta pemetaan CLO/PLO.
 - **FR-VRF-03:** PIC memberikan keputusan verifikasi:
   - **Approve:** Mengubah status soal menjadi `approved`.
   - **Revisi:** Mengubah status soal menjadi `revisi` dan wajib melampirkan catatan revisi mendalam.
   - **Reject:** Mengubah status soal menjadi `rejected` dengan alasan penolakan.
-- **FR-VRF-04:** Sistem mencatat transaksi verifikasi di tabel `verifications` sebagai audit log.
+- **FR-VRF-04:** Sistem mencatat transaksi verifikasi di tabel `verifications` sebagai audit log dan menyajikannya secara transparan dalam riwayat verifikasi (*full audit trail*) mencakup seluruh keputusan (`approved`, `revisi`, `rejected`).
 
 ### 5.7 Otomatisasi Berita Acara Verifikasi (Minutes of Verification)
-- **FR-BAC-01:** Penggenerasian Berita Acara otomatis oleh Coordinator/Super Admin jika seluruh soal pada periode/penugasan terkait telah berstatus `approved`.
+- **FR-BAC-01:** Penggenerasian Berita Acara otomatis dapat dipicu oleh Dosen bertipe PIC (untuk tugas verifikasinya sendiri) maupun oleh Super Admin (dapat memfilter semua PIC / memilih PIC spesifik).
 - **FR-BAC-02:** Berita Acara diberi Nomor BA unik dengan format otomatis (contoh: `BA/VERIF/2026/001`).
 - **FR-BAC-03:** Penyimpanan hasil cetak Berita Acara dalam format PDF (`file_pdf`) dan DOCX (`file_docx`).
 - **FR-BAC-04:** Pratinjau (*Print Preview*) dan pengunduhan berkas Berita Acara via REST API.
