@@ -26,6 +26,7 @@ export function PloCloPage() {
     const [search, setSearch]                   = useState('');
     const [prodiId, setProdiId]                 = useState<string>('');
     const [selectedPloFilter, setSelectedPloFilter] = useState<string>('');
+    const [selectedMataKuliahFilter, setSelectedMataKuliahFilter] = useState<string>('');
     const [selectedPeriodeId, setSelectedPeriodeId] = useState<string>('');
 
     // Pagination states
@@ -55,8 +56,8 @@ export function PloCloPage() {
         api.get('/program-studi').then((res) => {
             setProdiList(res.data.data);
             // Default to user's prodi if available
-            if (user?.program_studi_id) {
-                setProdiId(String(user.program_studi_id));
+            if (user?.prodi_id || user?.program_studi_id) {
+                setProdiId(String(user?.prodi_id || user?.program_studi_id));
             } else if (res.data.data.length > 0) {
                 setProdiId(String(res.data.data[0].id));
             }
@@ -90,10 +91,11 @@ export function PloCloPage() {
         error: ploError,
         refetch: refetchPlo,
     } = usePloList({
-        prodi_id:   prodiId,
-        periode_id: selectedPeriodeId,
-        page:       ploPage,
-        per_page:   ploPerPage,
+        prodi_id:       prodiId,
+        mata_kuliah_id: selectedMataKuliahFilter,
+        periode_id:     selectedPeriodeId,
+        page:           ploPage,
+        per_page:       ploPerPage,
         search,
     });
 
@@ -103,10 +105,11 @@ export function PloCloPage() {
         error: cloError,
         refetch: refetchClo,
     } = useCloList({
-        plo_id:     selectedPloFilter,
-        periode_id: selectedPeriodeId,
-        page:       cloPage,
-        per_page:   cloPerPage,
+        plo_id:         selectedPloFilter,
+        mata_kuliah_id: selectedMataKuliahFilter,
+        periode_id:     selectedPeriodeId,
+        page:           cloPage,
+        per_page:       cloPerPage,
         search,
     });
 
@@ -126,6 +129,7 @@ export function PloCloPage() {
             setProdiId(String(user.program_studi_id));
         }
         setSelectedPloFilter('');
+        setSelectedMataKuliahFilter('');
         setPloPage(1);
         setCloPage(1);
         // Kembali ke periode aktif
@@ -146,11 +150,16 @@ export function PloCloPage() {
 
     const handleSavePlo = async (data: any) => {
         try {
+            const payload = {
+                ...data,
+                mata_kuliah_id: data.mata_kuliah_id ? Number(data.mata_kuliah_id) : null,
+                periode_id: data.periode_id ? Number(data.periode_id) : null,
+            };
             if (currentPlo) {
-                await updatePloMutation.mutateAsync({ id: currentPlo.id, payload: data });
+                await updatePloMutation.mutateAsync({ id: currentPlo.id, payload });
                 toast.success('PLO berhasil diperbarui');
             } else {
-                await createPloMutation.mutateAsync(data);
+                await createPloMutation.mutateAsync(payload);
                 toast.success('PLO berhasil ditambahkan');
             }
             setPloModalOpen(false);
@@ -173,11 +182,17 @@ export function PloCloPage() {
 
     const handleSaveClo = async (data: any) => {
         try {
+            const payload = {
+                ...data,
+                mata_kuliah_id: data.mata_kuliah_id ? Number(data.mata_kuliah_id) : null,
+                periode_id: data.periode_id ? Number(data.periode_id) : null,
+                plo_id: data.plo_id ? Number(data.plo_id) : null,
+            };
             if (currentClo) {
-                await updateCloMutation.mutateAsync({ id: currentClo.id, payload: data });
+                await updateCloMutation.mutateAsync({ id: currentClo.id, payload });
                 toast.success('CLO berhasil diperbarui');
             } else {
-                await createCloMutation.mutateAsync(data);
+                await createCloMutation.mutateAsync(payload);
                 toast.success('CLO berhasil ditambahkan');
             }
             setCloModalOpen(false);
@@ -218,10 +233,10 @@ export function PloCloPage() {
         try {
             let csvContent = "data:text/csv;charset=utf-8,";
             if (activeTab === 'plo') {
-                csvContent += "No,Kode PLO,Deskripsi,Program Studi,Tanggal Dibuat\n";
+                csvContent += "No,Kode PLO,Deskripsi,Mata Kuliah,Program Studi,Tanggal Dibuat\n";
                 const rows = ploResponse?.data || [];
                 rows.forEach((r, idx) => {
-                    csvContent += `"${idx + 1}","${r.kode}","${r.deskripsi.replace(/"/g, '""')}","${r.prodi_name || ''}","${r.created_at}"\n`;
+                    csvContent += `"${idx + 1}","${r.kode}","${r.deskripsi.replace(/"/g, '""')}","${r.mata_kuliah?.nama_mk || 'Umum'}","${r.prodi_name || ''}","${r.created_at}"\n`;
                 });
             } else {
                 csvContent += "No,Kode CLO,Deskripsi,PLO,Mata Kuliah,Tanggal Dibuat\n";
@@ -350,6 +365,24 @@ export function PloCloPage() {
                     </select>
                 </div>
 
+                {/* Mata Kuliah filter — untuk semua tab */}
+                <select
+                    value={selectedMataKuliahFilter}
+                    onChange={(e) => {
+                        setSelectedMataKuliahFilter(e.target.value);
+                        setPloPage(1);
+                        setCloPage(1);
+                    }}
+                    className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
+                >
+                    <option value="">Semua Mata Kuliah</option>
+                    {courseList.map((mk) => (
+                        <option key={mk.id} value={mk.id}>
+                            {mk.kode_mk} - {mk.nama_mk}
+                        </option>
+                    ))}
+                </select>
+
                 {activeTab === 'clo' && (
                     <select
                         value={selectedPloFilter}
@@ -384,6 +417,9 @@ export function PloCloPage() {
                                 <th className="px-6 py-4 w-16">No</th>
                                 <th className="px-6 py-4 w-32">Kode</th>
                                 <th className="px-6 py-4">Deskripsi</th>
+                                {activeTab === 'plo' && (
+                                    <th className="px-6 py-4 w-48">Mata Kuliah</th>
+                                )}
                                 {activeTab === 'clo' && (
                                     <>
                                         <th className="px-6 py-4 w-36">PLO Relasi</th>
@@ -397,7 +433,7 @@ export function PloCloPage() {
                         <tbody className="divide-y divide-gray-200">
                             {/* Loading Skeleton */}
                             {((activeTab === 'plo' && ploLoading) || (activeTab === 'clo' && cloLoading)) && (
-                                <SkeletonTable rows={5} cols={activeTab === 'plo' ? 6 : 7} />
+                                <SkeletonTable rows={5} cols={activeTab === 'plo' ? 7 : 7} />
                             )}
 
                             {/* PLO Tab Content */}
@@ -416,6 +452,9 @@ export function PloCloPage() {
                                         <td className="px-6 py-4 font-semibold text-gray-900">{r.kode}</td>
                                         <td className="px-6 py-4 max-w-md truncate" title={r.deskripsi}>
                                             {r.deskripsi}
+                                        </td>
+                                        <td className="px-6 py-4 max-w-xs truncate" title={r.mata_kuliah?.nama_mk}>
+                                            {r.mata_kuliah ? `${r.mata_kuliah.kode_mk} - ${r.mata_kuliah.nama_mk}` : 'Umum (Prodi)'}
                                         </td>
 
                                         <td className="px-6 py-4 text-gray-400">
@@ -469,7 +508,7 @@ export function PloCloPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 max-w-xs truncate" title={r.mata_kuliah?.nama_mk}>
-                                            {r.mata_kuliah?.kode_mk} - {r.mata_kuliah?.nama_mk}
+                                            {r.mata_kuliah ? `${r.mata_kuliah.kode_mk} - ${r.mata_kuliah.nama_mk}` : '—'}
                                         </td>
                                         <td className="px-6 py-4 text-gray-400">
                                             {new Date(r.created_at).toLocaleDateString('id-ID', {
@@ -544,6 +583,7 @@ export function PloCloPage() {
                 onSubmit={handleSavePlo}
                 plo={currentPlo}
                 programStudiList={prodiList}
+                mataKuliahList={courseList}
                 defaultPeriodeId={selectedPeriodeId}
                 loading={createPloMutation.isPending || updatePloMutation.isPending}
             />

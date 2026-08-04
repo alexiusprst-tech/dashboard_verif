@@ -6,6 +6,9 @@ export interface Plo {
     deskripsi: string;
     prodi_id: number;
     prodi_name?: string;
+    mata_kuliah_id?: number;
+    mata_kuliah?: MataKuliah;
+    periode_id?: number;
     created_by?: number;
     created_at: string;
     updated_at: string;
@@ -16,6 +19,8 @@ export interface PloFormData {
     kode: string;
     deskripsi: string;
     prodi_id: number | '';
+    mata_kuliah_id?: number | '';
+    periode_id?: number;
 }
 
 /* ── CLO Types ──────────────────────────────────────────────── */

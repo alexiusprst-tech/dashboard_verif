@@ -37,6 +37,19 @@ class EloquentCloRepository implements CloRepositoryContract
         if (!empty($filters['plo_id'])) {
             $query->where('plo_id', $filters['plo_id']);
         }
+        if (!empty($filters['periode_id'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('periode_id', $filters['periode_id'])
+                  ->orWhereNull('periode_id');
+            });
+        }
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('kode', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%");
+            });
+        }
 
         return $query->orderBy('kode')->paginate($perPage);
     }

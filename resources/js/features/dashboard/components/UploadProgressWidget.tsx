@@ -26,9 +26,9 @@ export function UploadProgressWidget() {
 
             if (statusFilter === 'all') return matchesSearch;
             if (statusFilter === 'belum_upload') return matchesSearch && item.status === 'belum_upload';
+            if (statusFilter === 'in_review') return matchesSearch && (item.status === 'in_review' || item.status === 'submitted' || item.status === 'draft');
             if (statusFilter === 'revisi') return matchesSearch && item.status === 'revisi';
             if (statusFilter === 'approved') return matchesSearch && item.status === 'approved';
-            if (statusFilter === 'submitted') return matchesSearch && item.status === 'submitted';
             return matchesSearch;
         });
     }, [progressList, searchQuery, statusFilter]);
@@ -39,35 +39,30 @@ export function UploadProgressWidget() {
                 return (
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 border border-green-200">
                         <CheckCircle2 className="h-3 w-3" />
-                        Approved
+                        Disetujui
                     </span>
                 );
             case 'revisi':
                 return (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200">
                         <AlertTriangle className="h-3 w-3" />
-                        Perlu Revisi
+                        Revisi
                     </span>
                 );
+            case 'in_review':
             case 'submitted':
-                return (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200">
-                        <Clock className="h-3 w-3" />
-                        Submitted
-                    </span>
-                );
             case 'draft':
                 return (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700 border border-gray-200">
-                        <FileText className="h-3 w-3" />
-                        Draft
+                    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 border border-indigo-200">
+                        <Clock className="h-3 w-3" />
+                        In Review
                     </span>
                 );
             case 'rejected':
                 return (
                     <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200">
                         <AlertCircle className="h-3 w-3" />
-                        Rejected
+                        Ditolak
                     </span>
                 );
             case 'belum_upload':
@@ -83,8 +78,7 @@ export function UploadProgressWidget() {
     const getProgressBarColor = (progress: number, status: string) => {
         if (status === 'approved') return 'bg-green-500';
         if (status === 'revisi') return 'bg-amber-500';
-        if (status === 'submitted') return 'bg-blue-500';
-        if (status === 'draft') return 'bg-indigo-400';
+        if (status === 'in_review' || status === 'submitted' || status === 'draft') return 'bg-indigo-500';
         return 'bg-gray-300';
     };
 
@@ -119,9 +113,9 @@ export function UploadProgressWidget() {
                         >
                             <option value="all">Semua Status</option>
                             <option value="belum_upload">Belum Upload</option>
-                            <option value="submitted">Submitted</option>
+                            <option value="in_review">In Review</option>
                             <option value="revisi">Revisi</option>
-                            <option value="approved">Approved</option>
+                            <option value="approved">Disetujui</option>
                         </select>
                     </div>
                 </div>

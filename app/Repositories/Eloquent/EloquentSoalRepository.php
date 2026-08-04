@@ -32,7 +32,7 @@ class EloquentSoalRepository implements SoalRepositoryContract
         if (!empty($filters['periode_id'])) {
             $query->where('periode_id', $filters['periode_id']);
         }
-        if (!empty($filters['status'])) {
+        if (!empty($filters['status']) && $filters['status'] !== 'all' && $filters['status'] !== 'semua') {
             $query->where('status', $filters['status']);
         }
         if (!empty($filters['dosen_id'])) {
@@ -100,7 +100,7 @@ class EloquentSoalRepository implements SoalRepositoryContract
         $query = Soal::with(['dosen', 'mataKuliah', 'clo', 'template.kategori'])
             ->where('periode_id', $periodeId);
 
-        if ($status && $status !== 'all') {
+        if (!empty($status) && $status !== 'all' && $status !== 'semua') {
             if ($status === 'pending') {
                 $query->whereIn('status', ['submitted', 'in_review', 'revisi']);
             } else {

@@ -7,6 +7,8 @@ const BASE = '/plo';
 
 export async function getPloList(params: {
     prodi_id: number | string;
+    mata_kuliah_id?: number | string;
+    periode_id?: number | string;
     page?: number;
     per_page?: number;
     search?: string;

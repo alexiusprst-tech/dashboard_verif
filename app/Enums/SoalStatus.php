@@ -16,8 +16,8 @@ enum SoalStatus: string
         return match($this) {
             self::Draft     => 'Draft',
             self::Submitted => 'Submitted',
-            self::InReview  => 'Dalam Review',
-            self::Revisi    => 'Perlu Revisi',
+            self::InReview  => 'In Review',
+            self::Revisi    => 'Revisi',
             self::Approved  => 'Disetujui',
             self::Rejected  => 'Ditolak',
         };

@@ -199,10 +199,8 @@ export function SoalPage() {
                     className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
                 >
                     <option value="">Semua Status</option>
-                    <option value="draft">Draft</option>
-                    <option value="submitted">Submitted</option>
-                    <option value="in_review">Dalam Review</option>
-                    <option value="revisi">Perlu Revisi</option>
+                    <option value="in_review">In Review</option>
+                    <option value="revisi">Revisi</option>
                     <option value="approved">Disetujui</option>
                     <option value="rejected">Ditolak</option>
                 </select>
