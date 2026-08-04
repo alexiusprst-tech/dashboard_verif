@@ -151,39 +151,21 @@ function SidebarNavItem({ item, collapsed }: NavItemProps) {
             title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
                 cn(
-                    'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                    isActive
-                        ? 'bg-[var(--color-primary)] text-white shadow-sm shadow-red-500/20 font-semibold'
-                        : 'text-gray-600 hover:bg-red-50/60 hover:text-[var(--color-primary)]',
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                    'text-gray-400 hover:bg-white/10 hover:text-white',
+                    isActive && 'sidebar-active-item',
                     collapsed && 'justify-center px-2',
                 )
             }
         >
-            {({ isActive }) => (
-                <>
-                    <Icon
-                        size={18}
-                        className={cn(
-                            'flex-shrink-0 transition-colors',
-                            isActive ? 'text-white' : 'text-gray-400 group-hover:text-[var(--color-primary)]',
-                        )}
-                    />
-                    {!collapsed && (
-                        <span className="truncate">{item.label}</span>
-                    )}
-                    {!collapsed && item.badge !== undefined && item.badge > 0 && (
-                        <span
-                            className={cn(
-                                'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold transition-colors',
-                                isActive
-                                    ? 'bg-white text-[var(--color-primary)]'
-                                    : 'bg-[var(--color-primary)] text-white',
-                            )}
-                        >
-                            {item.badge > 99 ? '99+' : item.badge}
-                        </span>
-                    )}
-                </>
+            <Icon size={18} className="flex-shrink-0" />
+            {!collapsed && (
+                <span className="truncate">{item.label}</span>
+            )}
+            {!collapsed && item.badge !== undefined && item.badge > 0 && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-primary)] px-1 text-xs font-bold text-white">
+                    {item.badge > 99 ? '99+' : item.badge}
+                </span>
             )}
         </NavLink>
     );
@@ -209,16 +191,16 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     );
 
     const sidebarContent = (
-        <div className="flex h-full flex-col bg-white border-r border-gray-200/80 shadow-sm">
+        <div className="flex h-full flex-col bg-[#0f0f0f] border-r border-white/5">
 
             {/* ── Logo & Brand (juga tombol toggle sidebar) ── */}
 
             {/* COLLAPSED: Ikon PanelLeft sebagai tombol buka sidebar */}
             {collapsed && (
-                <div className="flex justify-center border-b border-gray-100 px-3 py-4">
+                <div className="flex justify-center border-b border-white/5 px-3 py-4">
                     <button
                         onClick={() => setCollapsed(false)}
-                        className="hidden md:flex items-center justify-center rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                        className="hidden md:flex items-center justify-center rounded-lg p-2 text-gray-500 transition-colors hover:bg-white/8 hover:text-white"
                         aria-label="Buka sidebar"
                         title="Buka sidebar"
                     >
@@ -229,35 +211,35 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
             {/* EXPANDED: Logo + teks, klik untuk collapse */}
             {!collapsed && (
-                <div className="border-b border-gray-100 px-3 py-3">
+                <div className="border-b border-white/5 px-3 py-3">
                     <button
                         onClick={() => setCollapsed(true)}
-                        className="group hidden md:flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
+                        className="group hidden md:flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/8"
                         aria-label="Tutup sidebar"
                         title="Tutup sidebar"
                     >
-                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-red-50 p-1.5 border border-red-100/60 transition-transform group-hover:scale-95">
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 p-1.5 transition-transform group-hover:scale-95">
                             <img src="/images/logo-telkom.png" alt="Telkom University Logo" className="h-full w-full object-contain" />
                         </div>
                         <div className="text-left">
-                            <p className="text-xs font-bold leading-tight text-gray-900">
+                            <p className="text-xs font-bold leading-tight text-white">
                                 Sistem Verifikasi
                             </p>
                             <p className="text-[10px] text-gray-500 font-medium">Soal Ujian · Tel-U</p>
                         </div>
                         <PanelLeft
                             size={15}
-                            className="ml-auto text-gray-400 opacity-0 transition-opacity group-hover:opacity-100"
+                            className="ml-auto text-gray-600 opacity-0 transition-opacity group-hover:opacity-100"
                         />
                     </button>
 
                     {/* Mobile: hanya tampilkan logo statis */}
                     <div className="flex md:hidden items-center gap-3 px-2 py-2">
-                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-red-50 p-1.5 border border-red-100/60">
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 p-1.5">
                             <img src="/images/logo-telkom.png" alt="Telkom University Logo" className="h-full w-full object-contain" />
                         </div>
                         <div className="text-left">
-                            <p className="text-xs font-bold leading-tight text-gray-900">Sistem Verifikasi</p>
+                            <p className="text-xs font-bold leading-tight text-white">Sistem Verifikasi</p>
                             <p className="text-[10px] text-gray-500 font-medium">Soal Ujian · Tel-U</p>
                         </div>
                     </div>
@@ -269,11 +251,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 {sections.map((section, sIdx) => (
                     <div key={sIdx}>
                         {section.title && !collapsed && (
-                            <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
                                 {section.title}
                             </p>
                         )}
-                        <ul className="space-y-1">
+                        <ul className="space-y-0.5">
                             {section.items.map((item) => (
                                 <li key={item.href}>
                                     <SidebarNavItem item={item} collapsed={collapsed} />
@@ -283,6 +265,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                     </div>
                 ))}
             </nav>
+
 
         </div>
     );
@@ -304,16 +287,16 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 <div className="fixed inset-0 z-40 md:hidden">
                     {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+                        className="absolute inset-0 bg-black/50"
                         onClick={onMobileClose}
                         aria-hidden="true"
                     />
                     {/* Drawer */}
-                    <aside className="absolute left-0 top-0 h-full w-64 shadow-2xl">
+                    <aside className="absolute left-0 top-0 h-full w-64 shadow-xl">
                         {/* Close button */}
                         <button
                             onClick={onMobileClose}
-                            className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                            className="absolute right-3 top-3 z-10 rounded-md p-1 text-gray-400 hover:text-white"
                             aria-label="Tutup menu"
                         >
                             <X size={18} />
