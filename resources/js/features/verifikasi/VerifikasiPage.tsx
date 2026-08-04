@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckSquare, Calendar, Eye, FileText, CheckCircle2, AlertTriangle, RefreshCw, History, Filter } from 'lucide-react';
+import { CheckSquare, Calendar, Eye, FileText, Filter } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { Pagination } from '@/shared/components/ui/Pagination';
@@ -8,7 +8,7 @@ import { SkeletonTable } from '@/shared/components/ui/Skeleton';
 import { StatusBadge } from '@/shared/components/ui/StatusBadge';
 import { Modal } from '@/shared/components/ui/Modal';
 import { useToast } from '@/shared/hooks/useToast';
-import { formatDate } from '@/shared/lib/utils';
+
 import api from '@/shared/lib/api';
 
 import type { Soal } from '@/features/soal/types/soal.types';
@@ -131,10 +131,8 @@ export function VerifikasiPage() {
                     className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
                 >
                     <option value="">— Semua Status —</option>
-                    <option value="pending">Perlu Verifikasi (Submitted / Review / Revisi)</option>
-                    <option value="submitted">Submitted</option>
-                    <option value="in_review">Dalam Review</option>
-                    <option value="revisi">Perlu Revisi</option>
+                    <option value="in_review">In Review</option>
+                    <option value="revisi">Revisi</option>
                     <option value="approved">Disetujui</option>
                     <option value="rejected">Ditolak</option>
                 </select>

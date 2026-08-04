@@ -125,7 +125,7 @@ class SoalService
                 'judul_soal'     => $data['judul_soal'],
                 'file_soal'      => $path,
                 'versi'          => $versi,
-                'status'         => SoalStatus::Submitted->value,
+                'status'         => SoalStatus::InReview->value,
                 'uploaded_at'    => now(),
             ]);
         });
@@ -176,7 +176,7 @@ class SoalService
                 $versi = $latestVersi + 1;
                 
                 $updateData['versi']       = $versi;
-                $updateData['status']      = SoalStatus::Submitted->value;
+                $updateData['status']      = SoalStatus::InReview->value;
                 $updateData['uploaded_at'] = now();
 
                 $soal = DB::transaction(function () use ($soal, $updateData, $path, $user) {

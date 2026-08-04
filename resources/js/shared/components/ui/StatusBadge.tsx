@@ -19,15 +19,15 @@ interface StatusConfig {
 
 const STATUS_CONFIG: Record<SoalStatus, StatusConfig> = {
     draft: {
-        label: 'Draft',
-        className: 'bg-[var(--color-gray-100)] text-[var(--color-gray-600)] border-[var(--color-gray-300)]',
+        label: 'In Review',
+        className: 'bg-[var(--color-info-light)] text-[var(--color-info)] border-[var(--color-info)]',
     },
     submitted: {
-        label: 'Submitted',
+        label: 'In Review',
         className: 'bg-[var(--color-info-light)] text-[var(--color-info)] border-[var(--color-info)]',
     },
     in_review: {
-        label: 'Dalam Review',
+        label: 'In Review',
         className: 'bg-[var(--color-info-light)] text-[var(--color-info)] border-[var(--color-info)]',
     },
     approved: {
@@ -35,7 +35,7 @@ const STATUS_CONFIG: Record<SoalStatus, StatusConfig> = {
         className: 'bg-[var(--color-success-light)] text-[var(--color-success)] border-[var(--color-success)]',
     },
     revisi: {
-        label: 'Perlu Revisi',
+        label: 'Revisi',
         className: 'bg-[var(--color-warning-light)] text-[var(--color-warning)] border-[var(--color-warning)]',
     },
     rejected: {

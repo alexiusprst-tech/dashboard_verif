@@ -152,7 +152,7 @@ function SidebarNavItem({ item, collapsed }: NavItemProps) {
             className={({ isActive }) =>
                 cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                    'text-gray-400 hover:bg-white/10 hover:text-white',
+                    'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
                     isActive && 'sidebar-active-item',
                     collapsed && 'justify-center px-2',
                 )
@@ -191,16 +191,16 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     );
 
     const sidebarContent = (
-        <div className="flex h-full flex-col bg-[#0f0f0f] border-r border-white/5">
+        <div className="flex h-full flex-col bg-white border-r border-gray-200">
 
             {/* ── Logo & Brand (juga tombol toggle sidebar) ── */}
 
             {/* COLLAPSED: Ikon PanelLeft sebagai tombol buka sidebar */}
             {collapsed && (
-                <div className="flex justify-center border-b border-white/5 px-3 py-4">
+                <div className="flex justify-center border-b border-gray-100 px-3 py-4">
                     <button
                         onClick={() => setCollapsed(false)}
-                        className="hidden md:flex items-center justify-center rounded-lg p-2 text-gray-500 transition-colors hover:bg-white/8 hover:text-white"
+                        className="hidden md:flex items-center justify-center rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
                         aria-label="Buka sidebar"
                         title="Buka sidebar"
                     >
@@ -211,36 +211,36 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
             {/* EXPANDED: Logo + teks, klik untuk collapse */}
             {!collapsed && (
-                <div className="border-b border-white/5 px-3 py-3">
+                <div className="border-b border-gray-100 px-3 py-3">
                     <button
                         onClick={() => setCollapsed(true)}
-                        className="group hidden md:flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/8"
+                        className="group hidden md:flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
                         aria-label="Tutup sidebar"
                         title="Tutup sidebar"
                     >
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 p-1.5 transition-transform group-hover:scale-95">
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-50 border border-gray-100 p-1.5 transition-transform group-hover:scale-95">
                             <img src="/images/logo-telkom.png" alt="Telkom University Logo" className="h-full w-full object-contain" />
                         </div>
                         <div className="text-left">
-                            <p className="text-xs font-bold leading-tight text-white">
+                            <p className="text-xs font-bold leading-tight text-gray-900">
                                 Sistem Verifikasi
                             </p>
-                            <p className="text-[10px] text-gray-500 font-medium">Soal Ujian · Tel-U</p>
+                            <p className="text-[10px] text-gray-400 font-medium">Soal Ujian · Tel-U</p>
                         </div>
                         <PanelLeft
                             size={15}
-                            className="ml-auto text-gray-600 opacity-0 transition-opacity group-hover:opacity-100"
+                            className="ml-auto text-gray-400 opacity-0 transition-opacity group-hover:opacity-100"
                         />
                     </button>
 
                     {/* Mobile: hanya tampilkan logo statis */}
                     <div className="flex md:hidden items-center gap-3 px-2 py-2">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 p-1.5">
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-50 border border-gray-100 p-1.5">
                             <img src="/images/logo-telkom.png" alt="Telkom University Logo" className="h-full w-full object-contain" />
                         </div>
                         <div className="text-left">
-                            <p className="text-xs font-bold leading-tight text-white">Sistem Verifikasi</p>
-                            <p className="text-[10px] text-gray-500 font-medium">Soal Ujian · Tel-U</p>
+                            <p className="text-xs font-bold leading-tight text-gray-900">Sistem Verifikasi</p>
+                            <p className="text-[10px] text-gray-400 font-medium">Soal Ujian · Tel-U</p>
                         </div>
                     </div>
                 </div>
@@ -251,7 +251,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 {sections.map((section, sIdx) => (
                     <div key={sIdx}>
                         {section.title && !collapsed && (
-                            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
+                            <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                                 {section.title}
                             </p>
                         )}
@@ -296,7 +296,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                         {/* Close button */}
                         <button
                             onClick={onMobileClose}
-                            className="absolute right-3 top-3 z-10 rounded-md p-1 text-gray-400 hover:text-white"
+                            className="absolute right-3 top-3 z-10 rounded-md p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100"
                             aria-label="Tutup menu"
                         >
                             <X size={18} />

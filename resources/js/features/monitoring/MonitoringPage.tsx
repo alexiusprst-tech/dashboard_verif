@@ -170,27 +170,20 @@ export function MonitoringPage() {
                     ))}
                 </div>
             ) : (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                     <StatCard
-                        label="Draft"
-                        value={statusCounts.draft ?? 0}
-                        icon={<FileText size={18} />}
-                        color="text-gray-500"
-                        bg="bg-gray-100"
-                    />
-                    <StatCard
-                        label="Submitted"
-                        value={statusCounts.submitted ?? 0}
-                        icon={<Activity size={18} />}
-                        color="text-blue-600"
-                        bg="bg-blue-50"
-                    />
-                    <StatCard
-                        label="Dalam Review"
-                        value={statusCounts.in_review ?? 0}
+                        label="In Review"
+                        value={(statusCounts.in_review ?? 0) + (statusCounts.submitted ?? 0) + (statusCounts.draft ?? 0)}
                         icon={<Clock size={18} />}
                         color="text-indigo-600"
                         bg="bg-indigo-50"
+                    />
+                    <StatCard
+                        label="Revisi"
+                        value={statusCounts.revisi ?? 0}
+                        icon={<AlertTriangle size={18} />}
+                        color="text-amber-600"
+                        bg="bg-amber-50"
                     />
                     <StatCard
                         label="Disetujui"
@@ -198,13 +191,6 @@ export function MonitoringPage() {
                         icon={<CheckCircle2 size={18} />}
                         color="text-green-600"
                         bg="bg-green-50"
-                    />
-                    <StatCard
-                        label="Perlu Revisi"
-                        value={statusCounts.revisi ?? 0}
-                        icon={<AlertTriangle size={18} />}
-                        color="text-amber-600"
-                        bg="bg-amber-50"
                     />
                     <StatCard
                         label="Ditolak"
@@ -252,7 +238,7 @@ export function MonitoringPage() {
                     <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center gap-2 mb-4">
                             <Users size={16} className="text-[var(--color-primary)]" />
-                            <h3 className="text-sm font-bold text-gray-700">Progress Verifikasi Program Studi</h3>
+                            <h3 className="text-sm font-bold text-gray-700">Progress Verifikasi S1 Sistem Informasi</h3>
                         </div>
                         <div className="space-y-3">
                             {prodiProgress.map((p) => (
@@ -284,11 +270,9 @@ export function MonitoringPage() {
                             className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
                         >
                             <option value="">— Semua —</option>
-                            <option value="draft">Draft</option>
-                            <option value="submitted">Submitted</option>
-                            <option value="in_review">Dalam Review</option>
+                            <option value="in_review">In Review</option>
+                            <option value="revisi">Revisi</option>
                             <option value="approved">Disetujui</option>
-                            <option value="revisi">Perlu Revisi</option>
                             <option value="rejected">Ditolak</option>
                         </select>
                     </div>

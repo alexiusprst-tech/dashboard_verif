@@ -39,6 +39,8 @@ export function CloModal({
         register,
         handleSubmit,
         reset,
+        watch,
+        setValue,
         formState: { errors },
     } = useForm<CloFormData>({
         resolver: zodResolver(schema),
@@ -49,6 +51,13 @@ export function CloModal({
             mata_kuliah_id: '',
             periode_id:     defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
         },
+    });
+
+    const selectedMataKuliahId = watch('mata_kuliah_id');
+
+    const filteredPloList = ploList.filter((p) => {
+        if (!selectedMataKuliahId) return true;
+        return !p.mata_kuliah_id || String(p.mata_kuliah_id) === String(selectedMataKuliahId);
     });
 
     useEffect(() => {
@@ -102,27 +111,7 @@ export function CloModal({
             }
         >
             <form id="clo-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                    <label htmlFor="plo_id" className="block text-sm font-medium text-gray-700">
-                        Pilih PLO <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                        id="plo_id"
-                        {...register('plo_id')}
-                        className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-                    >
-                        <option value="">Pilih PLO</option>
-                        {ploList.map((p) => (
-                            <option key={p.id} value={p.id}>
-                                {p.kode} - {p.deskripsi.substring(0, 50)}...
-                            </option>
-                        ))}
-                    </select>
-                    {errors.plo_id && (
-                        <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.plo_id.message}</p>
-                    )}
-                </div>
-
+                {/* 1. Mata Kuliah — Pilih Mata Kuliah terlebih dahulu */}
                 <div>
                     <label htmlFor="mata_kuliah_id" className="block text-sm font-medium text-gray-700">
                         Mata Kuliah <span className="text-red-500">*</span>
@@ -130,6 +119,10 @@ export function CloModal({
                     <select
                         id="mata_kuliah_id"
                         {...register('mata_kuliah_id')}
+                        onChange={(e) => {
+                            register('mata_kuliah_id').onChange(e);
+                            setValue('plo_id', '');
+                        }}
                         className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                     >
                         <option value="">Pilih Mata Kuliah</option>
@@ -141,6 +134,28 @@ export function CloModal({
                     </select>
                     {errors.mata_kuliah_id && (
                         <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.mata_kuliah_id.message}</p>
+                    )}
+                </div>
+
+                {/* 2. PLO Relasi */}
+                <div>
+                    <label htmlFor="plo_id" className="block text-sm font-medium text-gray-700">
+                        Pilih PLO Relasi <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        id="plo_id"
+                        {...register('plo_id')}
+                        className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                    >
+                        <option value="">Pilih PLO</option>
+                        {filteredPloList.map((p) => (
+                            <option key={p.id} value={p.id}>
+                                {p.kode} - {p.deskripsi.substring(0, 50)}...
+                            </option>
+                        ))}
+                    </select>
+                    {errors.plo_id && (
+                        <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.plo_id.message}</p>
                     )}
                 </div>
 

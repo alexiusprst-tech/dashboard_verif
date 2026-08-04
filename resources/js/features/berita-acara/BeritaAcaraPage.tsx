@@ -41,12 +41,15 @@ export function BeritaAcaraPage() {
 
     // Load periodes
     useEffect(() => {
-        api.get('/periode', { params: { per_page: 50 } }).then((res) => {
-            setPeriodes(res.data.data);
-            const active = res.data.data.find((p: any) => p.status === 'aktif');
-            if (active) setSelectedPeriodeId(String(active.id));
-            else if (res.data.data.length > 0) setSelectedPeriodeId(String(res.data.data[0].id));
-        });
+        api.get('/periode', { params: { per_page: 50 } })
+            .then((res) => {
+                const data: Periode[] = res.data?.data ?? [];
+                setPeriodes(data);
+                const active = data.find((p: any) => p.status === 'aktif');
+                if (active) setSelectedPeriodeId(String(active.id));
+                else if (data.length > 0) setSelectedPeriodeId(String(data[0].id));
+            })
+            .catch(() => setPeriodes([]));
     }, []);
 
     // Load daftar PIC untuk dropdown pilih verifikator (hanya super admin)
@@ -54,7 +57,7 @@ export function BeritaAcaraPage() {
         if (!user?.is_super_admin || !selectedPeriodeId) return;
         api.get('/penugasan', { params: { periode_id: selectedPeriodeId, per_page: 100 } })
             .then((res) => {
-                const pics: PicOption[] = (res.data.data ?? []).map((p: any) => ({
+                const pics: PicOption[] = (res.data?.data ?? []).map((p: any) => ({
                     id: p.dosen?.id ?? p.user_id,
                     nama_lengkap: p.dosen?.nama_lengkap ?? p.dosen?.name ?? '—',
                     kode_dosen: p.dosen?.kode_dosen ?? null,
@@ -176,7 +179,7 @@ export function BeritaAcaraPage() {
                     }}
                     className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
                 >
-                    {periodes.map((p) => (
+                    {(periodes ?? []).map((p) => (
                         <option key={p.id} value={p.id}>{p.nama_periode}</option>
                     ))}
                 </select>
@@ -197,7 +200,7 @@ export function BeritaAcaraPage() {
                             className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
                         >
                             <option value="">— Semua PIC —</option>
-                            {picList.map((pic) => (
+                            {(picList ?? []).map((pic) => (
                                 <option key={pic.id} value={pic.id}>
                                     {pic.nama_lengkap}{pic.kode_dosen ? ` (${pic.kode_dosen})` : ''}
                                 </option>
@@ -226,8 +229,8 @@ export function BeritaAcaraPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {isLoading && <SkeletonTable rows={4} cols={8} />}
-                            {!isLoading && (response?.data.length ?? 0) > 0 &&
-                                response?.data.map((r, idx) => (
+                            {!isLoading && (response?.data ?? []).length > 0 &&
+                                (response?.data ?? []).map((r, idx) => (
                                     <tr key={r.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4">
                                             <input type="checkbox" className="rounded border-gray-300 text-[var(--color-primary)]" />
@@ -297,7 +300,7 @@ export function BeritaAcaraPage() {
                     </table>
                 </div>
 
-                {!isLoading && (!response || (response?.data.length ?? 0) === 0) && (
+                {!isLoading && (response?.data ?? []).length === 0 && (
                     <EmptyState />
                 )}
 

@@ -142,18 +142,15 @@ class DashboardService
                 $statusVal = $soal->status instanceof \BackedEnum ? $soal->status->value : (string) $soal->status;
                 switch ($statusVal) {
                     case 'draft':
-                        $status = 'draft';
-                        $statusLabel = 'Draft';
-                        $progress = 25;
-                        break;
                     case 'submitted':
-                        $status = 'submitted';
-                        $statusLabel = 'Submitted';
+                    case 'in_review':
+                        $status = 'in_review';
+                        $statusLabel = 'In Review';
                         $progress = 50;
                         break;
                     case 'revisi':
                         $status = 'revisi';
-                        $statusLabel = 'Perlu Revisi';
+                        $statusLabel = 'Revisi';
                         $progress = 70;
                         break;
                     case 'approved':

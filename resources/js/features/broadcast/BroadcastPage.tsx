@@ -304,8 +304,7 @@ export function BroadcastPage() {
                                 {...register('target')}
                                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
                             >
-                                <option value="semua">Semua Dosen</option>
-                                <option value="prodi_tertentu">Program Studi Tertentu</option>
+                                <option value="semua">Semua Dosen (Prodi Sistem Informasi)</option>
                             </select>
                         </div>
 

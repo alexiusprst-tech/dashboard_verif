@@ -155,25 +155,8 @@ export function DosenPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    {/* Filter Prodi */}
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Filter size={14} />
-                        <span>Prodi:</span>
-                        <select
-                            value={selectedProdi}
-                            onChange={(e) => {
-                                setSelectedProdi(e.target.value);
-                                setPage(1);
-                            }}
-                            className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
-                        >
-                            <option value="">Semua Prodi</option>
-                            {prodiList.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.kode_prodi} — {p.nama_prodi}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">
+                        <span>Prodi: S1 Sistem Informasi</span>
                     </div>
 
                     {/* Filter Tipe Dosen */}

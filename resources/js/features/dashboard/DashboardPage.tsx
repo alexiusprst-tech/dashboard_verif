@@ -78,12 +78,10 @@ interface PicData {
 /* ── Status Color Map ───────────────────────────────────────── */
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+    in_review: { label: 'In Review', color: '#4F46E5', bg: 'bg-indigo-50' },
+    revisi: { label: 'Revisi', color: '#D97706', bg: 'bg-amber-50' },
     approved: { label: 'Disetujui', color: '#16A34A', bg: 'bg-green-50' },
-    in_review: { label: 'Dalam Review', color: '#4F46E5', bg: 'bg-indigo-50' },
-    submitted: { label: 'Dikirim', color: '#2563EB', bg: 'bg-blue-50' },
-    revisi: { label: 'Perlu Revisi', color: '#D97706', bg: 'bg-amber-50' },
     rejected: { label: 'Ditolak', color: '#DC2626', bg: 'bg-red-50' },
-    draft: { label: 'Draft', color: '#9CA3AF', bg: 'bg-gray-100' },
 };
 
 /* ── Stat Card ─────────────────────────────────────────────── */
@@ -187,13 +185,12 @@ function CustomChartTooltip({ active, payload }: any) {
 /* ── Status Pie/Donut Chart Component ────────────────────────── */
 
 function StatusPieChart({ counts }: { counts: SoalStatusCounts }) {
+    const inReviewVal = counts.in_review + counts.submitted + counts.draft;
     const data = [
+        { name: 'In Review', value: inReviewVal, color: STATUS_CONFIG.in_review.color },
+        { name: 'Revisi', value: counts.revisi, color: STATUS_CONFIG.revisi.color },
         { name: 'Disetujui', value: counts.approved, color: STATUS_CONFIG.approved.color },
-        { name: 'Dalam Review', value: counts.in_review, color: STATUS_CONFIG.in_review.color },
-        { name: 'Dikirim', value: counts.submitted, color: STATUS_CONFIG.submitted.color },
-        { name: 'Perlu Revisi', value: counts.revisi, color: STATUS_CONFIG.revisi.color },
         { name: 'Ditolak', value: counts.rejected, color: STATUS_CONFIG.rejected.color },
-        { name: 'Draft', value: counts.draft, color: STATUS_CONFIG.draft.color },
     ].filter((item) => item.value > 0);
 
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -258,9 +255,7 @@ function StatusPieChart({ counts }: { counts: SoalStatusCounts }) {
 
 function StatusBarChart({ counts }: { counts: SoalStatusCounts }) {
     const data = [
-        { name: 'Draft', value: counts.draft, color: STATUS_CONFIG.draft.color },
-        { name: 'Dikirim', value: counts.submitted, color: STATUS_CONFIG.submitted.color },
-        { name: 'In Review', value: counts.in_review, color: STATUS_CONFIG.in_review.color },
+        { name: 'In Review', value: counts.in_review + counts.submitted + counts.draft, color: STATUS_CONFIG.in_review.color },
         { name: 'Revisi', value: counts.revisi, color: STATUS_CONFIG.revisi.color },
         { name: 'Disetujui', value: counts.approved, color: STATUS_CONFIG.approved.color },
         { name: 'Ditolak', value: counts.rejected, color: STATUS_CONFIG.rejected.color },
@@ -288,16 +283,14 @@ function StatusBarChart({ counts }: { counts: SoalStatusCounts }) {
 
 function StatusSummaryGrid({ counts }: { counts: SoalStatusCounts }) {
     const items = [
-        { label: 'Draft', value: counts.draft, icon: <FileText size={14} />, color: 'text-gray-500', bg: 'bg-gray-100' },
-        { label: 'Dikirim', value: counts.submitted, icon: <Send size={14} />, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Dalam Review', value: counts.in_review, icon: <Activity size={14} />, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        { label: 'In Review', value: counts.in_review + counts.submitted + counts.draft, icon: <Activity size={14} />, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        { label: 'Revisi', value: counts.revisi, icon: <AlertTriangle size={14} />, color: 'text-amber-600', bg: 'bg-amber-50' },
         { label: 'Disetujui', value: counts.approved, icon: <CheckCircle2 size={14} />, color: 'text-green-600', bg: 'bg-green-50' },
-        { label: 'Perlu Revisi', value: counts.revisi, icon: <AlertTriangle size={14} />, color: 'text-amber-600', bg: 'bg-amber-50' },
         { label: 'Ditolak', value: counts.rejected, icon: <XCircle size={14} />, color: 'text-red-500', bg: 'bg-red-50' },
     ];
 
     return (
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {items.map((item) => (
                 <div key={item.label} className="flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
                     <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${item.bg} flex-shrink-0`}>

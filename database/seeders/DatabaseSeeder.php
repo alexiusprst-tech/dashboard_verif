@@ -44,11 +44,6 @@ class DatabaseSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $if = ProgramStudi::firstOrCreate(
-            ['kode_prodi' => 'IF'],
-            ['nama_prodi' => 'Teknik Informatika']
-        );
-
         $si = ProgramStudi::firstOrCreate(
             ['kode_prodi' => 'SI'],
             ['nama_prodi' => 'Sistem Informasi']
@@ -69,7 +64,7 @@ class DatabaseSeeder extends Seeder
                 'nama_lengkap' => 'Administrator Utama',
                 'email' => 'admin@telkomuniversity.ac.id',
                 'password' => Hash::make('password'),
-                'prodi_id' => $if->id,
+                'prodi_id' => $si->id,
                 'is_super_admin' => true,
                 'is_coordinator' => false,
                 'status_aktif' => true,
@@ -84,7 +79,7 @@ class DatabaseSeeder extends Seeder
                 'nama_lengkap' => 'Koordinator Program Studi',
                 'email' => 'coordinator@telkomuniversity.ac.id',
                 'password' => Hash::make('password'),
-                'prodi_id' => $if->id,
+                'prodi_id' => $si->id,
                 'is_super_admin' => false,
                 'is_coordinator' => true,
                 'status_aktif' => true,
@@ -113,7 +108,7 @@ class DatabaseSeeder extends Seeder
                     'nama_lengkap' => $dosen['nama'],
                     'email' => $dosen['email'],
                     'password' => Hash::make('password'),
-                    'prodi_id' => $if->id,
+                    'prodi_id' => $si->id,
                     'is_super_admin' => false,
                     'is_coordinator' => false,
                     'status_aktif' => true,
@@ -129,12 +124,12 @@ class DatabaseSeeder extends Seeder
 
         Course::firstOrCreate(
             ['kode_mk' => 'IF2113'],
-            ['nama_mk' => 'Dasar Pemrograman', 'prodi_id' => $if->id, 'sks' => 3]
+            ['nama_mk' => 'Dasar Pemrograman', 'prodi_id' => $si->id, 'sks' => 3]
         );
 
         Course::firstOrCreate(
             ['kode_mk' => 'IF2243'],
-            ['nama_mk' => 'Rekayasa Perangkat Lunak', 'prodi_id' => $if->id, 'sks' => 3]
+            ['nama_mk' => 'Rekayasa Perangkat Lunak', 'prodi_id' => $si->id, 'sks' => 3]
         );
 
         /*

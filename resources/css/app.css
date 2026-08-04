@@ -127,11 +127,12 @@ h1, h2, h3, h4, h5, h6 {
    Utility Helpers
    ============================================================ */
 
-/* Sidebar active item — dark theme, merah Telkom */
+/* Sidebar active item — light theme, merah Telkom */
 .sidebar-active-item {
     background-color: var(--color-primary);
     color: #ffffff !important;
     font-weight: 600;
+    box-shadow: 0 2px 6px -1px rgba(178, 34, 34, 0.25);
 }
 
 .sidebar-active-item svg {

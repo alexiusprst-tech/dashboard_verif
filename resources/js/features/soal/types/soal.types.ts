@@ -1,12 +1,14 @@
 import type { Periode } from '@/features/periode/types/periode.types';
 import type { ProgramStudi, MataKuliah, Clo } from '@/features/plo-clo/types/plo.types';
 import type { Kategori, TemplateSoal } from '@/features/kategori/types/kategori.types';
+import type { DosenUser } from '@/features/dosen/types/dosen.types';
 
 export interface Soal {
     id: number;
     uuid: string;
     dosen_id: number;
     dosen_name?: string;
+    dosen?: DosenUser;
     mata_kuliah_id: number;
     mata_kuliah_kode?: string;
     mata_kuliah_nama?: string;

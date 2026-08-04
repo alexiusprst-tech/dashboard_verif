@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Clo;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCloRequest extends FormRequest
 {
@@ -11,10 +12,26 @@ class StoreCloRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('periode_id') && ($this->periode_id === '' || $this->periode_id === 'null' || $this->periode_id === 0 || $this->periode_id === '0')) {
+            $this->merge(['periode_id' => null]);
+        }
+    }
+
     public function rules(): array
     {
+        $mataKuliahId = $this->mata_kuliah_id;
+
         return [
-            'kode'          => 'required|string|max:30|unique:clo,kode,NULL,id,mata_kuliah_id,' . $this->mata_kuliah_id,
+            'kode' => [
+                'required',
+                'string',
+                'max:30',
+                Rule::unique('clo', 'kode')->where(function ($query) use ($mataKuliahId) {
+                    return $query->where('mata_kuliah_id', $mataKuliahId);
+                }),
+            ],
             'nama_clo'      => 'nullable|string|max:255',
             'deskripsi'     => 'nullable|string',
             'mata_kuliah_id'=> 'required|exists:courses,id',
