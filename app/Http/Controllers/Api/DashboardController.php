@@ -18,7 +18,8 @@ class DashboardController extends Controller
 
     public function superAdmin(Request $request): JsonResponse
     {
-        $data = $this->dashboardService->superAdmin();
+        $periodeId = $request->query('periode_id');
+        $data = $this->dashboardService->superAdmin($periodeId ? (int)$periodeId : null);
 
         return response()->json([
             'success' => true,
@@ -29,7 +30,8 @@ class DashboardController extends Controller
 
     public function dosen(Request $request): JsonResponse
     {
-        $data = $this->dashboardService->dosen($request->user());
+        $periodeId = $request->query('periode_id');
+        $data = $this->dashboardService->dosen($request->user(), $periodeId ? (int)$periodeId : null);
 
         return response()->json([
             'success' => true,
@@ -40,7 +42,8 @@ class DashboardController extends Controller
 
     public function pic(Request $request): JsonResponse
     {
-        $data = $this->dashboardService->pic($request->user());
+        $periodeId = $request->query('periode_id');
+        $data = $this->dashboardService->pic($request->user(), $periodeId ? (int)$periodeId : null);
 
         return response()->json([
             'success' => true,
@@ -51,7 +54,8 @@ class DashboardController extends Controller
 
     public function coordinator(Request $request): JsonResponse
     {
-        $data = $this->dashboardService->coordinator();
+        $periodeId = $request->query('periode_id');
+        $data = $this->dashboardService->coordinator($periodeId ? (int)$periodeId : null);
 
         return response()->json([
             'success' => true,
@@ -62,7 +66,8 @@ class DashboardController extends Controller
 
     public function uploadProgress(Request $request): JsonResponse
     {
-        $data = $this->dashboardService->uploadProgress($request->user());
+        $periodeId = $request->query('periode_id');
+        $data = $this->dashboardService->uploadProgress($request->user(), $periodeId ? (int)$periodeId : null);
 
         return response()->json([
             'success' => true,

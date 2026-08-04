@@ -20,9 +20,22 @@ class DashboardService
         $this->periodeRepository = $periodeRepository;
     }
 
-    public function superAdmin(): array
+    protected function getPeriodeTarget(?int $periodeId): ?\App\Models\Periode
     {
-        $activePeriode = $this->periodeRepository->findActive();
+        if ($periodeId) {
+            $periode = \App\Models\Periode::find($periodeId);
+            if ($periode) return $periode;
+        }
+
+        $active = $this->periodeRepository->findActive();
+        if ($active) return $active;
+
+        return \App\Models\Periode::latest('id')->first();
+    }
+
+    public function superAdmin(?int $periodeId = null): array
+    {
+        $activePeriode = $this->getPeriodeTarget($periodeId);
         if (!$activePeriode) {
             return [
                 'periode' => null,
@@ -38,9 +51,9 @@ class DashboardService
         ];
     }
 
-    public function dosen(User $user): array
+    public function dosen(User $user, ?int $periodeId = null): array
     {
-        $activePeriode = $this->periodeRepository->findActive();
+        $activePeriode = $this->getPeriodeTarget($periodeId);
         if (!$activePeriode) {
             return [
                 'periode' => null,
@@ -56,9 +69,9 @@ class DashboardService
         ];
     }
 
-    public function pic(User $user): array
+    public function pic(User $user, ?int $periodeId = null): array
     {
-        $activePeriode = $this->periodeRepository->findActive();
+        $activePeriode = $this->getPeriodeTarget($periodeId);
         if (!$activePeriode) {
             return [
                 'periode' => null,
@@ -72,25 +85,29 @@ class DashboardService
         ];
     }
 
-    public function coordinator(): array
+    public function coordinator(?int $periodeId = null): array
     {
-        $activePeriode = $this->periodeRepository->findActive();
+        $activePeriode = $this->getPeriodeTarget($periodeId);
         if (!$activePeriode) {
             return [
                 'periode' => null,
+                'soal_status_counts' => [],
+                'progress' => null,
                 'progress_by_prodi' => []
             ];
         }
 
         return [
             'periode' => $activePeriode,
+            'soal_status_counts' => $this->dashboardRepository->countSoalByStatus($activePeriode->id),
+            'progress' => $this->dashboardRepository->progressByPeriode($activePeriode->id),
             'progress_by_prodi' => $this->dashboardRepository->progressByProdi($activePeriode->id)
         ];
     }
 
-    public function uploadProgress(User $user): array
+    public function uploadProgress(User $user, ?int $periodeId = null): array
     {
-        $activePeriode = $this->periodeRepository->findActive();
+        $activePeriode = $this->getPeriodeTarget($periodeId);
         if (!$activePeriode) {
             return [];
         }

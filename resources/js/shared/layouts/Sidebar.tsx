@@ -43,11 +43,11 @@ const COMMON_ITEMS: NavItem[] = [
 
 const DOSEN_ITEMS: NavItem[] = [
     { label: 'Soal Saya', href: '/soal', icon: FileText },
+    { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
 ];
 
 const PIC_ITEMS: NavItem[] = [
     { label: 'Verifikasi Soal', href: '/verifikasi', icon: CheckSquare },
-    { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
 ];
 
 const COORDINATOR_ITEMS: NavItem[] = [

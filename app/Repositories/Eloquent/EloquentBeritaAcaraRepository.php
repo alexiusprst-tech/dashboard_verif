@@ -32,6 +32,15 @@ class EloquentBeritaAcaraRepository implements BeritaAcaraRepositoryContract
         if (!empty($filters['verifier_id'])) {
             $query->where('verifier_id', $filters['verifier_id']);
         }
+        if (!empty($filters['dosen_id'])) {
+            $dosenId = $filters['dosen_id'];
+            $query->where(function ($q) use ($dosenId) {
+                $q->where('verifier_id', $dosenId)
+                  ->orWhereHas('items.soal', function ($q2) use ($dosenId) {
+                      $q2->where('dosen_id', $dosenId);
+                  });
+            });
+        }
 
         return $query->orderByDesc('generated_at')->paginate($perPage);
     }

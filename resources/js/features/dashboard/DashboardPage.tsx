@@ -33,11 +33,12 @@ import {
     PieChart as PieIcon,
     Sparkles,
     CheckSquare,
+    ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { formatDate } from '@/shared/lib/utils';
-import api from '@/shared/lib/api';
 import { UploadProgressWidget } from './components/UploadProgressWidget';
+import { BroadcastWidget } from './components/BroadcastWidget';
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -343,18 +344,22 @@ function QuickActions({ actions }: { actions: QuickAction[] }) {
     );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   Dashboard Views per Role
-══════════════════════════════════════════════════════════════ */
+interface RoleDashboardProps {
+    selectedPeriodeId: string;
+    setSelectedPeriodeId: (id: string) => void;
+    periodes: DashboardPeriode[];
+}
 
 /* ── Coordinator Dashboard ─────────────────────────────────── */
 
-function CoordinatorDashboard() {
+function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: RoleDashboardProps) {
     const [chartType, setChartType] = useState<'donut' | 'bar'>('donut');
     const { data, isLoading } = useQuery({
-        queryKey: ['dashboard', 'coordinator'],
+        queryKey: ['dashboard', 'coordinator', selectedPeriodeId],
         queryFn: async (): Promise<SuperAdminData> => {
-            const res = await api.get('/dashboard/coordinator');
+            const res = await api.get('/dashboard/coordinator', {
+                params: { periode_id: selectedPeriodeId || undefined },
+            });
             return res.data.data;
         },
     });
@@ -380,26 +385,45 @@ function CoordinatorDashboard() {
                 <div className="lg:col-span-2 flex flex-col gap-5">
                     {/* Main Chart Card */}
                     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-gray-100 pb-3">
                             <div className="flex items-center gap-2">
                                 <BarChart3 size={16} className="text-[var(--color-primary)]" />
                                 <h3 className="text-sm font-bold text-gray-800">Visualisasi Distribusi Status Soal</h3>
                             </div>
 
-                            {/* View Switcher Button */}
-                            <div className="flex items-center gap-1 rounded-xl bg-gray-100 p-1">
-                                <button
-                                    onClick={() => setChartType('donut')}
-                                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${chartType === 'donut' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                >
-                                    <PieIcon size={13} /> Donut
-                                </button>
-                                <button
-                                    onClick={() => setChartType('bar')}
-                                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${chartType === 'bar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                >
-                                    <BarChart3 size={13} /> Batang
-                                </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Filter Periode Dropdown */}
+                                <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-2.5 py-1 transition hover:bg-white">
+                                    <CalendarClock size={13} className="text-[var(--color-primary)] flex-shrink-0" />
+                                    <select
+                                        value={selectedPeriodeId}
+                                        onChange={(e) => setSelectedPeriodeId(e.target.value)}
+                                        className="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
+                                    >
+                                        <option value="">Periode Aktif</option>
+                                        {periodes.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.nama_periode} {p.status === 'aktif' ? '(Aktif)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* View Switcher Button */}
+                                <div className="flex items-center gap-1 rounded-xl bg-gray-100 p-1">
+                                    <button
+                                        onClick={() => setChartType('donut')}
+                                        className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${chartType === 'donut' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        <PieIcon size={13} /> Donut
+                                    </button>
+                                    <button
+                                        onClick={() => setChartType('bar')}
+                                        className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${chartType === 'bar' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        <BarChart3 size={13} /> Batang
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -507,18 +531,23 @@ function CoordinatorDashboard() {
                     />
                 </div>
             </div>
+
+            {/* Pengumuman & Broadcast Widget */}
+            <BroadcastWidget />
         </div>
     );
 }
 
 /* ── Dosen Dashboard ────────────────────────────────────────── */
 
-function DosenDashboard() {
+function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: RoleDashboardProps) {
     const { user } = useAuth();
     const { data, isLoading } = useQuery({
-        queryKey: ['dashboard', 'dosen'],
+        queryKey: ['dashboard', 'dosen', selectedPeriodeId],
         queryFn: async (): Promise<DosenData> => {
-            const res = await api.get('/dashboard/dosen');
+            const res = await api.get('/dashboard/dosen', {
+                params: { periode_id: selectedPeriodeId || undefined },
+            });
             return res.data.data;
         },
     });
@@ -537,17 +566,39 @@ function DosenDashboard() {
                 <StatCard label="Perlu Revisi" value={isLoading ? '…' : counts.revisi} icon={<AlertTriangle size={18} />} color="text-amber-600" bg="bg-amber-50" />
             </div>
 
+            {/* Pengumuman & Broadcast Widget */}
+            <BroadcastWidget />
+
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
                 {/* Left Area: Visual Diagram & Alur */}
                 <div className="lg:col-span-2 flex flex-col gap-5">
                     {/* Status Chart Card */}
                     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-gray-100 pb-3">
                             <div className="flex items-center gap-2">
                                 <PieIcon size={16} className="text-[var(--color-primary)]" />
                                 <h3 className="text-sm font-bold text-gray-800">Diagram Status Soal Saya</h3>
                             </div>
-                            <span className="text-xs font-semibold text-gray-400">{totalSoal} Soal Terdaftar</span>
+
+                            <div className="flex items-center gap-2">
+                                {/* Filter Periode Dropdown */}
+                                <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-2.5 py-1 transition hover:bg-white">
+                                    <CalendarClock size={13} className="text-[var(--color-primary)] flex-shrink-0" />
+                                    <select
+                                        value={selectedPeriodeId}
+                                        onChange={(e) => setSelectedPeriodeId(e.target.value)}
+                                        className="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
+                                    >
+                                        <option value="">Periode Aktif</option>
+                                        {periodes.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.nama_periode} {p.status === 'aktif' ? '(Aktif)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <span className="text-xs font-semibold text-gray-400">{totalSoal} Soal</span>
+                            </div>
                         </div>
 
                         {isLoading ? (
@@ -555,33 +606,6 @@ function DosenDashboard() {
                         ) : (
                             <StatusPieChart counts={counts} />
                         )}
-                    </div>
-
-                    {/* Step-by-Step Workflow Guide */}
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-800 mb-4">Alur Verifikasi Soal Ujian</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                            <div className="flex flex-col p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Langkah 1</span>
-                                <span className="text-xs font-bold text-gray-800 mt-1">1. Buat Draft Soal</span>
-                                <p className="text-[11px] text-gray-500 mt-1">Pilih periode & CLO matakuliah.</p>
-                            </div>
-                            <div className="flex flex-col p-3 rounded-xl bg-blue-50/50 border border-blue-100">
-                                <span className="text-[10px] font-bold text-blue-500 uppercase">Langkah 2</span>
-                                <span className="text-xs font-bold text-blue-900 mt-1">2. Unggah Berkas</span>
-                                <p className="text-[11px] text-blue-700 mt-1">Gunakan template format Word.</p>
-                            </div>
-                            <div className="flex flex-col p-3 rounded-xl bg-indigo-50/50 border border-indigo-100">
-                                <span className="text-[10px] font-bold text-indigo-500 uppercase">Langkah 3</span>
-                                <span className="text-xs font-bold text-indigo-900 mt-1">3. Peninjauan PIC</span>
-                                <p className="text-[11px] text-indigo-700 mt-1">PIC memeriksa kesesuaian soal.</p>
-                            </div>
-                            <div className="flex flex-col p-3 rounded-xl bg-green-50/50 border border-green-100">
-                                <span className="text-[10px] font-bold text-green-600 uppercase">Langkah 4</span>
-                                <span className="text-xs font-bold text-green-900 mt-1">4. Disetujui</span>
-                                <p className="text-[11px] text-green-700 mt-1">Masuk ke Berita Acara resmi.</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -617,9 +641,9 @@ function DosenDashboard() {
                 </div>
             </div>
 
-            {/* Progress Upload per Mata Kuliah (Enhancement FEATURE 3) */}
+            {/* Progress Upload per Mata Kuliah (UploadProgressWidget) */}
             <div className="mt-2">
-                <UploadProgressWidget />
+                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} />
             </div>
         </div>
     );
@@ -627,16 +651,33 @@ function DosenDashboard() {
 
 /* ── PIC Dashboard ──────────────────────────────────────────── */
 
-function PicDashboard() {
-    const { data, isLoading } = useQuery({
-        queryKey: ['dashboard', 'pic'],
-        queryFn: async (): Promise<PicData> => {
-            const res = await api.get('/dashboard/pic');
+function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: RoleDashboardProps) {
+    const { data: dosenData, isLoading: dosenLoading } = useQuery({
+        queryKey: ['dashboard', 'dosen', selectedPeriodeId],
+        queryFn: async (): Promise<DosenData> => {
+            const res = await api.get('/dashboard/dosen', {
+                params: { periode_id: selectedPeriodeId || undefined },
+            });
             return res.data.data;
         },
     });
 
-    const summary = data?.summary ?? { total: 0, pending: 0, done: 0 };
+    const { data: picData, isLoading: picLoading } = useQuery({
+        queryKey: ['dashboard', 'pic', selectedPeriodeId],
+        queryFn: async (): Promise<PicData> => {
+            const res = await api.get('/dashboard/pic', {
+                params: { periode_id: selectedPeriodeId || undefined },
+            });
+            return res.data.data;
+        },
+    });
+
+    const isLoading = dosenLoading || picLoading;
+
+    const counts = dosenData?.soal_status_counts ?? { draft: 0, submitted: 0, in_review: 0, approved: 0, revisi: 0, rejected: 0 };
+    const totalSoalSaya = Object.values(counts).reduce((a, b) => a + b, 0);
+
+    const summary = picData?.summary ?? { total: 0, pending: 0, done: 0 };
     const pct = summary.total > 0 ? Math.round((summary.done / summary.total) * 100) : 0;
 
     const donutData = [
@@ -646,82 +687,166 @@ function PicDashboard() {
 
     return (
         <div className="flex flex-col gap-5">
-            <PeriodeBanner periode={data?.periode ?? null} />
+            <PeriodeBanner periode={picData?.periode ?? dosenData?.periode ?? null} />
 
-            <div className="grid grid-cols-3 gap-4">
-                <StatCard label="Total Soal Ditugaskan" value={isLoading ? '…' : summary.total} icon={<Layers size={18} />} color="text-[var(--color-primary)]" bg="bg-[var(--color-primary-light)]" />
-                <StatCard label="Belum Diverifikasi" value={isLoading ? '…' : summary.pending} icon={<Clock size={18} />} color="text-amber-600" bg="bg-amber-50" to="/verifikasi" />
-                <StatCard label="Sudah Diverifikasi" value={isLoading ? '…' : summary.done} icon={<CheckCircle2 size={18} />} color="text-green-600" bg="bg-green-50" border="border-green-100" />
+            {/* Dosen Stats Cards */}
+            <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Statistik Soal Saya (Dosen)</h3>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <StatCard label="Total Soal Saya" value={isLoading ? '…' : totalSoalSaya} icon={<FileText size={18} />} color="text-[var(--color-primary)]" bg="bg-[var(--color-primary-light)]" to="/soal" />
+                    <StatCard label="Disetujui" value={isLoading ? '…' : counts.approved} icon={<CheckCircle2 size={18} />} color="text-green-600" bg="bg-green-50" border="border-green-100" />
+                    <StatCard label="Dalam Review" value={isLoading ? '…' : counts.in_review} icon={<Activity size={18} />} color="text-indigo-600" bg="bg-indigo-50" />
+                    <StatCard label="Perlu Revisi" value={isLoading ? '…' : counts.revisi} icon={<AlertTriangle size={18} />} color="text-amber-600" bg="bg-amber-50" />
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-                        <CheckSquare size={16} className="text-[var(--color-primary)]" />
-                        <h3 className="text-sm font-bold text-gray-800">Progress Verifikasi PIC</h3>
-                    </div>
+            {/* PIC Verifier Stats Cards */}
+            <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Statistik Penugasan Verifikasi (PIC)</h3>
+                <div className="grid grid-cols-3 gap-4">
+                    <StatCard label="Total Soal Ditugaskan" value={isLoading ? '…' : summary.total} icon={<Layers size={18} />} color="text-[var(--color-primary)]" bg="bg-[var(--color-primary-light)]" />
+                    <StatCard label="Belum Diverifikasi" value={isLoading ? '…' : summary.pending} icon={<Clock size={18} />} color="text-amber-600" bg="bg-amber-50" to="/verifikasi" />
+                    <StatCard label="Sudah Diverifikasi" value={isLoading ? '…' : summary.done} icon={<CheckCircle2 size={18} />} color="text-green-600" bg="bg-green-50" border="border-green-100" />
+                </div>
+            </div>
 
-                    {isLoading ? (
-                        <div className="space-y-3">
-                            <div className="h-8 animate-pulse rounded-xl bg-gray-100" />
-                            <div className="h-4 animate-pulse rounded bg-gray-100 w-3/4" />
-                        </div>
-                    ) : (
-                        <div className="flex flex-col sm:flex-row items-center gap-6">
-                            <div className="w-full sm:w-1/2 h-48 relative">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={donutData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={50}
-                                            outerRadius={75}
-                                            paddingAngle={3}
-                                            dataKey="value"
-                                        >
-                                            {donutData.map((entry, index) => (
-                                                <Cell key={`pic-cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip content={<CustomChartTooltip />} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span className="text-2xl font-black text-gray-900">{pct}%</span>
-                                    <span className="text-[10px] text-gray-400 font-semibold uppercase">Selesai</span>
-                                </div>
+            {/* Pengumuman & Broadcast Widget */}
+            <BroadcastWidget />
+
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+                <div className="lg:col-span-2 flex flex-col gap-5">
+                    {/* Dosen Chart */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-gray-100 pb-3">
+                            <div className="flex items-center gap-2">
+                                <PieIcon size={16} className="text-[var(--color-primary)]" />
+                                <h3 className="text-sm font-bold text-gray-800">Diagram Status Soal Saya</h3>
                             </div>
 
-                            <div className="w-full sm:w-1/2 flex flex-col justify-center gap-3">
-                                <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 border border-green-100">
-                                    <span className="text-xs font-semibold text-green-800">Sudah Diverifikasi</span>
-                                    <span className="text-base font-bold text-green-900">{summary.done} Soal</span>
-                                </div>
-                                <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-100">
-                                    <span className="text-xs font-semibold text-amber-800">Perlu Peninjauan</span>
-                                    <span className="text-base font-bold text-amber-900">{summary.pending} Soal</span>
-                                </div>
-                                {summary.pending > 0 && (
-                                    <Link
-                                        to="/verifikasi"
-                                        className="mt-1 flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-white shadow transition hover:bg-[var(--color-primary-dark)]"
+                            <div className="flex items-center gap-2">
+                                {/* Filter Periode Dropdown */}
+                                <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-2.5 py-1 transition hover:bg-white">
+                                    <CalendarClock size={13} className="text-[var(--color-primary)] flex-shrink-0" />
+                                    <select
+                                        value={selectedPeriodeId}
+                                        onChange={(e) => setSelectedPeriodeId(e.target.value)}
+                                        className="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
                                     >
-                                        Periksa Antrian Sekarang <ArrowRight size={14} />
-                                    </Link>
-                                )}
+                                        <option value="">Periode Aktif</option>
+                                        {periodes.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.nama_periode} {p.status === 'aktif' ? '(Aktif)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <span className="text-xs font-semibold text-gray-400">{totalSoalSaya} Soal</span>
+                            </div>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="h-48 animate-pulse rounded-xl bg-gray-100" />
+                        ) : (
+                            <StatusPieChart counts={counts} />
+                        )}
+                    </div>
+
+                    {/* PIC Progress Chart */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
+                            <CheckSquare size={16} className="text-[var(--color-primary)]" />
+                            <h3 className="text-sm font-bold text-gray-800">Progress Verifikasi PIC</h3>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="space-y-3">
+                                <div className="h-8 animate-pulse rounded-xl bg-gray-100" />
+                                <div className="h-4 animate-pulse rounded bg-gray-100 w-3/4" />
+                            </div>
+                        ) : (
+                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                                <div className="w-full sm:w-1/2 h-48 relative">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={donutData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={50}
+                                                outerRadius={75}
+                                                paddingAngle={3}
+                                                dataKey="value"
+                                            >
+                                                {donutData.map((entry, index) => (
+                                                    <Cell key={`pic-cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip content={<CustomChartTooltip />} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                        <span className="text-2xl font-black text-gray-900">{pct}%</span>
+                                        <span className="text-[10px] text-gray-400 font-semibold uppercase">Selesai</span>
+                                    </div>
+                                </div>
+
+                                <div className="w-full sm:w-1/2 flex flex-col justify-center gap-3">
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 border border-green-100">
+                                        <span className="text-xs font-semibold text-green-800">Sudah Diverifikasi</span>
+                                        <span className="text-base font-bold text-green-900">{summary.done} Soal</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-100">
+                                        <span className="text-xs font-semibold text-amber-800">Perlu Peninjauan</span>
+                                        <span className="text-base font-bold text-amber-900">{summary.pending} Soal</span>
+                                    </div>
+                                    {summary.pending > 0 && (
+                                        <Link
+                                            to="/verifikasi"
+                                            className="mt-1 flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-white shadow transition hover:bg-[var(--color-primary-dark)]"
+                                        >
+                                            Periksa Antrian Sekarang <ArrowRight size={14} />
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-5">
+                    {/* Deadline Reminder */}
+                    {dosenData?.deadline && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                                <CalendarClock size={16} className="text-amber-600" />
+                                <h3 className="text-sm font-bold text-amber-900">Pengingat Tenggat Waktu</h3>
+                            </div>
+                            <p className="text-xs text-amber-800 leading-relaxed">
+                                Batas akhir pengunggahan dan revisi soal untuk <span className="font-bold">{dosenData.deadline.nama_periode}</span> adalah:
+                            </p>
+                            <div className="mt-3 p-3 rounded-xl bg-white border border-amber-200 text-center">
+                                <p className="text-sm font-extrabold text-amber-900">
+                                    {formatDate(dosenData.deadline.tanggal_deadline)}
+                                </p>
                             </div>
                         </div>
                     )}
-                </div>
 
-                <QuickActions
-                    actions={[
-                        { label: 'Antrian Verifikasi', desc: 'Soal yang perlu diperiksa', icon: <ShieldCheck size={16} />, to: '/verifikasi', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
-                        { label: 'Berita Acara', desc: 'Generate & print berita acara', icon: <FileText size={16} />, to: '/berita-acara', color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { label: 'Pengumuman', desc: 'Lihat broadcast terbaru', icon: <Megaphone size={16} />, to: '/broadcast', color: 'text-green-600', bg: 'bg-green-50' },
-                    ]}
-                />
+                    <QuickActions
+                        actions={[
+                            { label: 'Unggah Soal Saya', desc: 'Kirim soal baru ke sistem', icon: <FileText size={16} />, to: '/soal', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
+                            { label: 'Antrian Verifikasi', desc: 'Soal yang perlu diperiksa', icon: <ShieldCheck size={16} />, to: '/verifikasi', color: 'text-blue-600', bg: 'bg-blue-50' },
+                            { label: 'Lihat PLO & CLO', desc: 'Referensi capaian pembelajaran', icon: <BookOpen size={16} />, to: '/plo-clo', color: 'text-purple-600', bg: 'bg-purple-50' },
+                            { label: 'Berita Acara', desc: 'Generate & print berita acara', icon: <ClipboardList size={16} />, to: '/berita-acara', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                            { label: 'Pengumuman', desc: 'Lihat broadcast terbaru', icon: <Megaphone size={16} />, to: '/broadcast', color: 'text-green-600', bg: 'bg-green-50' },
+                        ]}
+                    />
+                </div>
+            </div>
+
+            {/* Progress Upload per Mata Kuliah (UploadProgressWidget) */}
+            <div className="mt-2">
+                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} />
             </div>
         </div>
     );
@@ -733,6 +858,15 @@ function PicDashboard() {
 
 export function DashboardPage() {
     const { user, role } = useAuth();
+    const [selectedPeriodeId, setSelectedPeriodeId] = useState<string>('');
+
+    const { data: periodes = [] } = useQuery<DashboardPeriode[]>({
+        queryKey: ['periodes', 'list'],
+        queryFn: async () => {
+            const res = await api.get('/periode', { params: { per_page: 50 } });
+            return res.data?.data ?? [];
+        },
+    });
 
     const greeting = () => {
         const h = new Date().getHours();
@@ -771,9 +905,27 @@ export function DashboardPage() {
             </div>
 
             {/* ── Role-based Dashboard ─────────────────────────── */}
-            {role === 'coordinator' && <CoordinatorDashboard />}
-            {role === 'pic' && <PicDashboard />}
-            {role === 'dosen' && <DosenDashboard />}
+            {role === 'coordinator' && (
+                <CoordinatorDashboard
+                    selectedPeriodeId={selectedPeriodeId}
+                    setSelectedPeriodeId={setSelectedPeriodeId}
+                    periodes={periodes}
+                />
+            )}
+            {role === 'pic' && (
+                <PicDashboard
+                    selectedPeriodeId={selectedPeriodeId}
+                    setSelectedPeriodeId={setSelectedPeriodeId}
+                    periodes={periodes}
+                />
+            )}
+            {role === 'dosen' && (
+                <DosenDashboard
+                    selectedPeriodeId={selectedPeriodeId}
+                    setSelectedPeriodeId={setSelectedPeriodeId}
+                    periodes={periodes}
+                />
+            )}
         </div>
     );
 }
