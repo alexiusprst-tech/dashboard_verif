@@ -86,8 +86,8 @@ export function BeritaAcaraPage() {
 
     const generateMutation = useGenerateBa();
 
-    // Koordinator/PIC bisa generate BA
-    const canGenerate = user?.is_super_admin || user?.is_coordinator || (!user?.is_super_admin && !user?.is_coordinator);
+    // Hannya Koordinator / Super Admin / PIC aktif yang bisa generate BA (Dosen biasa hanya bisa melihat/download)
+    const canGenerate = Boolean(user?.is_super_admin || user?.is_coordinator || user?.is_pic_active);
 
     const handleGenerate = async (regenerate = false) => {
         if (!selectedPeriodeId) {

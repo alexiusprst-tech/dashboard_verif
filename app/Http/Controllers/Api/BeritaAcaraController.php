@@ -30,9 +30,11 @@ class BeritaAcaraController extends Controller
         $filters = $request->only(['periode_id', 'verifier_id']);
         $perPage = $request->query('per_page', 15);
 
-        // Jika bukan Super Admin, filter verifier_id wajib milik PIC yang login
-        if (!$user->isSuperAdmin()) {
-            $filters['verifier_id'] = $user->id;
+        if ($user->isSuperAdmin() || $user->isCoordinator()) {
+            // Super Admin & Coordinator bisa melihat seluruh BA
+        } else {
+            // Dosen & PIC melihat BA di mana mereka adalah verifikator atau soal milik mereka ada di BA tersebut
+            $filters['dosen_id'] = $user->id;
         }
 
         $paginator = $this->beritaAcaraRepository->paginate($filters, $perPage);
@@ -88,8 +90,15 @@ class BeritaAcaraController extends Controller
             abort(404, 'Berita Acara tidak ditemukan.');
         }
 
-        // Hanya Super Admin dan PIC yang bersangkutan yang boleh mengunduh
-        if (!$request->user()->isSuperAdmin() && $ba->verifier_id !== $request->user()->id) {
+        $user = $request->user();
+        $isOwnerOrVerifier = $user->isSuperAdmin()
+            || $user->isCoordinator()
+            || $ba->verifier_id === $user->id
+            || $ba->items()->whereHas('soal', function ($q) use ($user) {
+                $q->where('dosen_id', $user->id);
+            })->exists();
+
+        if (!$isOwnerOrVerifier) {
             abort(403, 'Anda tidak memiliki wewenang untuk mengunduh Berita Acara ini.');
         }
 

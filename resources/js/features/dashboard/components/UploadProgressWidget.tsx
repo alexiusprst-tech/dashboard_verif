@@ -13,8 +13,12 @@ import {
 import { useUploadProgress } from '../hooks/useUploadProgress';
 import type { CourseUploadProgress } from '../types/uploadProgress.types';
 
-export function UploadProgressWidget() {
-    const { data: progressList = [], isLoading, isError } = useUploadProgress();
+interface UploadProgressWidgetProps {
+    selectedPeriodeId?: string;
+}
+
+export function UploadProgressWidget({ selectedPeriodeId }: UploadProgressWidgetProps) {
+    const { data: progressList = [], isLoading, isError } = useUploadProgress(selectedPeriodeId);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
