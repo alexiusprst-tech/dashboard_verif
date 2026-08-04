@@ -40,6 +40,7 @@ class DosenController extends Controller
         $data = $request->validated();
         $data['uuid'] = (string) Str::uuid();
         $data['nama_lengkap'] = $data['name'];
+        $data['is_coordinator'] = $request->boolean('is_coordinator', false);
         $data['status_aktif'] = $request->boolean('status_aktif', true);
 
         $user = $this->userRepository->create($data);
@@ -82,6 +83,9 @@ class DosenController extends Controller
         }
         if (empty($data['password'])) {
             unset($data['password']);
+        }
+        if ($request->has('is_coordinator')) {
+            $data['is_coordinator'] = $request->boolean('is_coordinator');
         }
 
         $updated = $this->userRepository->update($user, $data);

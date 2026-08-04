@@ -55,10 +55,8 @@ export function CloModal({
 
     const selectedMataKuliahId = watch('mata_kuliah_id');
 
-    const filteredPloList = ploList.filter((p) => {
-        if (!selectedMataKuliahId) return true;
-        return !p.mata_kuliah_id || String(p.mata_kuliah_id) === String(selectedMataKuliahId);
-    });
+    // Tampilkan seluruh PLO yang tersedia di periode & prodi aktif agar pengguna bebas memilih PLO mana saja
+    const displayPloList = ploList;
 
     useEffect(() => {
         if (clo) {
@@ -111,7 +109,7 @@ export function CloModal({
             }
         >
             <form id="clo-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* 1. Mata Kuliah — Pilih Mata Kuliah terlebih dahulu */}
+                {/* 1. Mata Kuliah — Pilih Mata Kuliah */}
                 <div>
                     <label htmlFor="mata_kuliah_id" className="block text-sm font-medium text-gray-700">
                         Mata Kuliah <span className="text-red-500">*</span>
@@ -119,10 +117,6 @@ export function CloModal({
                     <select
                         id="mata_kuliah_id"
                         {...register('mata_kuliah_id')}
-                        onChange={(e) => {
-                            register('mata_kuliah_id').onChange(e);
-                            setValue('plo_id', '');
-                        }}
                         className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                     >
                         <option value="">Pilih Mata Kuliah</option>
@@ -148,9 +142,9 @@ export function CloModal({
                         className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                     >
                         <option value="">Pilih PLO</option>
-                        {filteredPloList.map((p) => (
+                        {displayPloList.map((p) => (
                             <option key={p.id} value={p.id}>
-                                {p.kode} - {p.deskripsi.substring(0, 50)}...
+                                {p.kode}{p.nama_plo ? ` - ${p.nama_plo}` : ''}{p.deskripsi ? ` (${p.deskripsi.substring(0, 50)}${p.deskripsi.length > 50 ? '...' : ''})` : ''}
                             </option>
                         ))}
                     </select>

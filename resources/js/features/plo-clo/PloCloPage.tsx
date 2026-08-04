@@ -164,6 +164,11 @@ export function PloCloPage() {
             }
             setPloModalOpen(false);
             refetchPlo();
+            if (prodiId) {
+                api.get('/plo', { params: { prodi_id: prodiId, periode_id: selectedPeriodeId, per_page: 100 } }).then((res) => {
+                    setAllPloForSelect(res.data.data);
+                });
+            }
         } catch (e: any) {
             toast.error(e.response?.data?.message || 'Gagal menyimpan PLO');
         }
@@ -172,11 +177,21 @@ export function PloCloPage() {
     // CLO Handlers
     const handleOpenAddClo = () => {
         setCurrentClo(null);
+        if (prodiId) {
+            api.get('/plo', { params: { prodi_id: prodiId, periode_id: selectedPeriodeId, per_page: 100 } }).then((res) => {
+                setAllPloForSelect(res.data.data);
+            });
+        }
         setCloModalOpen(true);
     };
 
     const handleOpenEditClo = (clo: Clo) => {
         setCurrentClo(clo);
+        if (prodiId) {
+            api.get('/plo', { params: { prodi_id: prodiId, periode_id: selectedPeriodeId, per_page: 100 } }).then((res) => {
+                setAllPloForSelect(res.data.data);
+            });
+        }
         setCloModalOpen(true);
     };
 

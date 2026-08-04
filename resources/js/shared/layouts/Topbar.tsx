@@ -334,16 +334,23 @@ export function Topbar({ onMobileMenuToggle, notificationCount = 0 }: TopbarProp
                             <p className="text-sm font-medium text-gray-800 leading-tight">
                                 {user?.name ?? 'Pengguna'}
                             </p>
-                            <p className="text-xs text-gray-400 leading-tight">
-                                {user?.is_super_admin
-                                    ? 'Koordinator'
-                                    : 'Dosen'}
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-xs text-gray-400 leading-none">
+                                    {user?.is_super_admin
+                                        ? 'Super Admin'
+                                        : user?.is_coordinator
+                                        ? 'Koordinator'
+                                        : user?.email === 'pic@telkomuniversity.ac.id' || user?.kode_dosen === 'PIC001'
+                                        ? 'PIC'
+                                        : 'Dosen'}
+                                </span>
                                 {user?.is_pic_active && (
-                                    <span className="ml-1 rounded-sm bg-[var(--color-primary-light)] px-1 py-px text-[10px] font-semibold text-[var(--color-primary)]">
-                                        PIC
+                                    <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/80 leading-none">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        PIC Aktif
                                     </span>
                                 )}
-                            </p>
+                            </div>
                         </div>
                         <ChevronDown
                             size={14}

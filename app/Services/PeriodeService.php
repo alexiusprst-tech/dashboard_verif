@@ -22,11 +22,28 @@ class PeriodeService
         $this->activityLogService = $activityLogService;
     }
 
+    private function normalizeSemester(?string $semester): string
+    {
+        if (!$semester) {
+            return 'ganjil';
+        }
+        $val = strtolower(trim($semester));
+        if ($val === '1' || str_contains($val, 'ganjil')) {
+            return 'ganjil';
+        }
+        if ($val === '2' || str_contains($val, 'genap')) {
+            return 'genap';
+        }
+        return 'ganjil';
+    }
+
     public function create(array $data, User $user): Periode
     {
         if (strtotime($data['tanggal_deadline']) <= strtotime($data['tanggal_mulai'])) {
             throw new BusinessException('Tanggal deadline harus setelah tanggal mulai.', 422);
         }
+
+        $data['semester'] = $this->normalizeSemester($data['semester'] ?? null);
 
         $periode = $this->periodeRepository->create($data);
 
@@ -46,6 +63,10 @@ class PeriodeService
             if (strtotime($data['tanggal_deadline']) <= strtotime($data['tanggal_mulai'])) {
                 throw new BusinessException('Tanggal deadline harus setelah tanggal mulai.', 422);
             }
+        }
+
+        if (isset($data['semester'])) {
+            $data['semester'] = $this->normalizeSemester($data['semester']);
         }
 
         $periode = $this->periodeRepository->update($periode, $data);

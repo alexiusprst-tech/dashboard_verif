@@ -39,6 +39,7 @@ export function DosenModal({
             tipe_dosen: 'biasa',
             semester_lb: '',
             prodi_id: '',
+            is_coordinator: false,
             status_aktif: true,
         },
     });
@@ -55,6 +56,7 @@ export function DosenModal({
                 tipe_dosen: editingDosen.tipe_dosen || 'biasa',
                 semester_lb: editingDosen.semester_lb || '',
                 prodi_id: editingDosen.prodi_id || '',
+                is_coordinator: editingDosen.is_coordinator ?? false,
                 status_aktif: editingDosen.status_aktif ?? true,
             });
         } else {
@@ -66,6 +68,7 @@ export function DosenModal({
                 tipe_dosen: 'biasa',
                 semester_lb: '',
                 prodi_id: '',
+                is_coordinator: false,
                 status_aktif: true,
             });
         }
@@ -231,8 +234,21 @@ export function DosenModal({
                         )}
                     </div>
 
+                    {/* Status Koordinator */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                        <input
+                            type="checkbox"
+                            id="is_coordinator"
+                            className="rounded border-gray-300 text-[var(--color-primary)] focus:ring-0"
+                            {...register('is_coordinator')}
+                        />
+                        <label htmlFor="is_coordinator" className="text-xs font-semibold text-gray-700 cursor-pointer">
+                            Tetapkan sebagai Koordinator Program Studi (Akses Monitoring & Manajemen Dosen)
+                        </label>
+                    </div>
+
                     {/* Status Aktif */}
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="flex items-center gap-2 pt-1">
                         <input
                             type="checkbox"
                             id="status_aktif"

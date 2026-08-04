@@ -236,9 +236,16 @@ export function DosenPage() {
                                                 {(dosen.nama_lengkap || dosen.name || 'D').charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-gray-800">
-                                                    {dosen.nama_lengkap || dosen.name}
-                                                </p>
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="font-semibold text-gray-800">
+                                                        {dosen.nama_lengkap || dosen.name}
+                                                    </p>
+                                                    {dosen.is_coordinator && (
+                                                        <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
+                                                            Koordinator
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="text-[11px] text-gray-400">{dosen.email}</p>
                                             </div>
                                         </div>

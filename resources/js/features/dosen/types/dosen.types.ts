@@ -30,5 +30,6 @@ export interface DosenFormData {
     tipe_dosen: TipeDosen;
     semester_lb?: SemesterLb | '';
     prodi_id: number | string | '';
+    is_coordinator?: boolean;
     status_aktif: boolean;
 }

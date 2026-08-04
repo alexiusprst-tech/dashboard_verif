@@ -50,6 +50,8 @@ const PIC_ITEMS: NavItem[] = [
     { label: 'Verifikasi Soal', href: '/verifikasi', icon: CheckSquare },
 ];
 
+const BERITA_ACARA_ITEM: NavItem = { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList };
+
 const COORDINATOR_ITEMS: NavItem[] = [
     { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
 ];
@@ -124,6 +126,7 @@ function buildNavSections(
             items: [
                 ...DOSEN_ITEMS,
                 ...picItemsWithBadge,
+                BERITA_ACARA_ITEM,
             ],
         });
     } else {

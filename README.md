@@ -2,8 +2,6 @@
 
 Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara) soal ujian oleh dosen, dengan alur penugasan PIC (Person in Charge) yang bersifat dinamis per periode. Fokus penggunaan saat ini untuk **Program Studi Sistem Informasi**.
 
-> Dokumen ini adalah versi terbaru yang sudah mencakup seluruh revisi: penyederhanaan role (Coordinator melebur ke PIC), pembedaan Dosen Biasa/LB, pemetaan dosen↔mata kuliah, PLO/CLO per periode, dan format soal wajib PDF.
-
 ---
 
 ## Daftar Isi
@@ -23,17 +21,21 @@ Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara
 
 ## 1. Ringkasan Sistem
 
-Sistem ini dibangun untuk mendigitalkan proses verifikasi soal ujian di lingkungan akademik, khususnya Program Studi Sistem Informasi. Setiap periode (semester ganjil/genap), dosen mengunggah soal (format PDF) sesuai kategori dan template yang ditentukan, sesuai mata kuliah yang diampunya pada periode tersebut. Sejumlah dosen ditunjuk oleh **PIC (Person in Charge)** untuk memegang **role PIC**, yang memverifikasi soal dan memantau progres verifikasi. Hasil verifikasi didokumentasikan secara otomatis dalam bentuk **Berita Acara (BA)** yang bisa dicetak.
+Sistem ini dibangun untuk mendigitalkan proses verifikasi soal ujian di lingkungan akademik, khususnya Program Studi Sistem Informasi. Setiap periode (semester ganjil/genap), dosen mengunggah soal (format PDF) sesuai kategori dan template yang ditentukan serta mata kuliah yang diampunya pada periode tersebut. Dosen terpilih ditunjuk sebagai **PIC (Person in Charge)** untuk memverifikasi soal dan memantau progres verifikasi. Hasil verifikasi didokumentasikan secara otomatis dalam bentuk **Berita Acara (BA)** yang dapat dicetak.
 
-Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
+Terdapat 4 peran utama dalam sistem:
+- **Super Admin**: Mengelola seluruh konfigurasi sistem, akun pengguna (dosen), periode akademik, template soal & berita acara, penugasan PIC, broadcast pemberitahuan, serta memantau seluruh data sistem.
+- **Coordinator**: Memantau progres verifikasi tingkat prodi, mengelola data dosen prodi, serta melihat dan mencetak Berita Acara.
+- **PIC (Person in Charge)**: Dosen yang mendapatkan penugasan dinamis per periode untuk memverifikasi soal ujian (approve, revisi, reject), memantau progres verifikasi, serta meng-generate Berita Acara.
+- **Dosen**: Mengisi PLO & CLO per periode akademik, mengunggah soal ujian (PDF) sesuai mata kuliah yang diampu, serta menindaklanjuti catatan revisi dari verifikator.
 
-- **Hanya ada 3 tingkat akses**: PIC, Dosen (base), dan Dosen yang diberi **role PIC**. Tidak ada role PIC terpisah — seluruh fitur yang sebelumnya dianggap "milik PIC" (monitoring/dashboard progres) sudah melebur menjadi bagian dari role PIC.
-- **PIC bukan role permanen.** Status PIC adalah *penugasan role* yang berlaku untuk satu periode tertentu saja (disimpan di tabel `user_roles`), bisa berbeda-beda setiap periode. Seorang dosen bisa jadi PIC di periode ini, dan jadi dosen biasa di periode berikutnya.
-- **Dosen yang diberi role PIC dapat memverifikasi SEMUA soal** yang diupload dosen dalam periode aktif tempat dia bertugas — tidak dibatasi ke target dosen tertentu, karena scope aplikasi ini memang fokus untuk satu prodi (Sistem Informasi).
-- **Ada dua tipe dosen**: Dosen Biasa (aktif di semua periode) dan Dosen LB/Luar Biasa (hanya aktif di satu jenis periode — ganjil atau genap sesuai penugasannya).
-- **PLO dan CLO di-scope per periode** — bisa berbeda konten antar semester, tidak dipakai lintas periode secara otomatis.
-- **Berita Acara digenerate otomatis** dari data verifikasi (snapshot immutable), bukan diketik manual atau live-query, untuk menjaga konsistensi dokumen resmi walau ada perubahan data setelahnya.
-- **Format soal dan template wajib PDF** untuk menjaga konsistensi saat digabung ke dokumen Berita Acara.
+Poin penting sistem:
+- **Empat Tingkat Peran (Role)**: Super Admin, Coordinator, PIC, dan Dosen.
+- **PIC bersifat dinamis per periode**: Penugasan PIC disimpan pada tabel `user_roles` (`user_id`, `role_id`, `periode_id`). Seorang dosen dapat menjadi PIC pada suatu periode tertentu dan kembali menjadi Dosen biasa pada periode berikutnya.
+- **Dua tipe dosen**: Dosen Biasa (aktif di semua periode) dan Dosen LB / Luar Biasa (aktif pada periode ganjil atau genap sesuai penugasan).
+- **Scope PLO dan CLO per periode**: Terikat pada periode akademik aktif.
+- **Berita Acara Otomatis & Immutable**: Generated dari snapshot data verifikasi.
+- **Format berkas wajib PDF**: Berlaku untuk berkas soal dan template.
 
 ---
 
@@ -41,88 +43,84 @@ Poin penting yang membedakan sistem ini dari sistem CRUD biasa:
 
 | Role | Sifat | Deskripsi Singkat |
 |---|---|---|
-| **Coordinator** | Permanen | Mengelola keseluruhan sistem: user, periode, deadline, pemetaan dosen↔matkul, pemberian role PIC, broadcast, dan monitoring semua data |
-| **Dosen (Biasa)** | Permanen (base role) | Role dasar, aktif di semua periode. Berhak CRUD PLO/CLO dan upload soal |
-| **Dosen (LB / Luar Biasa)** | Permanen (base role, dengan batasan) | Sama seperti Dosen Biasa, tapi **hanya aktif di satu jenis periode** (ganjil **atau** genap) sesuai penugasan |
-| **Dosen dengan role PIC** | Dinamis (assignment per periode, melekat pada akun dosen) | Diberikan Coordinator untuk satu periode tertentu. Mendapat **seluruh fitur dosen**, ditambah **verifikasi soal** dan **monitoring/dashboard progres** (fitur yang sebelumnya disebut "Coordinator" sudah melebur ke sini) |
-
-> **Catatan penting:** karena PIC adalah assignment dinamis, secara teknis disimpan di tabel `user_roles` (kombinasi `user_id`, `role_id`, `periode_id`), bukan sebagai kolom `role` tetap di tabel `users`. Tidak ada lagi kolom `is_coordinator` — role Coordinator sudah dihapus sepenuhnya dari desain.
+| **Super Admin** | Permanen | Mengelola keseluruhan sistem: user/dosen, periode & deadline, kategori & template soal/BA, penugasan PIC, broadcast, monitoring prodi, dan berita acara. |
+| **Coordinator** | Permanen | Mengelola dan memantau aktivitas prodi: manajemen dosen, monitoring prodi, serta melihat dan mencetak Berita Acara. |
+| **PIC (Person in Charge)** | Dinamis (assignment per periode) | Dosen yang diberi penugasan verifikator pada periode tertentu. Melakukan verifikasi soal (approve/revisi/reject), memantau progres verifikasi, dan meng-generate Berita Acara. |
+| **Dosen (Biasa & LB)** | Permanen (base role) | Role dasar dosen pengampu. Mengisi PLO/CLO per periode, mengunggah soal (PDF) sesuai mata kuliah yang diampu, dan melihat status revisi soal. |
 
 ### Matriks Hak Akses
 
-| Fitur | Coordinator | Dosen (tanpa role PIC) | Dosen (dengan role PIC) |
-|---|:---:|:---:|:---:|
-| CRUD PLO & CLO (per periode) | ✅ | ✅ | ✅ |
-| Upload Soal (PDF, sesuai matkul yang diampu) | ❌ | ✅ | ✅ |
-| Kelola Periode & Deadline | ✅ | ❌ | ❌ |
-| Kelola Kategori/Template Soal (PDF) | ✅ | ❌ | ❌ |
-| Kelola Pemetaan Dosen ↔ Mata Kuliah | ✅ | ❌ | ❌ |
-| Berikan Role PIC ke Dosen | ✅ | ❌ | ❌ |
-| Verifikasi Soal (approve/revisi/reject) | ❌ | ❌ | ✅ (semua soal dalam periode tugasnya) |
-| Monitoring/Dashboard Progres Verifikasi | ✅ (semua periode) | ❌ | ✅ (periode tempat dia jadi PIC) |
-| Generate & Print Berita Acara | ✅ (semua) | ❌ | ✅ (miliknya) |
-| Kirim Broadcast | ✅ | ❌ | ❌ |
+| Fitur | Super Admin | Coordinator | PIC | Dosen |
+|---|:---:|:---:|:---:|:---:|
+| CRUD User & Manajemen Dosen | ✅ | ✅ | ❌ | ❌ |
+| Kelola Periode & Deadline | ✅ | ❌ | ❌ | ❌ |
+| Kelola Kategori & Template Soal / BA | ✅ | ❌ | ❌ | ❌ |
+| Penugasan PIC (User Role) | ✅ | ❌ | ❌ | ❌ |
+| Kirim Broadcast | ✅ | ❌ | ❌ | ❌ |
+| CRUD PLO & CLO (per periode) | ✅ | ✅ | ✅ | ✅ |
+| Upload Soal (PDF, sesuai matkul) | ✅ | ✅ | ✅ | ✅ |
+| Verifikasi Soal (Approve/Revisi/Reject) | ✅ | ❌* | ✅ | ❌ |
+| Monitoring Prodi / Dashboard Progres | ✅ | ✅ | ✅ | ❌ |
+| Generate & Print Berita Acara | ✅ (Semua PIC) | ✅ (Semua) | ✅ (Milik Sendiri) | ❌ |
+
+*\* Catatan: Coordinator dapat melakukan verifikasi soal apabila juga ditugaskan sebagai PIC pada periode berjalan.*
 
 ---
 
 ## 3. Proses Bisnis
 
-### Tahap 1 — Persiapan Periode (Coordinator)
-1. Coordinator membuat **Periode** baru (tentukan jenis semester: ganjil/genap) beserta **tenggat waktu (deadline)** upload soal.
-2. Coordinator menyiapkan/memilih **Kategori & Template** soal (format PDF) yang berlaku untuk periode tersebut.
-3. Coordinator membuat **pemetaan dosen ↔ mata kuliah** untuk periode ini (menentukan dosen mana mengampu mata kuliah apa) — pemetaan ini fleksibel dan bisa diedit kapan saja oleh Coordinator.
-4. Coordinator mengirim **Broadcast** pemberitahuan ke seluruh dosen terkait pembukaan periode dan deadline.
+### Tahap 1 — Persiapan Periode (Super Admin)
+1. **Super Admin** membuat Periode baru (semester ganjil/genap) beserta tenggat waktu (deadline) upload soal.
+2. **Super Admin** menyiapkan Kategori & Template soal serta Template Berita Acara (format PDF/DOCX).
+3. **Super Admin** menetapkan penugasan PIC untuk periode berjalan dan mengirimkan Broadcast ke seluruh dosen.
 
-### Tahap 2 — Upload Soal (Dosen)
-5. Dosen login. Jika Dosen LB, sistem otomatis mengecek apakah jenis semester periode aktif sesuai dengan penugasannya — jika tidak sesuai, menu upload tidak tersedia.
-6. Dosen melengkapi **PLO** dan **CLO** untuk periode aktif (data ini spesifik per periode, tidak otomatis terbawa dari periode sebelumnya).
-7. Dosen mengunduh template (PDF), menyusun soal dalam format PDF, lalu mengunggahnya ke sistem sebelum deadline — hanya bisa memilih mata kuliah yang sesuai dengan pemetaan dosen↔matkul miliknya di periode ini.
-8. Status soal otomatis menjadi `submitted`.
+### Tahap 2 — Pengisian PLO/CLO & Upload Soal (Dosen)
+4. **Dosen** login ke sistem. Jika Dosen LB, sistem memvalidasi keaktifan berdasarkan semester penugasannya.
+5. **Dosen** melengkapi PLO dan CLO untuk periode aktif.
+6. **Dosen** mengunggah berkas soal (format PDF) sesuai mata kuliah yang diampu sebelum deadline. Status soal menjadi `submitted`.
 
-### Tahap 3 — Pemberian Role PIC (Coordinator)
-9. Menjelang/setelah deadline, Coordinator memberikan **role PIC** kepada 4–5 dosen terpilih untuk periode tersebut — pencarian dosen dilakukan berdasarkan **kode dosen** dan **nama lengkap**.
-10. Dosen yang diberi role ini otomatis mendapat akses penuh: verifikasi seluruh soal dalam periode tersebut + dashboard monitoring progres.
+### Tahap 3 — Penugasan & Verifikasi Soal (PIC)
+7. **PIC** menerima antrean soal yang perlu diverifikasi pada periode tugasnya.
+8. **PIC** memeriksa soal dan menentukan hasil verifikasi: **Approve**, **Revisi**, atau **Reject** beserta catatan verifikator.
+9. Jika diminta **Revisi**, Dosen pengampu mengunggah ulang berkas soal dan status kembali menjadi `submitted` untuk diverifikasi ulang oleh PIC.
 
-### Tahap 4 — Verifikasi (Dosen dengan role PIC)
-11. Dosen dengan role PIC login dan melihat **seluruh soal** yang perlu diverifikasi dalam periode tugasnya (tidak dibatasi ke dosen tertentu).
-12. PIC memverifikasi tiap soal dengan hasil: **approve**, **minta revisi**, atau **reject**, disertai catatan.
-13. Jika soal diminta revisi, dosen pemilik soal mengunggah ulang (tetap PDF), status kembali ke `submitted`, dan masuk antrian verifikasi lagi.
-
-### Tahap 5 — Monitoring Progres (Dosen dengan role PIC)
-14. Dosen dengan role PIC dapat memantau progres verifikasi keseluruhan (dashboard rekap per mata kuliah/status) untuk periode tempat dia bertugas — fitur ini yang sebelumnya dianggap terpisah sebagai "Coordinator".
-
-### Tahap 6 — Dokumentasi
-15. Setelah proses verifikasi selesai, sistem **secara otomatis men-generate Berita Acara** berdasarkan snapshot data verifikasi (siapa PIC, soal-soal apa saja yang diverifikasi, hasil verifikasi, tanggal pelaksanaan) — data ini **tidak berubah lagi** meskipun ada soal yang direvisi lagi setelahnya.
-16. Dosen dengan role PIC dapat **mencetak** dokumen dengan tiga opsi: **BA saja**, **Soal saja**, atau **BA + Soal (gabungan)**.
+### Tahap 4 — Monitoring & Berita Acara (Coordinator & Super Admin)
+10. **Coordinator** dan **Super Admin** memantau progres verifikasi soal prodi melalui Dashboard Monitoring Prodi.
+11. Setelah verifikasi selesai, **PIC** meng-generate Berita Acara (BA).
+12. **Coordinator** dan **Super Admin** dapat meninjau, mengunduh, dan mencetak Berita Acara seluruh PIC.
 
 ---
 
 ## 4. Fitur per Role
 
+### Super Admin
+- Manajemen Akun Dosen (Super Admin, Coordinator, Dosen Biasa/LB)
+- Manajemen Periode Akademik & Deadline
+- Kelola Kategori & Template Soal (PDF) serta Template Berita Acara
+- Penugasan PIC per Periode
+- Kelola & Kirim Broadcast Pemberitahuan
+- Dashboard Monitoring & Filter Berita Acara Seluruh PIC
+- Akses penuh ke seluruh data dan fitur sistem
+
 ### Coordinator
-- Dashboard ringkasan progres upload & verifikasi seluruh periode
-- Manajemen akun dosen (kode dosen, nama, tipe dosen Biasa/LB, prodi)
-- Manajemen Periode & Deadline (dengan jenis semester ganjil/genap)
-- Manajemen Kategori/Template Soal (validasi PDF)
-- Manajemen pemetaan Dosen ↔ Mata Kuliah per periode
-- Pemberian role PIC ke dosen terpilih (pencarian via kode/nama)
-- Kirim & kelola Broadcast pemberitahuan
-- Melihat & mengunduh rekap seluruh Berita Acara
+- Dashboard Monitoring Progres Verifikasi Prodi
+- Manajemen Data Dosen Prodi
+- Melihat, mengunduh, dan mencetak Berita Acara seluruh PIC
+- CRUD PLO & CLO serta Upload Soal (sebagai Dosen Pengampu)
 
-### Dosen (Biasa & LB — base role)
-- CRUD PLO (Program Learning Outcome) khusus periode aktif
-- CRUD CLO (Course Learning Outcome) khusus periode aktif, terhubung ke PLO dan mata kuliah
-- Upload soal (PDF) sesuai kategori, template, dan mata kuliah yang diampu, sebelum deadline
-- Melihat status soal sendiri (draft/submitted/in review/revisi/approved/rejected)
-- Menerima notifikasi broadcast dari Coordinator
-- *(Khusus Dosen LB)* akses upload/interaksi soal hanya tersedia saat periode aktif sesuai jenis semester penugasannya
+### PIC (Person in Charge)
+- Dihubungkan secara dinamis per periode akademik
+- Mengakses antrean verifikasi soal ujian pada periode tugasnya
+- Memberikan keputusan verifikasi (Approve / Perlu Revisi / Reject) dan catatan verifikator
+- Dashboard Monitoring Progres Verifikasi PIC
+- Generate, preview, dan cetak Berita Acara (opsi: BA saja, Soal saja, atau BA + Soal)
 
-### Dosen dengan Role PIC (Muncul sebagai menu tambahan saat role aktif di periode berjalan)
-- Melihat **seluruh** soal yang perlu diverifikasi dalam periode tugasnya
-- Melakukan verifikasi (approve/revisi/reject) disertai catatan
-- Melihat riwayat verifikasi yang sudah dilakukan
-- **Dashboard monitoring progres verifikasi** (per mata kuliah/status) — fitur yang sebelumnya disebut terpisah sebagai "Coordinator"
-- Generate & Print Berita Acara (BA saja/Soal saja/Keduanya)
+### Dosen (Biasa & LB)
+- Role dasar untuk seluruh dosen pengampu
+- CRUD PLO & CLO khusus periode aktif
+- Upload berkas soal (PDF) sesuai mata kuliah yang diampu sebelum deadline
+- Memantau status soal (Submitted, In Review, Revisi, Approved, Rejected) dan riwayat revisi
+- Menerima notifikasi & broadcast dari sistem/admin
 
 ---
 
@@ -466,7 +464,7 @@ Berita Acara dirancang sebagai dokumen yang di-generate otomatis (bukan diketik 
 
 Hal-hal yang sudah difinalisasi dan diimplementasikan:
 
-- ✅ **Penyederhanaan Role & Akses**: Role Coordinator dilebur ke PIC; PIC dinamis per periode (disimpan di `user_roles`).
+- ✅ **Empat Peran Pengguna (Role & Akses)**: Super Admin, Coordinator, PIC (dinamis per periode via `user_roles`), dan Dosen (Biasa/LB).
 - ✅ **Berita Acara per Role**:
   - Dosen dengan role **PIC** dapat meng-generate Berita Acara untuk tugas verifikasinya sendiri secara mandiri.
   - **Super Admin** dapat memfilter daftar Berita Acara dengan opsi **"— Semua PIC —"** (menampilkan Berita Acara seluruh PIC secara bersamaan) atau memilih PIC spesifik.

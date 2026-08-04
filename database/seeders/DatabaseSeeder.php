@@ -7,8 +7,10 @@ use App\Models\Category;
 use App\Models\Course;
 use App\Models\Periode;
 use App\Models\ProgramStudi;
+use App\Models\Role;
 use App\Models\Template;
 use App\Models\User;
+use App\Models\UserRole;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -86,6 +88,21 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // PIC (Person in Charge / Verifikator)
+        User::updateOrCreate(
+            ['kode_dosen' => 'PIC001'],
+            [
+                'uuid' => (string) Str::uuid(),
+                'nama_lengkap' => 'PIC Verifikator Soal',
+                'email' => 'pic@telkomuniversity.ac.id',
+                'password' => Hash::make('password'),
+                'prodi_id' => $si->id,
+                'is_super_admin' => false,
+                'is_coordinator' => false,
+                'status_aktif' => true,
+            ]
+        );
+
         /*
         |--------------------------------------------------------------------------
         | DOSEN
@@ -93,11 +110,12 @@ class DatabaseSeeder extends Seeder
         */
 
         $dosenList = [
-            ['kode' => 'DSN001', 'nama' => 'Dosen Satu',  'email' => 'dosen1@telkomuniversity.ac.id'],
-            ['kode' => 'DSN002', 'nama' => 'Dosen Dua',   'email' => 'dosen2@telkomuniversity.ac.id'],
-            ['kode' => 'DSN003', 'nama' => 'Dosen Tiga',  'email' => 'dosen3@telkomuniversity.ac.id'],
-            ['kode' => 'DSN004', 'nama' => 'Dosen Empat', 'email' => 'dosen4@telkomuniversity.ac.id'],
-            ['kode' => 'DSN005', 'nama' => 'Dosen Lima',  'email' => 'dosen5@telkomuniversity.ac.id'],
+            ['kode' => 'DSN001', 'nama' => 'Dosen Satu',  'email' => 'dosen1@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
+            ['kode' => 'DSN002', 'nama' => 'Dosen Dua',   'email' => 'dosen2@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
+            ['kode' => 'DSN003', 'nama' => 'Dosen Tiga',  'email' => 'dosen3@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
+            ['kode' => 'DSN004', 'nama' => 'Dosen Empat', 'email' => 'dosen4@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
+            ['kode' => 'DSN005', 'nama' => 'Dosen Lima',  'email' => 'dosen5@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
+            ['kode' => 'DSNLB1', 'nama' => 'Dosen Luar Biasa', 'email' => 'dosenlb@telkomuniversity.ac.id', 'tipe' => 'lb', 'semester_lb' => 'ganjil'],
         ];
 
         foreach ($dosenList as $dosen) {
@@ -111,6 +129,8 @@ class DatabaseSeeder extends Seeder
                     'prodi_id' => $si->id,
                     'is_super_admin' => false,
                     'is_coordinator' => false,
+                    'tipe_dosen' => $dosen['tipe'],
+                    'semester_lb' => $dosen['semester_lb'],
                     'status_aktif' => true,
                 ]
             );
@@ -122,12 +142,12 @@ class DatabaseSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        Course::firstOrCreate(
+        $if2113 = Course::firstOrCreate(
             ['kode_mk' => 'IF2113'],
             ['nama_mk' => 'Dasar Pemrograman', 'prodi_id' => $si->id, 'sks' => 3]
         );
 
-        Course::firstOrCreate(
+        $if2243 = Course::firstOrCreate(
             ['kode_mk' => 'IF2243'],
             ['nama_mk' => 'Rekayasa Perangkat Lunak', 'prodi_id' => $si->id, 'sks' => 3]
         );
@@ -138,7 +158,7 @@ class DatabaseSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        Periode::firstOrCreate(
+        $periode = Periode::firstOrCreate(
             ['nama_periode' => 'UTS Ganjil 2025/2026'],
             [
                 'semester' => 'ganjil',
@@ -148,6 +168,31 @@ class DatabaseSeeder extends Seeder
                 'status' => PeriodeStatus::Aktif->value,
             ]
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | PEMETAAN DOSEN MATKUL
+        |--------------------------------------------------------------------------
+        */
+
+        $admin = User::where('is_super_admin', true)->first();
+        $dosen1User = User::where('email', 'dosen1@telkomuniversity.ac.id')->first();
+        $dosen2User = User::where('email', 'dosen2@telkomuniversity.ac.id')->first();
+
+        if ($if2113 && $if2243 && $periode && $admin) {
+            if ($dosen1User) {
+                DB::table('dosen_mata_kuliah')->updateOrInsert(
+                    ['dosen_id' => $dosen1User->id, 'mata_kuliah_id' => $if2113->id, 'periode_id' => $periode->id],
+                    ['created_by' => $admin->id, 'created_at' => now(), 'updated_at' => now()]
+                );
+            }
+            if ($dosen2User) {
+                DB::table('dosen_mata_kuliah')->updateOrInsert(
+                    ['dosen_id' => $dosen2User->id, 'mata_kuliah_id' => $if2243->id, 'periode_id' => $periode->id],
+                    ['created_by' => $admin->id, 'created_at' => now(), 'updated_at' => now()]
+                );
+            }
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -194,5 +239,37 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | PENUGASAN PIC
+        |--------------------------------------------------------------------------
+        | Assign PIC khusus (pic@telkomuniversity.ac.id) & Dosen terpilih sebagai PIC.
+        | Coordinator TIDAK dimasukkan di sini agar terpisah sepenuhnya.
+        |--------------------------------------------------------------------------
+        */
+
+        $picRole = Role::where('nama_role', 'pic')->first();
+
+        if ($picRole && $periode && $admin) {
+            $picCandidates = User::whereIn('email', [
+                'pic@telkomuniversity.ac.id',
+                'dosen1@telkomuniversity.ac.id',
+            ])->get();
+
+            foreach ($picCandidates as $user) {
+                UserRole::firstOrCreate(
+                    [
+                        'user_id'    => $user->id,
+                        'role_id'    => $picRole->id,
+                        'periode_id' => $periode->id,
+                    ],
+                    [
+                        'assigned_by' => $admin->id,
+                        'assigned_at' => now(),
+                    ]
+                );
+            }
+        }
     }
 }

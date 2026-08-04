@@ -71,7 +71,9 @@ export function VerifikasiModal({
 
     const fileExt = soal.file_soal.split('.').pop()?.toLowerCase();
     const isPdf = fileExt === 'pdf';
-    const fileUrl = soal.file_url || `/storage/${soal.file_soal}`;
+    // Selalu gunakan URL absolut agar iframe tidak ditangkap oleh React Router
+    const fileUrl = soal.file_url
+        || `${window.location.origin}/storage/${soal.file_soal}`;
 
     return (
         <Modal
@@ -116,12 +118,15 @@ export function VerifikasiModal({
                             <Download size={13} /> Unduh
                         </a>
                     </div>
-                    <div className="flex-1 min-h-[300px] flex items-center justify-center bg-white rounded-lg border border-gray-100">
+                    <div className="flex-1 min-h-[300px] flex items-center justify-center bg-white rounded-lg border border-gray-100 overflow-hidden">
                         {isPdf ? (
                             <iframe
-                                src={fileUrl}
+                                key={fileUrl}
+                                src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
                                 className="h-full w-full rounded-lg"
+                                style={{ minHeight: '380px' }}
                                 title="Pratinjau PDF"
+                                sandbox="allow-scripts allow-same-origin"
                             />
                         ) : (
                             <div className="text-center p-6 space-y-3">
@@ -132,7 +137,8 @@ export function VerifikasiModal({
                                 </div>
                                 <a
                                     href={fileUrl}
-                                    download
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 text-gray-700 px-3 py-1.5 text-xs font-semibold hover:bg-gray-200 transition"
                                 >
                                     <Download size={13} /> Unduh Berkas untuk Review

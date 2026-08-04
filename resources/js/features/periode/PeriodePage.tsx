@@ -199,7 +199,9 @@ export function PeriodePage() {
                                             <td className="px-6 py-4 font-semibold text-gray-900">
                                                 {r.nama_periode}
                                             </td>
-                                            <td className="px-6 py-4">Semester {r.semester}</td>
+                                            <td className="px-6 py-4 font-medium text-gray-900 capitalize">
+                                                Semester {r.semester || '-'}
+                                            </td>
                                             <td className="px-6 py-4">{r.tahun_akademik}</td>
                                             <td className="px-6 py-4">
                                                 <span

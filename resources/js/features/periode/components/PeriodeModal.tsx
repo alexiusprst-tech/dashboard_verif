@@ -43,7 +43,7 @@ export function PeriodeModal({
         resolver: zodResolver(schema),
         defaultValues: {
             nama_periode: '',
-            semester: '1',
+            semester: 'ganjil',
             tahun_akademik: '',
             tanggal_mulai: '',
             tanggal_deadline: '',
@@ -54,7 +54,7 @@ export function PeriodeModal({
         if (periode) {
             reset({
                 nama_periode: periode.nama_periode,
-                semester: periode.semester || '1',
+                semester: periode.semester || 'ganjil',
                 tahun_akademik: periode.tahun_akademik || '',
                 tanggal_mulai: periode.tanggal_mulai,
                 tanggal_deadline: periode.tanggal_deadline,
@@ -62,7 +62,7 @@ export function PeriodeModal({
         } else {
             reset({
                 nama_periode: '',
-                semester: '1',
+                semester: 'ganjil',
                 tahun_akademik: '',
                 tanggal_mulai: '',
                 tanggal_deadline: '',
@@ -127,9 +127,8 @@ export function PeriodeModal({
                             {...register('semester')}
                             className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                         >
-                            <option value="1">1 (Ganjil)</option>
-                            <option value="2">2 (Genap)</option>
-                            <option value="3">3 (Antara)</option>
+                            <option value="ganjil">Ganjil</option>
+                            <option value="genap">Genap</option>
                         </select>
                         {errors.semester && (
                             <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.semester.message}</p>
