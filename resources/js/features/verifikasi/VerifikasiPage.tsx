@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckSquare, Calendar, Eye, FileText, Filter } from 'lucide-react';
+import { CheckSquare, Calendar, Eye, FileText, Filter, UserCheck } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { Pagination } from '@/shared/components/ui/Pagination';
@@ -8,6 +8,7 @@ import { SkeletonTable } from '@/shared/components/ui/Skeleton';
 import { StatusBadge } from '@/shared/components/ui/StatusBadge';
 import { Modal } from '@/shared/components/ui/Modal';
 import { useToast } from '@/shared/hooks/useToast';
+import { useAuth } from '@/shared/hooks/useAuth';
 
 import api from '@/shared/lib/api';
 
@@ -17,8 +18,10 @@ import { useTugasSaya, useSubmitVerifikasi } from './hooks/useVerifikasi';
 import { VerifikasiModal } from './components/VerifikasiModal';
 import { TimelineCard } from '@/features/soal/components/TimelineCard';
 import { RevisionHistoryAccordion } from '@/features/soal/components/RevisionHistoryAccordion';
+import { ManageTargetsModal } from '@/features/penugasan-pic/components/ManageTargetsModal';
 
 export function VerifikasiPage() {
+    const { user } = useAuth();
     const { toast } = useToast();
 
     // Filters
@@ -33,6 +36,7 @@ export function VerifikasiPage() {
     // Modals
     const [verifyModalOpen, setVerifyModalOpen] = useState(false);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
+    const [manageTargetsOpen, setManageTargetsOpen] = useState(false);
     const [selectedSoal, setSelectedSoal] = useState<Soal | null>(null);
 
     // Load Periodes on mount
@@ -96,6 +100,15 @@ export function VerifikasiPage() {
                 title="Tugas Verifikasi Soal Ujian"
                 description="Verifikasi kesesuaian soal ujian dosen dengan kurikulum, PLO/CLO, dan template standar."
                 breadcrumb={[{ label: 'Verifikasi Soal' }]}
+                action={
+                    <button
+                        onClick={() => setManageTargetsOpen(true)}
+                        className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] cursor-pointer"
+                    >
+                        <UserCheck size={16} />
+                        Pilih Dosen Target Saya
+                    </button>
+                }
             />
 
             <FilterBar onReset={handleReset}>
@@ -291,6 +304,16 @@ export function VerifikasiPage() {
                     </div>
                 )}
             </Modal>
+
+            <ManageTargetsModal
+                open={manageTargetsOpen}
+                onClose={() => {
+                    setManageTargetsOpen(false);
+                    refetch();
+                }}
+                verifier={user ? { id: user.id, user_id: user.id, dosen: { id: user.id, nama_lengkap: user.nama_lengkap } } : null}
+                periodeId={selectedPeriodeId}
+            />
         </div>
     );
 }

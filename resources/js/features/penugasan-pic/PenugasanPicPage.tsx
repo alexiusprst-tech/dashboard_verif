@@ -63,16 +63,27 @@ export function PenugasanPicPage() {
         setPage(1);
     };
 
-    const handleSaveAssignment = async (data: any) => {
+    const handleSaveAssignment = async (data: { periode_id: number; pic_dosen_ids: number[] }) => {
         try {
-            const res = await createMutation.mutateAsync(data);
-            const warning = res.warning;
-            toast.success(res.message || 'Role PIC berhasil diberikan.');
-            if (warning) toast.warning(warning);
+            let successCount = 0;
+            let lastRes: any = null;
+            for (const picId of data.pic_dosen_ids) {
+                const res = await createMutation.mutateAsync({
+                    periode_id: data.periode_id,
+                    pic_dosen_id: picId,
+                });
+                successCount++;
+                lastRes = res;
+            }
+            toast.success(`${successCount} Dosen berhasil ditugaskan sebagai PIC.`);
+            if (lastRes?.warning) {
+                toast.warning(lastRes.warning);
+            }
             setAssignModalOpen(false);
             refetch();
         } catch (e: any) {
             toast.error(e.response?.data?.message || 'Gagal menyimpan penugasan PIC.');
+            refetch();
         }
     };
 
@@ -104,7 +115,7 @@ export function PenugasanPicPage() {
                 action={
                     <button
                         onClick={() => setAssignModalOpen(true)}
-                        className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)]"
+                        className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] cursor-pointer"
                     >
                         <Plus size={16} />
                         Tugaskan PIC
@@ -196,7 +207,7 @@ export function PenugasanPicPage() {
                                             <div className="flex items-center justify-center">
                                                 <button
                                                     onClick={() => handleOpenDelete(r.id)}
-                                                    className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
+                                                    className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[var(--color-danger)] transition cursor-pointer"
                                                     title="Cabut Role PIC"
                                                 >
                                                     <MinusCircle size={15} />

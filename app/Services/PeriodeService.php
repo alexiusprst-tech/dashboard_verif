@@ -9,17 +9,23 @@ use App\Enums\PeriodeStatus;
 use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
+use App\Services\NotifikasiService;
+use App\Enums\NotificationType;
+
 class PeriodeService
 {
     protected PeriodeRepositoryContract $periodeRepository;
     protected ActivityLogService $activityLogService;
+    protected NotifikasiService $notifikasiService;
 
     public function __construct(
         PeriodeRepositoryContract $periodeRepository,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        NotifikasiService $notifikasiService
     ) {
         $this->periodeRepository = $periodeRepository;
         $this->activityLogService = $activityLogService;
+        $this->notifikasiService = $notifikasiService;
     }
 
     private function normalizeSemester(?string $semester): string
@@ -94,6 +100,23 @@ class PeriodeService
         $periode = $periode->fresh();
 
         $this->activityLogService->log("Mengaktifkan periode: {$periode->nama_periode}", 'Periode', $user->id);
+
+        // Ambil semua ID Koordinator yang aktif
+        $coordinatorIds = User::where('is_coordinator', true)
+            ->where('status_aktif', true)
+            ->pluck('id')
+            ->toArray();
+
+        if (!empty($coordinatorIds)) {
+            $this->notifikasiService->kirimBulk(
+                $coordinatorIds,
+                "Periode Akademik Aktif: {$periode->nama_periode}",
+                "Periode '{$periode->nama_periode}' telah diaktifkan oleh Administrator. Silakan kelola penugasan PIC dan monitoring verifikasi soal.",
+                NotificationType::Info,
+                'periode',
+                $periode->id
+            );
+        }
 
         return $periode;
     }

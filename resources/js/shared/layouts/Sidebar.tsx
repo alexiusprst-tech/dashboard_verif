@@ -15,6 +15,7 @@ import {
     Bell,
     X,
     Scroll,
+    BookMarked,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -39,11 +40,12 @@ interface NavSection {
 const COMMON_ITEMS: NavItem[] = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'PLO & CLO', href: '/plo-clo', icon: GraduationCap },
+    { label: 'Mata Kuliah', href: '/matkul', icon: BookMarked },
+    { label: 'Master CLO', href: '/clo-master', icon: Tag },
 ];
 
 const DOSEN_ITEMS: NavItem[] = [
     { label: 'Soal Saya', href: '/soal', icon: FileText },
-    { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
 ];
 
 const PIC_ITEMS: NavItem[] = [
@@ -106,6 +108,7 @@ function buildNavSections(
             title: 'Manajemen',
             items: [
                 ...COORDINATOR_MANAGEMENT_ITEMS,
+                { label: 'Penugasan PIC', href: '/penugasan-pic', icon: Users },
                 { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
                 { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
             ],
@@ -130,8 +133,8 @@ function buildNavSections(
             ],
         });
     } else {
-        // Dosen biasa hanya bisa upload soal
-        sections.push({ title: 'Soal', items: DOSEN_ITEMS });
+        // Dosen biasa bisa upload soal & melihat Berita Acara
+        sections.push({ title: 'Soal', items: [...DOSEN_ITEMS, BERITA_ACARA_ITEM] });
     }
 
     return sections;
@@ -259,8 +262,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                             </p>
                         )}
                         <ul className="space-y-0.5">
-                            {section.items.map((item) => (
-                                <li key={item.href}>
+                            {section.items.map((item, iIdx) => (
+                                <li key={`${sIdx}-${item.href}-${iIdx}`}>
                                     <SidebarNavItem item={item} collapsed={collapsed} />
                                 </li>
                             ))}

@@ -14,6 +14,9 @@ class Course extends Model
         'kode_mk',
         'nama_mk',
         'prodi_id',
+        'sks',
+        'semester',
+        'kategori',
     ];
 
     /* ── Relations ──────────────────────────────────────────── */

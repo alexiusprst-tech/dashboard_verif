@@ -98,7 +98,13 @@ class EloquentSoalRepository implements SoalRepositoryContract
     public function findForVerifier(int $verifierId, int $periodeId, int $perPage = 15, ?string $status = null): LengthAwarePaginator
     {
         $query = Soal::with(['dosen', 'mataKuliah', 'clo', 'template.kategori'])
-            ->where('periode_id', $periodeId);
+            ->where('periode_id', $periodeId)
+            ->whereIn('dosen_id', function ($q) use ($verifierId, $periodeId) {
+                $q->select('target_dosen_id')
+                    ->from('penugasan')
+                    ->where('verifier_id', $verifierId)
+                    ->where('periode_id', $periodeId);
+            });
 
         if (!empty($status) && $status !== 'all' && $status !== 'semua') {
             if ($status === 'pending') {

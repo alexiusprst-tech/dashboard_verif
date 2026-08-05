@@ -5,7 +5,6 @@ import * as z from 'zod';
 import { Search, X, UserCheck, ChevronDown } from 'lucide-react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { cn } from '@/shared/lib/utils';
-import type { PenugasanFormData } from '../types/penugasan.types';
 import type { Periode } from '@/features/periode/types/periode.types';
 import api from '@/shared/lib/api';
 
@@ -13,15 +12,12 @@ const schema = z.object({
     periode_id: z.coerce
         .number()
         .min(1, 'Periode wajib dipilih'),
-    pic_dosen_id: z.coerce
-        .number()
-        .min(1, 'Dosen PIC wajib dipilih'),
 });
 
 interface AssignModalProps {
     open: boolean;
     onClose: () => void;
-    onSubmit: (data: PenugasanFormData) => void;
+    onSubmit: (data: { periode_id: number; pic_dosen_ids: number[] }) => void;
     periodes: Periode[];
     defaultPeriodeId: string;
     loading?: boolean;
@@ -38,14 +34,12 @@ export function AssignModal({
     const {
         register,
         handleSubmit,
-        setValue,
         reset,
         formState: { errors },
-    } = useForm<PenugasanFormData>({
+    } = useForm<{ periode_id: number | string }>({
         resolver: zodResolver(schema),
         defaultValues: {
-            periode_id:   defaultPeriodeId ? Number(defaultPeriodeId) : '',
-            pic_dosen_id: '',
+            periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : '',
         },
     });
 
@@ -53,19 +47,20 @@ export function AssignModal({
     const [picSearch, setPicSearch]       = useState('');
     const [allDosen, setAllDosen]         = useState<any[]>([]);
     const [picResults, setPicResults]     = useState<any[]>([]);
-    const [selectedPic, setSelectedPic]   = useState<any | null>(null);
+    const [selectedPics, setSelectedPics] = useState<any[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
+    const [submitError, setSubmitError]   = useState('');
 
     useEffect(() => {
         if (open) {
             reset({
-                periode_id:   defaultPeriodeId ? Number(defaultPeriodeId) : '',
-                pic_dosen_id: '',
+                periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : '',
             });
             setPicSearch('');
-            setSelectedPic(null);
+            setSelectedPics([]);
             setPicResults([]);
             setShowDropdown(false);
+            setSubmitError('');
 
             // Ambil semua dosen aktif
             api.get('/dosen/search', { params: { q: '', per_page: 200 } }).then((res) => {
@@ -78,28 +73,45 @@ export function AssignModal({
     // Client-side filtering
     useEffect(() => {
         const query = picSearch.trim().toLowerCase();
+        // Saring dosen yang belum dipilih saja
+        const unselectedDosen = allDosen.filter(
+            (d) => !selectedPics.some((p) => p.id === d.id)
+        );
+
         if (!query) {
-            setPicResults(allDosen);
+            setPicResults(unselectedDosen);
         } else {
-            const filtered = allDosen.filter(
+            const filtered = unselectedDosen.filter(
                 (d) =>
                     d.nama_lengkap.toLowerCase().includes(query) ||
                     (d.kode_dosen && d.kode_dosen.toLowerCase().includes(query))
             );
             setPicResults(filtered);
         }
-    }, [picSearch, allDosen]);
+    }, [picSearch, allDosen, selectedPics]);
 
     const handleSelectPic = (dosen: any) => {
-        setSelectedPic(dosen);
-        setValue('pic_dosen_id', dosen.id);
+        if (!selectedPics.some((p) => p.id === dosen.id)) {
+            setSelectedPics((prev) => [...prev, dosen]);
+        }
         setPicSearch('');
         setShowDropdown(false);
+        setSubmitError('');
     };
 
-    const handleClearPic = () => {
-        setSelectedPic(null);
-        setValue('pic_dosen_id', '');
+    const handleRemovePic = (id: number) => {
+        setSelectedPics((prev) => prev.filter((p) => p.id !== id));
+    };
+
+    const handleFormSubmit = (formData: { periode_id: number | string }) => {
+        if (selectedPics.length === 0) {
+            setSubmitError('Pilih minimal satu dosen PIC.');
+            return;
+        }
+        onSubmit({
+            periode_id: Number(formData.periode_id),
+            pic_dosen_ids: selectedPics.map((p) => p.id),
+        });
     };
 
     return (
@@ -133,7 +145,7 @@ export function AssignModal({
                 </>
             }
         >
-            <form id="assign-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5 min-h-[340px]">
+            <form id="assign-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5 min-h-[340px]">
                 {/* Periode */}
                 <div>
                     <label htmlFor="assign-periode" className="block text-sm font-medium text-gray-700">
@@ -162,71 +174,72 @@ export function AssignModal({
                         Dosen yang Ditugaskan sebagai PIC <span className="text-red-500">*</span>
                     </label>
                     <p className="mt-0.5 text-xs text-gray-400">
-                        PIC akan bertanggung jawab memverifikasi seluruh soal dalam periode ini.
+                        Anda dapat memilih lebih dari satu dosen untuk ditugaskan sekaligus.
                     </p>
 
-                    {selectedPic ? (
-                        <div className="mt-2 flex items-center justify-between rounded-lg border border-[var(--color-primary-light)] bg-[var(--color-primary-light)]/20 px-3.5 py-2.5 text-sm">
-                            <div>
-                                <span className="font-semibold text-gray-800">
-                                    {selectedPic.nama_lengkap}
+                    <div className="relative mt-1.5">
+                        <Search
+                            size={15}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                        />
+                        <input
+                            id="assign-pic-search"
+                            type="text"
+                            value={picSearch}
+                            onChange={(e) => {
+                                setPicSearch(e.target.value);
+                                setShowDropdown(true);
+                            }}
+                            onFocus={() => setShowDropdown(true)}
+                            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                            placeholder="Ketik nama dosen atau klik panah untuk melihat daftar..."
+                            className="block h-10 w-full rounded-lg border border-gray-300 pl-9 pr-10 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+                        />
+                        <button
+                            type="button"
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                setShowDropdown((prev) => !prev);
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                            title="Lihat semua dosen"
+                        >
+                            <ChevronDown
+                                size={16}
+                                className={cn("transition-transform duration-200", showDropdown && "rotate-180")}
+                            />
+                        </button>
+                    </div>
+
+                    {/* Tag list dosen terpilih */}
+                    {selectedPics.length > 0 && (
+                        <div className="mt-2.5 flex flex-wrap gap-2 rounded-lg border border-purple-100 bg-purple-50/20 p-2.5">
+                            {selectedPics.map((pic) => (
+                                <span
+                                    key={pic.id}
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-purple-200 pl-2.5 pr-1.5 py-1 text-xs font-medium text-gray-800 shadow-sm"
+                                >
+                                    <span>{pic.nama_lengkap}</span>
+                                    {pic.kode_dosen && (
+                                        <span className="rounded bg-gray-100 px-1 text-[10px] font-mono text-gray-500">
+                                            {pic.kode_dosen}
+                                        </span>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemovePic(pic.id)}
+                                        className="rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                                        title="Hapus"
+                                    >
+                                        <X size={12} />
+                                    </button>
                                 </span>
-                                {selectedPic.kode_dosen && (
-                                    <span className="ml-2 rounded bg-white/80 px-1.5 py-0.5 text-xs font-mono font-medium text-gray-700 border border-gray-200">
-                                        {selectedPic.kode_dosen}
-                                    </span>
-                                )}
-                                {selectedPic.email && (
-                                    <p className="text-xs text-gray-500 mt-0.5">{selectedPic.email}</p>
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={handleClearPic}
-                                className="ml-2 rounded-md p-1 text-gray-400 hover:bg-white hover:text-gray-600 transition-colors"
-                                title="Ganti dosen"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-                     ) : (
-                        <div className="relative mt-1.5">
-                            <Search
-                                size={15}
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                            />
-                            <input
-                                id="assign-pic-search"
-                                type="text"
-                                value={picSearch}
-                                onChange={(e) => {
-                                    setPicSearch(e.target.value);
-                                    setShowDropdown(true);
-                                }}
-                                onFocus={() => setShowDropdown(true)}
-                                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                                placeholder="Cari nama atau klik panah untuk melihat daftar dosen..."
-                                className="block h-10 w-full rounded-lg border border-gray-300 pl-9 pr-10 text-sm focus:border-[var(--color-primary)] focus:outline-none"
-                            />
-                            <button
-                                type="button"
-                                onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    setShowDropdown((prev) => !prev);
-                                }}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
-                                title="Lihat semua dosen"
-                            >
-                                <ChevronDown
-                                    size={16}
-                                    className={cn("transition-transform duration-200", showDropdown && "rotate-180")}
-                                />
-                            </button>
+                            ))}
                         </div>
                     )}
 
                     {/* Dropdown hasil pencarian */}
-                    {showDropdown && !selectedPic && (
+                    {showDropdown && (
                         <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl divide-y divide-gray-100">
                             {picResults.length > 0 ? (
                                 picResults.map((d) => (
@@ -248,14 +261,14 @@ export function AssignModal({
                                 ))
                             ) : (
                                 <li className="px-4 py-3 text-center text-xs text-gray-400">
-                                    Tidak ada dosen yang sesuai dengan kata kunci "{picSearch}"
+                                    {picSearch ? `Tidak ada dosen yang sesuai dengan kata kunci "${picSearch}"` : 'Semua dosen telah terpilih'}
                                 </li>
                             )}
                         </ul>
                     )}
 
-                    {errors.pic_dosen_id && (
-                        <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.pic_dosen_id.message}</p>
+                    {submitError && (
+                        <p className="mt-1 text-xs text-[var(--color-danger)]">{submitError}</p>
                     )}
                 </div>
             </form>

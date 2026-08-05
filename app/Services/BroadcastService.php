@@ -29,11 +29,26 @@ class BroadcastService
     public function create(array $data, User $user): Broadcast
     {
         $data['created_by'] = $user->id;
-        $data['published_at'] = null; // Mulai dengan status draft/un-published
+        $data['published_at'] = now(); // Langsung terbitkan saat dibuat agar semua akun dapat langsung melihat
 
         $broadcast = $this->broadcastRepository->create($data);
 
-        $this->activityLogService->log("Membuat draft broadcast baru: {$broadcast->judul}", 'Broadcast', $user->id);
+        // Ambil target user IDs
+        $targetUserIds = [];
+        $targetEnum = $broadcast->target instanceof TargetBroadcast 
+            ? $broadcast->target 
+            : TargetBroadcast::tryFrom($broadcast->target);
+
+        if ($targetEnum === TargetBroadcast::Semua || $broadcast->target === 'semua') {
+            $targetUserIds = $this->userRepository->findAllActiveDosen()->pluck('id')->toArray();
+        } else {
+            $targetUserIds = $this->userRepository->findByProdi($broadcast->prodi_id)->pluck('id')->toArray();
+        }
+
+        // Dispatch Job untuk insert bulk notifikasi
+        PublishBroadcastJob::dispatch($targetUserIds, $broadcast->id, $broadcast->judul);
+
+        $this->activityLogService->log("Membuat dan mempublikasikan broadcast baru: {$broadcast->judul}", 'Broadcast', $user->id);
 
         return $broadcast;
     }

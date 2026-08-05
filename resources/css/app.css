@@ -139,10 +139,14 @@ h1, h2, h3, h4, h5, h6 {
     color: #ffffff;
 }
 
-/* Focus ring menggunakan warna primary */
-:focus-visible {
+/* Focus ring menggunakan warna primary untuk tombol & link */
+button:focus-visible, a:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+}
+
+input:focus, input:focus-visible, select:focus, select:focus-visible, textarea:focus, textarea:focus-visible {
+    outline: none !important;
 }
 
 /* Scrollbar subtle */

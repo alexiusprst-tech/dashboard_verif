@@ -48,7 +48,7 @@ class BroadcastController extends Controller
 
         return (new BroadcastResource($broadcast))->additional([
             'success' => true,
-            'message' => 'Draf broadcast berhasil dibuat.'
+            'message' => 'Pengumuman / broadcast berhasil dibuat dan diterbitkan.'
         ])->response();
     }
 

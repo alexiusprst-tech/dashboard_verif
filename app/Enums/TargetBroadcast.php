@@ -10,7 +10,7 @@ enum TargetBroadcast: string
     public function label(): string
     {
         return match($this) {
-            self::Semua         => 'Semua Dosen',
+            self::Semua         => 'Semua Akun',
             self::ProdiTertentu => 'Program Studi Tertentu',
         };
     }

@@ -55,7 +55,7 @@ function TargetBadge({ target }: { target: string }) {
     if (target === 'semua') {
         return (
             <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-                <Globe2 size={11} /> Semua Dosen
+                <Globe2 size={11} /> Semua Akun
             </span>
         );
     }
@@ -138,7 +138,7 @@ export function BroadcastPage() {
                 periode_id: data.periode_id ?? null,
             };
             await createMut.mutateAsync(payload);
-            toast.success('Draf broadcast berhasil dibuat!');
+            toast.success('Pengumuman berhasil dibuat dan diterbitkan ke semua akun!');
             reset();
             setCreateOpen(false);
         } catch (e: any) {
@@ -304,7 +304,8 @@ export function BroadcastPage() {
                                 {...register('target')}
                                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
                             >
-                                <option value="semua">Semua Dosen (Prodi Sistem Informasi)</option>
+                                <option value="semua">Semua Akun</option>
+                                <option value="prodi_tertentu">Program Studi Tertentu</option>
                             </select>
                         </div>
 
@@ -378,7 +379,7 @@ export function BroadcastPage() {
                             ) : (
                                 <Megaphone size={15} />
                             )}
-                            Simpan Draf
+                            Kirim Pengumuman
                         </button>
                     </div>
                 </form>

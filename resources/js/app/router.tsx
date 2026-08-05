@@ -16,6 +16,10 @@ import { BroadcastPage } from '@/features/broadcast/BroadcastPage';
 import { TemplateBaPage } from '@/features/berita-acara/TemplateBaPage';
 import { MonitoringPage } from '@/features/monitoring/MonitoringPage';
 import { DosenPage } from '@/features/dosen/DosenPage';
+import { MatkulPage } from '@/features/matkul/MatkulPage';
+import { MatkulDetailPage } from '@/features/matkul/MatkulDetailPage';
+import { KelolaCloPage } from '@/features/matkul/KelolaCloPage';
+import { CloMasterPage } from '@/features/plo-clo/CloMasterPage';
 
 /**
  * Router aplikasi Sistem Verifikasi Soal.
@@ -112,6 +116,26 @@ export const router = createBrowserRouter([
             {
                 path: 'dosen',
                 element: <DosenPage />,
+            },
+
+            {
+                path: 'matkul',
+                element: <MatkulPage />,
+            },
+
+            {
+                path: 'matkul/:id',
+                element: <MatkulDetailPage />,
+            },
+
+            {
+                path: 'matkul/:id/kelola-clo',
+                element: <KelolaCloPage />,
+            },
+
+            {
+                path: 'clo-master',
+                element: <CloMasterPage />,
             },
         ],
     },

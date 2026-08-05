@@ -35,8 +35,8 @@ export function MainLayout() {
             return (res.data.unread_count as number) ?? 0;
         },
         enabled: isAuthenticated,
-        refetchInterval: 60_000,
-        staleTime: 30_000,
+        refetchInterval: 10_000,
+        staleTime: 5_000,
     });
 
     // Sync data user dari server saat pertama load.

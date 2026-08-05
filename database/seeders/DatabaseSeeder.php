@@ -107,34 +107,12 @@ class DatabaseSeeder extends Seeder
         |--------------------------------------------------------------------------
         | DOSEN
         |--------------------------------------------------------------------------
+        | Data dosen nyata di-seed melalui DosenSeeder.
+        | Gunakan updateOrCreate berbasis kode_dosen agar aman dijalankan ulang.
+        |--------------------------------------------------------------------------
         */
 
-        $dosenList = [
-            ['kode' => 'DSN001', 'nama' => 'Dosen Satu',  'email' => 'dosen1@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
-            ['kode' => 'DSN002', 'nama' => 'Dosen Dua',   'email' => 'dosen2@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
-            ['kode' => 'DSN003', 'nama' => 'Dosen Tiga',  'email' => 'dosen3@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
-            ['kode' => 'DSN004', 'nama' => 'Dosen Empat', 'email' => 'dosen4@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
-            ['kode' => 'DSN005', 'nama' => 'Dosen Lima',  'email' => 'dosen5@telkomuniversity.ac.id', 'tipe' => 'biasa', 'semester_lb' => null],
-            ['kode' => 'DSNLB1', 'nama' => 'Dosen Luar Biasa', 'email' => 'dosenlb@telkomuniversity.ac.id', 'tipe' => 'lb', 'semester_lb' => 'ganjil'],
-        ];
-
-        foreach ($dosenList as $dosen) {
-            User::updateOrCreate(
-                ['kode_dosen' => $dosen['kode']],
-                [
-                    'uuid' => (string) Str::uuid(),
-                    'nama_lengkap' => $dosen['nama'],
-                    'email' => $dosen['email'],
-                    'password' => Hash::make('password'),
-                    'prodi_id' => $si->id,
-                    'is_super_admin' => false,
-                    'is_coordinator' => false,
-                    'tipe_dosen' => $dosen['tipe'],
-                    'semester_lb' => $dosen['semester_lb'],
-                    'status_aktif' => true,
-                ]
-            );
-        }
+        $this->call(DosenSeeder::class);
 
         /*
         |--------------------------------------------------------------------------
@@ -175,9 +153,10 @@ class DatabaseSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $admin = User::where('is_super_admin', true)->first();
-        $dosen1User = User::where('email', 'dosen1@telkomuniversity.ac.id')->first();
-        $dosen2User = User::where('email', 'dosen2@telkomuniversity.ac.id')->first();
+        $admin     = User::where('is_super_admin', true)->first();
+        // Ambil dua dosen pertama berdasarkan kode_dosen nyata untuk contoh pemetaan.
+        $dosen1User = User::where('kode_dosen', 'QLB')->first();
+        $dosen2User = User::where('kode_dosen', 'SHC')->first();
 
         if ($if2113 && $if2243 && $periode && $admin) {
             if ($dosen1User) {
@@ -252,9 +231,10 @@ class DatabaseSeeder extends Seeder
         $picRole = Role::where('nama_role', 'pic')->first();
 
         if ($picRole && $periode && $admin) {
-            $picCandidates = User::whereIn('email', [
-                'pic@telkomuniversity.ac.id',
-                'dosen1@telkomuniversity.ac.id',
+            // Gunakan kode_dosen nyata sebagai referensi PIC.
+            $picCandidates = User::whereIn('kode_dosen', [
+                'PIC001',
+                'QLB',
             ])->get();
 
             foreach ($picCandidates as $user) {

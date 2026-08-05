@@ -43,7 +43,6 @@ class EloquentUserRepository implements UserRepositoryContract
     public function findAllActiveDosen(): Collection
     {
         return User::where('status_aktif', true)
-            ->where('is_super_admin', false)
             ->orderBy('nama_lengkap')
             ->get();
     }

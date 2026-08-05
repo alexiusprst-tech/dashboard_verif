@@ -27,6 +27,7 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
     const [selectedPeriode, setSelectedPeriode] = useState<string>('');
     const [selectedCourse, setSelectedCourse] = useState<string>('');
     const [selectedClo, setSelectedClo] = useState<string>('');
+    const [selectedCloIds, setSelectedCloIds] = useState<Set<number>>(new Set());
     const [selectedKategori, setSelectedKategori] = useState<string>('');
     const [selectedTemplate, setSelectedTemplate] = useState<string>('');
     const [judulSoal, setJudulSoal] = useState('');
@@ -55,10 +56,12 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
             api.get('/clo', { params: { dropdown: 1, mata_kuliah_id: selectedCourse } }).then((res) => {
                 setClos(res.data.data);
                 setSelectedClo('');
+                setSelectedCloIds(new Set());
             });
         } else {
             setClos([]);
             setSelectedClo('');
+            setSelectedCloIds(new Set());
         }
     }, [selectedCourse]);
 
@@ -96,8 +99,8 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
             toast.error('Silakan pilih Mata Kuliah terlebih dahulu.');
             return;
         }
-        if (step === 3 && !selectedClo) {
-            toast.error('Silakan pilih CLO terlebih dahulu.');
+        if (step === 3 && selectedCloIds.size === 0 && !selectedClo) {
+            toast.error('Silakan pilih minimal 1 CLO.');
             return;
         }
         if (step === 4 && (!selectedKategori || !selectedTemplate)) {
@@ -270,7 +273,7 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
                 {step === 3 && (
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-gray-800">Langkah 3: Pilih CLO (Course Learning Outcomes)</h3>
-                        <p className="text-xs text-gray-500">Tentukan CLO atau Capaian Pembelajaran Mata Kuliah yang diukur pada ujian ini.</p>
+                        <p className="text-xs text-gray-500">Pilih satu atau lebih CLO yang paling sesuai dengan soal yang diunggah.</p>
                         {clos.length === 0 ? (
                             <div className="rounded-xl border border-dashed border-gray-200 bg-white py-10 text-center text-gray-400">
                                 <HelpCircle size={24} className="mx-auto text-gray-300 mb-1" />
@@ -278,33 +281,45 @@ export function SoalWizard({ onClose, onSubmit, loading = false }: SoalWizardPro
                                 <p className="text-[10px] text-gray-400 mt-0.5">Silakan hubungi koordinator atau tambahkan CLO terlebih dahulu.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {clos.map((c) => (
-                                    <label
-                                        key={c.id}
-                                        onClick={() => setSelectedClo(String(c.id))}
-                                        className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition ${
-                                            selectedClo === String(c.id)
-                                                ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
-                                                : 'border-gray-200 bg-white hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            checked={selectedClo === String(c.id)}
-                                            onChange={() => {}}
-                                            className="mt-1 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                                        />
-                                        <div>
-                                            <span className="inline-flex rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
-                                                {c.kode}
-                                            </span>
-                                            <p className="mt-2 text-xs text-gray-600 line-clamp-3" title={c.deskripsi}>
-                                                {c.deskripsi}
-                                            </p>
-                                        </div>
-                                    </label>
-                                ))}
+                            <div className="grid grid-cols-1 gap-3">
+                                {clos.map((c) => {
+                                    const isChecked = selectedCloIds.has(c.id) || selectedClo === String(c.id);
+                                    return (
+                                        <label
+                                            key={c.id}
+                                            onClick={() => {
+                                                setSelectedCloIds((prev) => {
+                                                    const next = new Set(prev);
+                                                    if (next.has(c.id)) next.delete(c.id);
+                                                    else next.add(c.id);
+                                                    const arr = Array.from(next);
+                                                    setSelectedClo(arr.length > 0 ? String(arr[0]) : '');
+                                                    return next;
+                                                });
+                                            }}
+                                            className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition ${
+                                                isChecked
+                                                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]/60 shadow-xs'
+                                                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={() => {}}
+                                                className="mt-0.5 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <span className="inline-flex rounded bg-blue-50 px-2 py-0.5 text-xs font-mono font-bold text-blue-700 border border-blue-200">
+                                                    {c.kode}
+                                                </span>
+                                                <p className="mt-1.5 text-xs text-gray-700 leading-relaxed font-medium">
+                                                    {c.deskripsi}
+                                                </p>
+                                            </div>
+                                        </label>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

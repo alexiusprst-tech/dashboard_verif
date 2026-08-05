@@ -45,14 +45,39 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::get('/courses', function (Illuminate\Http\Request $request) {
         $prodiId = $request->query('prodi_id');
-        $query = \App\Models\Course::query();
+        $query = \App\Models\Course::withCount('clo');
         if ($prodiId) {
             $query->where('prodi_id', $prodiId);
         }
         return response()->json([
             'success' => true,
-            'data' => $query->orderBy('nama_mk')->get()
+            'data' => $query->orderBy('semester')->orderBy('nama_mk')->get()
         ]);
+    });
+
+    Route::get('/courses/{id}', function (int $id) {
+        $course = \App\Models\Course::withCount('clo')->find($id);
+        if (!$course) {
+            return response()->json(['success' => false, 'message' => 'Mata kuliah tidak ditemukan.'], 404);
+        }
+        return response()->json(['success' => true, 'data' => $course]);
+    });
+
+    // CLO Transfer List — all CLOs with assignment status for a specific course
+    Route::get('/courses/{id}/clo', function (int $id) {
+        $all = \App\Models\Clo::orderBy('kode')
+            ->get(['id', 'kode', 'deskripsi', 'mata_kuliah_id']);
+        return response()->json(['success' => true, 'data' => $all]);
+    });
+
+    // Bulk assign CLOs to a course (saves transfer list)
+    Route::post('/courses/{id}/clo', function (Illuminate\Http\Request $request, int $id) {
+        $cloIds = $request->input('clo_ids', []);
+        \App\Models\Clo::where('mata_kuliah_id', $id)->update(['mata_kuliah_id' => null]);
+        if (!empty($cloIds)) {
+            \App\Models\Clo::whereIn('id', $cloIds)->update(['mata_kuliah_id' => $id]);
+        }
+        return response()->json(['success' => true, 'message' => 'CLO berhasil disimpan.']);
     });
 
     // Periode
@@ -94,6 +119,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/penugasan', [PenugasanController::class, 'index']);
     Route::post('/penugasan', [PenugasanController::class, 'store'])->middleware('coordinator');
     Route::delete('/penugasan/{id}', [PenugasanController::class, 'destroy'])->middleware('coordinator');
+    
+    // Pemetaan Dosen Target ke PIC
+    Route::get('/penugasan-dosen', [\App\Http\Controllers\Api\PenugasanDosenController::class, 'index']);
+    Route::post('/penugasan-dosen', [\App\Http\Controllers\Api\PenugasanDosenController::class, 'store']);
+    Route::delete('/penugasan-dosen/{id}', [\App\Http\Controllers\Api\PenugasanDosenController::class, 'destroy']);
 
     // Verifikasi
     Route::get('/verifikasi/tugas-saya', [VerifikasiController::class, 'tugasSaya'])->middleware('pic_periode');
