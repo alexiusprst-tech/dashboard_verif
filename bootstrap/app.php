@@ -27,9 +27,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(\App\Http\Middleware\AuthenticateQueryToken::class);
         $middleware->alias([
-            'super_admin' => \App\Http\Middleware\EnsureIsSuperAdmin::class,
-            'coordinator' => \App\Http\Middleware\EnsureIsCoordinator::class,
-            'pic_periode' => \App\Http\Middleware\EnsureIsPicForPeriode::class,
+            // Role baru
+            'super_admin'     => \App\Http\Middleware\EnsureIsSuperAdmin::class,
+            'koordinator_mk'  => \App\Http\Middleware\EnsureIsKoordinatorMk::class,
+            'verifikator'     => \App\Http\Middleware\EnsureIsVerifikator::class,
+            // Alias lama (backward compat — ditujukan ke middleware baru)
+            'coordinator'     => \App\Http\Middleware\EnsureIsKoordinatorMk::class,
+            'pic_periode'     => \App\Http\Middleware\EnsureIsVerifikator::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

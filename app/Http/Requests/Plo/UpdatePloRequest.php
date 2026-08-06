@@ -22,10 +22,6 @@ class UpdatePloRequest extends FormRequest
             $this->merge(['prodi_id' => $prodiId]);
         }
 
-        if ($this->has('mata_kuliah_id') && ($this->mata_kuliah_id === '' || $this->mata_kuliah_id === 'null' || $this->mata_kuliah_id === 0 || $this->mata_kuliah_id === '0')) {
-            $this->merge(['mata_kuliah_id' => null]);
-        }
-
         if ($this->has('periode_id') && ($this->periode_id === '' || $this->periode_id === 'null' || $this->periode_id === 0 || $this->periode_id === '0')) {
             $this->merge(['periode_id' => null]);
         }
@@ -34,7 +30,6 @@ class UpdatePloRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('plo');
-        $mataKuliahId = $this->mata_kuliah_id;
         $prodiId = $this->prodi_id;
 
         return [
@@ -42,19 +37,14 @@ class UpdatePloRequest extends FormRequest
                 'required',
                 'string',
                 'max:30',
-                Rule::unique('plo', 'kode')->ignore($id)->where(function ($query) use ($mataKuliahId, $prodiId) {
-                    if ($mataKuliahId) {
-                        return $query->where('mata_kuliah_id', $mataKuliahId);
-                    } else {
-                        return $query->whereNull('mata_kuliah_id')->where('prodi_id', $prodiId);
-                    }
+                Rule::unique('plo', 'kode')->ignore($id)->where(function ($query) use ($prodiId) {
+                    return $query->where('prodi_id', $prodiId);
                 }),
             ],
-            'nama_plo'       => 'nullable|string|max:255',
-            'deskripsi'      => 'nullable|string',
-            'prodi_id'       => 'required|exists:program_studi,id',
-            'mata_kuliah_id' => 'nullable|exists:courses,id',
-            'periode_id'     => 'nullable|exists:periode,id',
+            'nama_plo'   => 'nullable|string|max:255',
+            'deskripsi'  => 'nullable|string',
+            'prodi_id'   => 'required|exists:program_studi,id',
+            'periode_id' => 'nullable|exists:periode,id',
         ];
     }
 

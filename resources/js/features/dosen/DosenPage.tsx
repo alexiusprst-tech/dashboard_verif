@@ -240,9 +240,9 @@ export function DosenPage() {
                                                     <p className="font-semibold text-gray-800">
                                                         {dosen.nama_lengkap || dosen.name}
                                                     </p>
-                                                    {dosen.is_coordinator && (
+                                                    {(dosen.is_koordinator_mk ?? dosen.is_coordinator) && (
                                                         <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
-                                                            Koordinator
+                                                            Koordinator MK
                                                         </span>
                                                     )}
                                                 </div>

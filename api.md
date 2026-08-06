@@ -85,10 +85,10 @@ Semua respon REST API menggunakan amplop JSON tersentralisasi demi menjamin kons
       "nama_lengkap": "Dr. Dosen Contoh, S.T., M.T.",
       "email": "dosen@telkomuniversity.ac.id",
       "prodi_id": 1,
-      "is_coordinator": false,
-      "is_coordinator": true,
-      "status_aktif": true,
-      "roles": ["coordinator", "dosen"]
+      "is_super_admin": false,
+      "is_koordinator_mk": true,
+      "is_verifikator_aktif": false,
+      "status_aktif": true
     }
   }
 }
@@ -208,6 +208,31 @@ Semua respon REST API menggunakan amplop JSON tersentralisasi demi menjamin kons
   - `periode_id` (integer, required)
   - `judul_soal` (string, required)
   - `file_soal` (file, required, PDF format, max 10MB)
+
+---
+
+## 5.5 Penugasan Verifikator Endpoints (Super Admin)
+
+### 5.5.1 List Penugasan Verifikator
+- **URL:** `GET /penugasan-verifikator`
+- **Auth:** `auth:sanctum`
+- **Query Params:** `periode_id`, `course_id`, `dosen_id`
+
+### 5.5.2 Simpan Penugasan Verifikator
+- **URL:** `POST /penugasan-verifikator`
+- **Auth:** `auth:sanctum` (Super Admin)
+- **Request Body:**
+```json
+{
+  "course_id": 1,
+  "dosen_id": 5,
+  "periode_id": 2
+}
+```
+
+### 5.5.3 Hapus Penugasan Verifikator
+- **URL:** `DELETE /penugasan-verifikator/{id}`
+- **Auth:** `auth:sanctum` (Super Admin)
 
 ---
 

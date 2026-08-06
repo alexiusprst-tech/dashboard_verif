@@ -6,11 +6,10 @@ import { Modal } from '@/shared/components/ui/Modal';
 import type { Plo, PloFormData, ProgramStudi } from '../types/plo.types';
 
 const schema = z.object({
-    kode:           z.string().min(1, 'Kode PLO wajib diisi').max(20, 'Kode PLO maksimal 20 karakter'),
-    deskripsi:      z.string().min(1, 'Deskripsi PLO wajib diisi'),
-    prodi_id:       z.coerce.number({ invalid_type_error: 'Program Studi wajib dipilih' }).min(1, 'Program Studi wajib dipilih'),
-    mata_kuliah_id: z.union([z.coerce.number(), z.literal('')]).optional().transform((val) => (val === '' ? undefined : val)),
-    periode_id:     z.union([z.coerce.number(), z.literal('')]).optional().transform((val) => (val === '' ? undefined : val)),
+    kode:        z.string().min(1, 'Kode PLO wajib diisi').max(20, 'Kode PLO maksimal 20 karakter'),
+    deskripsi:   z.string().min(1, 'Deskripsi PLO wajib diisi'),
+    prodi_id:    z.coerce.number({ invalid_type_error: 'Program Studi wajib dipilih' }).min(1, 'Program Studi wajib dipilih'),
+    periode_id:  z.union([z.coerce.number(), z.literal('')]).optional().transform((val) => (val === '' ? undefined : val)),
 });
 
 interface PloModalProps {
@@ -19,8 +18,6 @@ interface PloModalProps {
     onSubmit: (data: PloFormData) => void;
     plo?: Plo | null;
     programStudiList: ProgramStudi[];
-    mataKuliahList?: MataKuliah[];
-    /** Periode yang sedang aktif/dipilih — disertakan saat create/update PLO */
     defaultPeriodeId?: string | number;
     loading?: boolean;
 }
@@ -31,7 +28,6 @@ export function PloModal({
     onSubmit,
     plo,
     programStudiList,
-    mataKuliahList = [],
     defaultPeriodeId,
     loading = false,
 }: PloModalProps) {
@@ -43,11 +39,10 @@ export function PloModal({
     } = useForm<PloFormData>({
         resolver: zodResolver(schema),
         defaultValues: {
-            kode:           '',
-            deskripsi:      '',
-            prodi_id:       '',
-            mata_kuliah_id: '',
-            periode_id:     defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
+            kode:       '',
+            deskripsi:  '',
+            prodi_id:   '',
+            periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
         },
     });
 
@@ -56,19 +51,17 @@ export function PloModal({
             const siProdi = programStudiList.find(p => p.nama_prodi.toLowerCase().includes('sistem informasi') || p.kode_prodi === 'SI') || programStudiList[0];
             if (plo) {
                 reset({
-                    kode:           plo.kode,
-                    deskripsi:      plo.deskripsi,
-                    prodi_id:       plo.prodi_id,
-                    mata_kuliah_id: plo.mata_kuliah_id || '',
-                    periode_id:     plo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
+                    kode:       plo.kode,
+                    deskripsi:  plo.deskripsi,
+                    prodi_id:   plo.prodi_id,
+                    periode_id: plo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
                 });
             } else {
                 reset({
-                    kode:           '',
-                    deskripsi:      '',
-                    prodi_id:       siProdi ? siProdi.id : '',
-                    mata_kuliah_id: '',
-                    periode_id:     defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
+                    kode:       '',
+                    deskripsi:  '',
+                    prodi_id:   siProdi ? siProdi.id : '',
+                    periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
                 });
             }
         }
@@ -105,25 +98,6 @@ export function PloModal({
             }
         >
             <form id="plo-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* Mata Kuliah — pilih Mata Kuliah terlebih dahulu */}
-                <div>
-                    <label htmlFor="mata_kuliah_id" className="block text-sm font-medium text-gray-700">
-                        Mata Kuliah
-                    </label>
-                    <select
-                        id="mata_kuliah_id"
-                        {...register('mata_kuliah_id')}
-                        className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-                    >
-                        <option value="">— Pilih Mata Kuliah —</option>
-                        {mataKuliahList.map((mk) => (
-                            <option key={mk.id} value={mk.id}>
-                                {mk.kode_mk} - {mk.nama_mk}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
                 <input
                     type="hidden"
                     value={programStudiList[0]?.id || 2}
@@ -137,8 +111,8 @@ export function PloModal({
                     <input
                         id="kode"
                         type="text"
-                        placeholder="Contoh: PLO-1"
-                        {...register('register' in errors ? 'kode' : 'kode')}
+                        placeholder="Contoh: PLO-01"
+                        {...register('kode')}
                         className="mt-1 block h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                     />
                     {errors.kode && (
@@ -148,12 +122,12 @@ export function PloModal({
 
                 <div>
                     <label htmlFor="deskripsi" className="block text-sm font-medium text-gray-700">
-                        Deskripsi <span className="text-red-500">*</span>
+                        Deskripsi PLO <span className="text-red-500">*</span>
                     </label>
                     <textarea
                         id="deskripsi"
                         rows={4}
-                        placeholder="Tuliskan deskripsi kompetensi PLO..."
+                        placeholder="Tuliskan deskripsi capaian pembelajaran lulusan (PLO)..."
                         {...register('deskripsi')}
                         className="mt-1 block w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                     />

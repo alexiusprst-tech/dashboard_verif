@@ -26,6 +26,7 @@ class User extends Authenticatable
         'prodi_id',
         'is_super_admin',
         'is_coordinator',
+        'is_koordinator_mk',
         'tipe_dosen',
         'semester_lb',
         'status_aktif',
@@ -40,11 +41,12 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'password'       => 'hashed',
-            'is_super_admin' => 'boolean',
-            'is_coordinator' => 'boolean',
-            'status_aktif'   => 'boolean',
-            'last_login_at'  => 'datetime',
+            'password'          => 'hashed',
+            'is_super_admin'    => 'boolean',
+            'is_coordinator'    => 'boolean',
+            'is_koordinator_mk' => 'boolean',
+            'status_aktif'      => 'boolean',
+            'last_login_at'     => 'datetime',
         ];
     }
 
@@ -66,19 +68,16 @@ class User extends Authenticatable
         return $this->hasMany(Soal::class, 'dosen_id');
     }
 
-    /**
-     * Role dinamis (PIC, dsb.) per periode.
-     * Gunakan ini untuk cek apakah user adalah PIC.
-     */
-    public function userRoles(): HasMany
-    {
-        return $this->hasMany(UserRole::class, 'user_id');
-    }
-
     /** Pemetaan mata kuliah yang diampu oleh dosen ini per periode */
     public function dosenMataKuliah(): HasMany
     {
         return $this->hasMany(DosenMataKuliah::class, 'dosen_id');
+    }
+
+    /** Penugasan sebagai verifikator (per mata kuliah per periode) */
+    public function penugasanVerifikator(): HasMany
+    {
+        return $this->hasMany(PenugasanVerifikator::class, 'dosen_id');
     }
 
     /** Verifikasi yang pernah dilakukan oleh user ini */
@@ -109,26 +108,37 @@ class User extends Authenticatable
         return (bool) $this->is_super_admin;
     }
 
-    public function isCoordinator(): bool
+    public function isKoordinatorMk(): bool
     {
-        return (bool) $this->is_coordinator;
+        // Fallback ke is_coordinator untuk backward compatibility
+        return (bool) ($this->is_koordinator_mk ?? $this->is_coordinator);
+    }
+
+    /**
+     * Cek apakah dosen adalah verifikator aktif di suatu periode.
+     * Query ke tabel penugasan_verifikator.
+     */
+    public function isVerifikatorPadaPeriode(int $periodeId): bool
+    {
+        return $this->penugasanVerifikator()
+            ->where('periode_id', $periodeId)
+            ->exists();
+    }
+
+    /**
+     * Cek apakah dosen adalah verifikator untuk mata kuliah tertentu di periode ini.
+     */
+    public function isVerifikatorPadaCourse(int $courseId, int $periodeId): bool
+    {
+        return $this->penugasanVerifikator()
+            ->where('course_id', $courseId)
+            ->where('periode_id', $periodeId)
+            ->exists();
     }
 
     public function isLbDosen(): bool
     {
         return $this->tipe_dosen === 'lb';
-    }
-
-    /**
-     * Cek apakah user adalah PIC aktif di suatu periode.
-     * Query ke tabel user_roles (bukan penugasan lama).
-     */
-    public function isPicOnPeriode(int $periodeId): bool
-    {
-        return $this->userRoles()
-            ->whereHas('role', fn ($q) => $q->where('nama_role', 'pic'))
-            ->where('periode_id', $periodeId)
-            ->exists();
     }
 
     /**

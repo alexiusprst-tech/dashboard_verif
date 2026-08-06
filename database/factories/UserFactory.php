@@ -28,6 +28,7 @@ class UserFactory extends Factory
             'prodi_id' => null,
             'is_super_admin' => false,
             'is_coordinator' => false,
+            'is_koordinator_mk' => false,
             'status_aktif' => true,
             'remember_token' => Str::random(10),
         ];

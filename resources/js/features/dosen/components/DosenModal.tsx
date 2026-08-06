@@ -39,6 +39,7 @@ export function DosenModal({
             tipe_dosen: 'biasa',
             semester_lb: '',
             prodi_id: '',
+            is_koordinator_mk: false,
             is_coordinator: false,
             status_aktif: true,
         },
@@ -47,6 +48,7 @@ export function DosenModal({
     const watchTipeDosen = watch('tipe_dosen');
 
     useEffect(() => {
+        const isKoordinator = editingDosen?.is_koordinator_mk ?? editingDosen?.is_coordinator ?? false;
         if (editingDosen) {
             reset({
                 name: editingDosen.nama_lengkap || editingDosen.name || '',
@@ -56,7 +58,8 @@ export function DosenModal({
                 tipe_dosen: editingDosen.tipe_dosen || 'biasa',
                 semester_lb: editingDosen.semester_lb || '',
                 prodi_id: editingDosen.prodi_id || '',
-                is_coordinator: editingDosen.is_coordinator ?? false,
+                is_koordinator_mk: isKoordinator,
+                is_coordinator: isKoordinator,
                 status_aktif: editingDosen.status_aktif ?? true,
             });
         } else {
@@ -68,6 +71,7 @@ export function DosenModal({
                 tipe_dosen: 'biasa',
                 semester_lb: '',
                 prodi_id: '',
+                is_koordinator_mk: false,
                 is_coordinator: false,
                 status_aktif: true,
             });
@@ -78,7 +82,12 @@ export function DosenModal({
 
     const handleFormSubmit = (data: DosenFormData) => {
         // Clean up empty fields if editing and password is empty
-        const payload: DosenFormData = { ...data };
+        const isKoordinator = data.is_koordinator_mk ?? data.is_coordinator ?? false;
+        const payload: DosenFormData = {
+            ...data,
+            is_koordinator_mk: isKoordinator,
+            is_coordinator: isKoordinator,
+        };
         if (isEdit && !payload.password) {
             delete payload.password;
         }
@@ -234,21 +243,8 @@ export function DosenModal({
                         )}
                     </div>
 
-                    {/* Status Koordinator */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                        <input
-                            type="checkbox"
-                            id="is_coordinator"
-                            className="rounded border-gray-300 text-[var(--color-primary)] focus:ring-0"
-                            {...register('is_coordinator')}
-                        />
-                        <label htmlFor="is_coordinator" className="text-xs font-semibold text-gray-700 cursor-pointer">
-                            Tetapkan sebagai Koordinator Program Studi (Akses Monitoring & Manajemen Dosen)
-                        </label>
-                    </div>
-
                     {/* Status Aktif */}
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                         <input
                             type="checkbox"
                             id="status_aktif"

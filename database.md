@@ -34,8 +34,7 @@ Menyimpan informasi data akun pengguna, dosen, coordinator, dan coordinator.
 | `prodi_id` | BIGINT | FK -> `program_studi(id)` | Nullable jika Coordinator Fakultas |
 | `tipe_dosen` | ENUM | 'biasa', 'lb' | Tipe Dosen (Biasa = Tetap, LB = Luar Biasa) |
 | `semester_lb` | ENUM | 'ganjil', 'genap', Nullable | Menentukan periode keaktifan Dosen LB |
-| `is_coordinator` | BOOLEAN | Default: `false` | Flag Coordinator |
-| `is_coordinator` | BOOLEAN | Default: `false` | Flag Coordinator Prodi/Fakultas |
+| `is_koordinator_mk` | BOOLEAN | Default: `false` | Flag Dosen Koordinator Mata Kuliah |
 | `status_aktif` | BOOLEAN | Default: `true` | Status keaktifan akun pengguna |
 | `last_login_at` | TIMESTAMP | Nullable | Timestamp login terakhir pengguna |
 | `remember_token` | VARCHAR(100) | Nullable | Token sesi "Remember Me" |
@@ -54,13 +53,27 @@ Menyimpan definisi peran (*roles*) tambahan dan pemetaan hubungan *many-to-many*
 | `id` | BIGINT | PK, Auto Increment | ID Role |
 | `nama_role` | VARCHAR(50) | Unique, Not Null | Nama Role (`coordinator`, `coordinator`, `dosen`, `pic`) |
 
-#### Tabel `user_roles`
+#### Tabel `user_roles` (Legacy)
 | Nama Kolom | Tipe Data | Constraint | Deskripsi |
 | :--- | :--- | :--- | :--- |
 | `id` | BIGINT | PK, Auto Increment | ID Pivot |
 | `user_id` | BIGINT | FK -> `users(id)` | User terkait |
 | `role_id` | BIGINT | FK -> `roles(id)` | Role terkait |
-| `periode_id` | BIGINT | FK -> `periode(id)` | Nullable; menentukan batas periode peran (misal: PIC) |
+| `periode_id` | BIGINT | FK -> `periode(id)` | Nullable; menentukan batas periode peran |
+
+#### Tabel `penugasan_verifikator`
+Menyimpan penugasan Dosen Verifikator per Mata Kuliah untuk periode berjalan.
+
+| Nama Kolom | Tipe Data | Constraint | Deskripsi |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT | PK, Auto Increment | ID Penugasan |
+| `course_id` | BIGINT | FK -> `courses(id)` | Mata Kuliah yang diverifikasi |
+| `dosen_id` | BIGINT | FK -> `users(id)` | Dosen yang bertindak sebagai Verifikator |
+| `periode_id` | BIGINT | FK -> `periode(id)` | Periode akademik penugasan |
+| `assigned_by` | BIGINT | FK -> `users(id)` | Super Admin yang melakukan penugasan |
+| `assigned_at` | TIMESTAMP | Nullable | Waktu penugasan dilakukan |
+| `created_at` | TIMESTAMP | Nullable | Waktu pembuatan record |
+| `updated_at` | TIMESTAMP | Nullable | Waktu pembaruan record |
 
 ---
 

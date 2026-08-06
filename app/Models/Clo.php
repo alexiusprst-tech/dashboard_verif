@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Clo extends Model
@@ -14,7 +15,6 @@ class Clo extends Model
         'kode',
         'nama_clo',
         'deskripsi',
-        'mata_kuliah_id',
         'plo_id',
         'periode_id',
         'created_by',
@@ -22,9 +22,9 @@ class Clo extends Model
 
     /* ── Relations ──────────────────────────────────────────── */
 
-    public function mataKuliah(): BelongsTo
+    public function courses(): BelongsToMany
     {
-        return $this->belongsTo(Course::class, 'mata_kuliah_id');
+        return $this->belongsToMany(Course::class, 'course_clo', 'clo_id', 'course_id')->withTimestamps();
     }
 
     public function plo(): BelongsTo

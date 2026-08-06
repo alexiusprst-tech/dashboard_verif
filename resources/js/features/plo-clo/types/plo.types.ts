@@ -6,20 +6,19 @@ export interface Plo {
     deskripsi: string;
     prodi_id: number;
     prodi_name?: string;
-    mata_kuliah_id?: number;
-    mata_kuliah?: MataKuliah;
+    prodi?: ProgramStudi;
     periode_id?: number;
     created_by?: number;
     created_at: string;
     updated_at: string;
     clo_count?: number;
+    clo?: Clo[];
 }
 
 export interface PloFormData {
     kode: string;
     deskripsi: string;
     prodi_id: number | '';
-    mata_kuliah_id?: number | '';
     periode_id?: number;
 }
 
@@ -31,8 +30,9 @@ export interface Clo {
     deskripsi: string;
     plo_id: number;
     plo_kode?: string;
-    mata_kuliah_id?: number;
-    mata_kuliah_nama?: string;
+    plo?: Plo;
+    courses?: MataKuliah[];
+    courses_count?: number;
     created_at: string;
     updated_at: string;
 }
@@ -41,7 +41,7 @@ export interface CloFormData {
     kode: string;
     deskripsi: string;
     plo_id: number | '';
-    mata_kuliah_id?: number | '';
+    periode_id?: number;
 }
 
 /* ── Pagination Meta ────────────────────────────────────────── */

@@ -7,10 +7,8 @@ use App\Models\Category;
 use App\Models\Course;
 use App\Models\Periode;
 use App\Models\ProgramStudi;
-use App\Models\Role;
 use App\Models\Template;
 use App\Models\User;
-use App\Models\UserRole;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -25,20 +23,10 @@ class DatabaseSeeder extends Seeder
     {
         /*
         |--------------------------------------------------------------------------
-        | ROLE DINAMIS
-        |--------------------------------------------------------------------------
-        | Hanya PIC yang disimpan pada tabel roles.
-        | Super Admin dan Coordinator menggunakan boolean pada tabel users.
+        | CATATAN: Tidak ada role dinamis yang perlu di-seed di sini.
+        | Peran verifikator ditangani via tabel penugasan_verifikator.
         |--------------------------------------------------------------------------
         */
-
-        DB::table('roles')->updateOrInsert(
-            ['nama_role' => 'pic'],
-            [
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        );
 
         /*
         |--------------------------------------------------------------------------
@@ -73,32 +61,34 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Coordinator
+        // Dosen Koordinator Mata Kuliah
         User::updateOrCreate(
             ['kode_dosen' => 'KOR001'],
             [
                 'uuid' => (string) Str::uuid(),
-                'nama_lengkap' => 'Koordinator Program Studi',
+                'nama_lengkap' => 'Dosen Koordinator MK',
                 'email' => 'coordinator@telkomuniversity.ac.id',
                 'password' => Hash::make('password'),
                 'prodi_id' => $si->id,
                 'is_super_admin' => false,
                 'is_coordinator' => true,
+                'is_koordinator_mk' => true,
                 'status_aktif' => true,
             ]
         );
 
-        // PIC (Person in Charge / Verifikator)
+        // Dosen Verifikator
         User::updateOrCreate(
-            ['kode_dosen' => 'PIC001'],
+            ['kode_dosen' => 'VER001'],
             [
                 'uuid' => (string) Str::uuid(),
-                'nama_lengkap' => 'PIC Verifikator Soal',
-                'email' => 'pic@telkomuniversity.ac.id',
+                'nama_lengkap' => 'Dosen Verifikator Soal',
+                'email' => 'verifikator@telkomuniversity.ac.id',
                 'password' => Hash::make('password'),
                 'prodi_id' => $si->id,
                 'is_super_admin' => false,
                 'is_coordinator' => false,
+                'is_koordinator_mk' => false,
                 'status_aktif' => true,
             ]
         );
@@ -175,6 +165,51 @@ class DatabaseSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
+        | PENUGASAN DOSEN VERIFIKATOR PER MATA KULIAH
+        |--------------------------------------------------------------------------
+        | Assign Dosen Verifikator ke Mata Kuliah IF2113 dan IF2243.
+        |--------------------------------------------------------------------------
+        */
+
+        if ($periode && $admin) {
+            $verifikatorUser = User::where('kode_dosen', 'VER001')->first();
+            $dosenVerifikator2 = User::where('kode_dosen', 'SHC')->first();
+
+            if ($verifikatorUser && $if2113) {
+                DB::table('penugasan_verifikator')->updateOrInsert(
+                    [
+                        'course_id'  => $if2113->id,
+                        'dosen_id'   => $verifikatorUser->id,
+                        'periode_id' => $periode->id,
+                    ],
+                    [
+                        'assigned_by' => $admin->id,
+                        'assigned_at' => now(),
+                        'created_at'  => now(),
+                        'updated_at'  => now(),
+                    ]
+                );
+            }
+
+            if ($dosenVerifikator2 && $if2243) {
+                DB::table('penugasan_verifikator')->updateOrInsert(
+                    [
+                        'course_id'  => $if2243->id,
+                        'dosen_id'   => $dosenVerifikator2->id,
+                        'periode_id' => $periode->id,
+                    ],
+                    [
+                        'assigned_by' => $admin->id,
+                        'assigned_at' => now(),
+                        'created_at'  => now(),
+                        'updated_at'  => now(),
+                    ]
+                );
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | KATEGORI SOAL
         |--------------------------------------------------------------------------
         */
@@ -219,37 +254,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | PENUGASAN PIC
-        |--------------------------------------------------------------------------
-        | Assign PIC khusus (pic@telkomuniversity.ac.id) & Dosen terpilih sebagai PIC.
-        | Coordinator TIDAK dimasukkan di sini agar terpisah sepenuhnya.
-        |--------------------------------------------------------------------------
-        */
-
-        $picRole = Role::where('nama_role', 'pic')->first();
-
-        if ($picRole && $periode && $admin) {
-            // Gunakan kode_dosen nyata sebagai referensi PIC.
-            $picCandidates = User::whereIn('kode_dosen', [
-                'PIC001',
-                'QLB',
-            ])->get();
-
-            foreach ($picCandidates as $user) {
-                UserRole::firstOrCreate(
-                    [
-                        'user_id'    => $user->id,
-                        'role_id'    => $picRole->id,
-                        'periode_id' => $periode->id,
-                    ],
-                    [
-                        'assigned_by' => $admin->id,
-                        'assigned_at' => now(),
-                    ]
-                );
-            }
-        }
+        // Tidak ada penugasan PIC lama yang perlu di-seed.
+        // Penugasan verifikator sudah di-seed di atas via tabel penugasan_verifikator.
     }
 }

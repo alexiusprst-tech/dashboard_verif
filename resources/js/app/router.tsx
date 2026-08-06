@@ -6,6 +6,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 
 import { PloCloPage } from '@/features/plo-clo/PloCloPage';
+import { PloDetailPage } from '@/features/plo-clo/PloDetailPage';
 import { SoalPage } from '@/features/soal/SoalPage';
 import { VerifikasiPage } from '@/features/verifikasi/VerifikasiPage';
 import { BeritaAcaraPage } from '@/features/berita-acara/BeritaAcaraPage';
@@ -19,7 +20,6 @@ import { DosenPage } from '@/features/dosen/DosenPage';
 import { MatkulPage } from '@/features/matkul/MatkulPage';
 import { MatkulDetailPage } from '@/features/matkul/MatkulDetailPage';
 import { KelolaCloPage } from '@/features/matkul/KelolaCloPage';
-import { CloMasterPage } from '@/features/plo-clo/CloMasterPage';
 
 /**
  * Router aplikasi Sistem Verifikasi Soal.
@@ -64,6 +64,11 @@ export const router = createBrowserRouter([
             },
 
             {
+                path: 'plo/:id',
+                element: <PloDetailPage />,
+            },
+
+            {
                 path: 'soal',
                 element: <SoalPage />,
             },
@@ -84,8 +89,13 @@ export const router = createBrowserRouter([
             },
 
             {
-                path: 'penugasan-pic',
+                path: 'penugasan-verifikator',
                 element: <PenugasanPicPage />,
+            },
+
+            {
+                path: 'penugasan-pic',
+                element: <Navigate to="/penugasan-verifikator" replace />,
             },
 
             {
@@ -131,11 +141,6 @@ export const router = createBrowserRouter([
             {
                 path: 'matkul/:id/kelola-clo',
                 element: <KelolaCloPage />,
-            },
-
-            {
-                path: 'clo-master',
-                element: <CloMasterPage />,
             },
         ],
     },

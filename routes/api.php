@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PloController;
 use App\Http\Controllers\Api\CloController;
@@ -65,41 +66,69 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // CLO Transfer List — all CLOs with assignment status for a specific course
     Route::get('/courses/{id}/clo', function (int $id) {
-        $all = \App\Models\Clo::orderBy('kode')
-            ->get(['id', 'kode', 'deskripsi', 'mata_kuliah_id']);
-        return response()->json(['success' => true, 'data' => $all]);
+        $course = \App\Models\Course::find($id);
+        if (!$course) {
+            return response()->json(['success' => false, 'message' => 'Mata kuliah tidak ditemukan.'], 404);
+        }
+
+        $assignedCloIds = DB::table('course_clo')
+            ->where('course_id', $id)
+            ->pluck('clo_id')
+            ->toArray();
+
+        $allClos = \App\Models\Clo::with(['plo', 'courses'])
+            ->orderBy('kode')
+            ->get();
+
+        $data = $allClos->map(function ($clo) use ($id, $assignedCloIds) {
+            $isAssigned = in_array($clo->id, $assignedCloIds);
+            return [
+                'id' => $clo->id,
+                'kode' => $clo->kode,
+                'deskripsi' => $clo->deskripsi,
+                'plo_id' => $clo->plo_id,
+                'plo' => $clo->plo ? [
+                    'id' => $clo->plo->id,
+                    'kode' => $clo->plo->kode,
+                    'deskripsi' => $clo->plo->deskripsi,
+                ] : null,
+                'mata_kuliah_id' => $isAssigned ? $id : null,
+                'is_assigned' => $isAssigned,
+                'courses_count' => $clo->courses->count(),
+            ];
+        });
+
+        return response()->json(['success' => true, 'data' => $data]);
     });
 
-    // Bulk assign CLOs to a course (saves transfer list)
+    // Bulk assign CLOs to a course (saves transfer list Many-to-Many)
     Route::post('/courses/{id}/clo', function (Illuminate\Http\Request $request, int $id) {
+        $course = \App\Models\Course::findOrFail($id);
         $cloIds = $request->input('clo_ids', []);
-        \App\Models\Clo::where('mata_kuliah_id', $id)->update(['mata_kuliah_id' => null]);
-        if (!empty($cloIds)) {
-            \App\Models\Clo::whereIn('id', $cloIds)->update(['mata_kuliah_id' => $id]);
-        }
+        $course->clo()->sync($cloIds);
         return response()->json(['success' => true, 'message' => 'CLO berhasil disimpan.']);
     });
 
-    // Periode
+    // Periode (Super Admin)
     Route::get('/periode', [PeriodeController::class, 'index']);
     Route::get('/periode/{id}', [PeriodeController::class, 'show']);
-    Route::post('/periode', [PeriodeController::class, 'store'])->middleware('coordinator');
-    Route::put('/periode/{id}', [PeriodeController::class, 'update'])->middleware('coordinator');
-    Route::delete('/periode/{id}', [PeriodeController::class, 'destroy'])->middleware('coordinator');
-    Route::patch('/periode/{id}/activate', [PeriodeController::class, 'activate'])->middleware('coordinator');
+    Route::post('/periode', [PeriodeController::class, 'store'])->middleware('super_admin');
+    Route::put('/periode/{id}', [PeriodeController::class, 'update'])->middleware('super_admin');
+    Route::delete('/periode/{id}', [PeriodeController::class, 'destroy'])->middleware('super_admin');
+    Route::patch('/periode/{id}/activate', [PeriodeController::class, 'activate'])->middleware('super_admin');
 
-    // Kategori & Template
+    // Kategori & Template (Super Admin)
     Route::get('/kategori', [KategoriController::class, 'index']);
     Route::get('/kategori/{id}', [KategoriController::class, 'show']);
-    Route::post('/kategori', [KategoriController::class, 'store'])->middleware('coordinator');
-    Route::put('/kategori/{id}', [KategoriController::class, 'update'])->middleware('coordinator');
-    Route::delete('/kategori/{id}', [KategoriController::class, 'destroy'])->middleware('coordinator');
+    Route::post('/kategori', [KategoriController::class, 'store'])->middleware('super_admin');
+    Route::put('/kategori/{id}', [KategoriController::class, 'update'])->middleware('super_admin');
+    Route::delete('/kategori/{id}', [KategoriController::class, 'destroy'])->middleware('super_admin');
 
     Route::get('/templates', [TemplateController::class, 'index']);
-    Route::post('/templates', [TemplateController::class, 'store'])->middleware('coordinator');
-    Route::delete('/templates/{id}', [TemplateController::class, 'destroy'])->middleware('coordinator');
+    Route::post('/templates', [TemplateController::class, 'store'])->middleware('super_admin');
+    Route::delete('/templates/{id}', [TemplateController::class, 'destroy'])->middleware('super_admin');
 
-    // Template Berita Acara
+    // Template Berita Acara (Super Admin)
     Route::get('/template-ba', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'index'])->middleware('super_admin');
     Route::get('/template-ba/active', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'active']);
     Route::post('/template-ba', [\App\Http\Controllers\Api\TemplateBeritaAcaraController::class, 'store'])->middleware('super_admin');
@@ -113,21 +142,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/questions/{id}/revision-history', [SoalController::class, 'revisionHistory']);
     Route::apiResource('soal', SoalController::class);
 
-    // Penugasan PIC & Dosen Management
-    Route::get('/dosen/search', [DosenController::class, 'search'])->middleware('coordinator');
-    Route::apiResource('dosen', DosenController::class)->middleware('coordinator');
-    Route::get('/penugasan', [PenugasanController::class, 'index']);
-    Route::post('/penugasan', [PenugasanController::class, 'store'])->middleware('coordinator');
-    Route::delete('/penugasan/{id}', [PenugasanController::class, 'destroy'])->middleware('coordinator');
-    
-    // Pemetaan Dosen Target ke PIC
-    Route::get('/penugasan-dosen', [\App\Http\Controllers\Api\PenugasanDosenController::class, 'index']);
-    Route::post('/penugasan-dosen', [\App\Http\Controllers\Api\PenugasanDosenController::class, 'store']);
-    Route::delete('/penugasan-dosen/{id}', [\App\Http\Controllers\Api\PenugasanDosenController::class, 'destroy']);
+    // Manajemen Dosen (GET: koordinator_mk+, POST/PUT/DELETE: super_admin)
+    Route::get('/dosen/search', [DosenController::class, 'search'])->middleware('koordinator_mk');
+    Route::get('/dosen', [DosenController::class, 'index'])->middleware('koordinator_mk');
+    Route::get('/dosen/{dosen}', [DosenController::class, 'show'])->middleware('koordinator_mk');
+    Route::post('/dosen', [DosenController::class, 'store'])->middleware('super_admin');
+    Route::put('/dosen/{dosen}', [DosenController::class, 'update'])->middleware('super_admin');
+    Route::patch('/dosen/{dosen}', [DosenController::class, 'update'])->middleware('super_admin');
+    Route::delete('/dosen/{dosen}', [DosenController::class, 'destroy'])->middleware('super_admin');
 
-    // Verifikasi
-    Route::get('/verifikasi/tugas-saya', [VerifikasiController::class, 'tugasSaya'])->middleware('pic_periode');
-    Route::post('/soal/{soal}/verifikasi', [VerifikasiController::class, 'submit'])->middleware('pic_periode');
+    // Penugasan Verifikator (Super Admin)
+    Route::get('/penugasan-verifikator', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'index']);
+    Route::post('/penugasan-verifikator', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'store'])->middleware('super_admin');
+    Route::delete('/penugasan-verifikator/{id}', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'destroy'])->middleware('super_admin');
+
+    // Endpoints penugasan lama untuk backward compatibility
+    Route::get('/penugasan', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'index']);
+    Route::post('/penugasan', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'store'])->middleware('super_admin');
+    Route::delete('/penugasan/{id}', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'destroy'])->middleware('super_admin');
+    Route::get('/penugasan-dosen', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'index']);
+    Route::post('/penugasan-dosen', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'store']);
+    Route::delete('/penugasan-dosen/{id}', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'destroy']);
+
+    // Verifikasi (Dosen Verifikator)
+    Route::get('/verifikasi/tugas-saya', [VerifikasiController::class, 'tugasSaya'])->middleware('verifikator');
+    Route::post('/soal/{soal}/verifikasi', [VerifikasiController::class, 'submit'])->middleware('verifikator');
     Route::get('/soal/{soal}/verifikasi/history', [VerifikasiController::class, 'history']);
 
     // Berita Acara
@@ -138,8 +177,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Broadcast
     Route::get('/broadcast', [BroadcastController::class, 'index']);
-    Route::post('/broadcast', [BroadcastController::class, 'store'])->middleware('coordinator');
-    Route::patch('/broadcast/{id}/publish', [BroadcastController::class, 'publish'])->middleware('coordinator');
+    Route::post('/broadcast', [BroadcastController::class, 'store'])->middleware('super_admin');
+    Route::patch('/broadcast/{id}/publish', [BroadcastController::class, 'publish'])->middleware('super_admin');
     Route::get('/broadcast/feed', [BroadcastController::class, 'feed']);
 
     // Notifikasi
@@ -148,8 +187,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/notifikasi/read-all', [NotifikasiController::class, 'readAll']);
 
     // Dashboard
-    Route::get('/dashboard/coordinator', [DashboardController::class, 'superAdmin'])->middleware('coordinator');
+    Route::get('/dashboard/super-admin', [DashboardController::class, 'superAdmin'])->middleware('super_admin');
+    Route::get('/dashboard/coordinator', [DashboardController::class, 'superAdmin'])->middleware('super_admin');
     Route::get('/dashboard/dosen', [DashboardController::class, 'dosen']);
     Route::get('/dashboard/upload-progress', [DashboardController::class, 'uploadProgress']);
-    Route::get('/dashboard/pic', [DashboardController::class, 'pic'])->middleware('pic_periode');
+    Route::get('/dashboard/verifikator', [DashboardController::class, 'pic'])->middleware('verifikator');
+    Route::get('/dashboard/pic', [DashboardController::class, 'pic'])->middleware('verifikator');
 });

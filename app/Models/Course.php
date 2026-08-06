@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Course extends Model
@@ -26,14 +27,9 @@ class Course extends Model
         return $this->belongsTo(ProgramStudi::class, 'prodi_id');
     }
 
-    public function plo(): HasMany
+    public function clo(): BelongsToMany
     {
-        return $this->hasMany(Plo::class, 'mata_kuliah_id');
-    }
-
-    public function clo(): HasMany
-    {
-        return $this->hasMany(Clo::class, 'mata_kuliah_id');
+        return $this->belongsToMany(Clo::class, 'course_clo', 'course_id', 'clo_id')->withTimestamps();
     }
 
     public function soal(): HasMany

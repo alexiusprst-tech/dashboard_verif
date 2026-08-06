@@ -15,7 +15,9 @@ export interface DosenUser {
     tipe_dosen: TipeDosen;
     semester_lb?: SemesterLb | null;
     is_super_admin: boolean;
-    is_coordinator: boolean;
+    is_koordinator_mk?: boolean;
+    is_coordinator?: boolean;
+    is_verifikator_aktif?: boolean;
     is_pic_active?: boolean;
     status_aktif: boolean;
     last_login_at?: string | null;
@@ -30,6 +32,7 @@ export interface DosenFormData {
     tipe_dosen: TipeDosen;
     semester_lb?: SemesterLb | '';
     prodi_id: number | string | '';
+    is_koordinator_mk?: boolean;
     is_coordinator?: boolean;
     status_aktif: boolean;
 }

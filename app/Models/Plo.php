@@ -16,16 +16,8 @@ class Plo extends Model
         'deskripsi',
         'prodi_id',
         'periode_id',
-        'mata_kuliah_id',
         'created_by',
     ];
-
-    /* ── Relations ──────────────────────────────────────────── */
-
-    public function mataKuliah(): BelongsTo
-    {
-        return $this->belongsTo(Course::class, 'mata_kuliah_id');
-    }
 
     public function programStudi(): BelongsTo
     {

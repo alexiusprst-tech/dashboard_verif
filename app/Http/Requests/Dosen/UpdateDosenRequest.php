@@ -22,9 +22,10 @@ class UpdateDosenRequest extends FormRequest
             'kode_dosen'   => 'sometimes|required|string|max:30|unique:users,kode_dosen,' . $dosenId,
             'tipe_dosen'   => 'sometimes|required|in:biasa,lb',
             'semester_lb'  => 'nullable|in:ganjil,genap',
-            'prodi_id'       => 'nullable|exists:program_studi,id',
-            'is_coordinator' => 'boolean',
-            'status_aktif'   => 'boolean',
+            'prodi_id'          => 'nullable|exists:program_studi,id',
+            'is_koordinator_mk' => 'boolean',
+            'is_coordinator'    => 'boolean',
+            'status_aktif'      => 'boolean',
         ];
     }
 

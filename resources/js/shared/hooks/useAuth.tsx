@@ -8,7 +8,7 @@ import {
 
 /* ── Types ─────────────────────────────────────────────────── */
 
-export type UserRole = 'coordinator' | 'pic' | 'dosen';
+export type UserRole = 'super_admin' | 'koordinator_mk' | 'verifikator' | 'dosen' | 'coordinator' | 'pic';
 
 export interface AuthUser {
     id: number;
@@ -16,10 +16,11 @@ export interface AuthUser {
     email: string;
     kode_dosen: string | null;
     is_super_admin: boolean;
-    is_coordinator: boolean;
-    /** Apakah user adalah PIC aktif di periode yang sedang berjalan.
-     *  Ini bukan role permanen — dihitung dari assignment di tabel `penugasan`. */
-    is_pic_active: boolean;
+    is_koordinator_mk?: boolean;
+    is_coordinator?: boolean;
+    is_verifikator_aktif?: boolean;
+    /** Backward compat */
+    is_pic_active?: boolean;
     program_studi_id: number | null;
     program_studi_name: string | null;
 }
@@ -43,8 +44,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /* ── Helper: derive role ───────────────────────────────────── */
 
 function deriveRole(user: AuthUser): UserRole {
-    if (user.is_super_admin || user.is_coordinator) return 'coordinator';
-    if (user.is_pic_active) return 'pic';
+    if (user.is_super_admin) return 'super_admin';
+    if (user.is_koordinator_mk || user.is_coordinator) return 'koordinator_mk';
+    if (user.is_verifikator_aktif || user.is_pic_active) return 'verifikator';
     return 'dosen';
 }
 

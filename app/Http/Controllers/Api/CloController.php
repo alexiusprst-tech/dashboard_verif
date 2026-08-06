@@ -27,9 +27,15 @@ class CloController extends Controller
         $filters = $request->only(['mata_kuliah_id', 'plo_id']);
         $perPage = $request->query('per_page', 15);
 
-        // Jika hanya minta list dropdown tanpa paginasi (misal untuk form upload soal)
-        if ($request->has('dropdown') && !empty($filters['mata_kuliah_id'])) {
-            $clos = $this->cloRepository->findByMataKuliah((int) $filters['mata_kuliah_id']);
+        // Jika hanya minta list dropdown tanpa paginasi (misal untuk form upload soal atau select)
+        if ($request->has('dropdown')) {
+            if (!empty($filters['mata_kuliah_id'])) {
+                $clos = $this->cloRepository->findByMataKuliah((int) $filters['mata_kuliah_id']);
+            } elseif (!empty($filters['plo_id'])) {
+                $clos = $this->cloRepository->findByPlo((int) $filters['plo_id']);
+            } else {
+                $clos = \App\Models\Clo::with(['plo', 'courses'])->orderBy('kode')->get();
+            }
             return CloResource::collection($clos)->additional([
                 'success' => true,
                 'message' => 'Data CLO dropdown berhasil diambil.'

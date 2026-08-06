@@ -85,6 +85,35 @@ class EloquentDashboardRepository implements DashboardRepositoryContract
 
     public function picSummary(int $verifierId, int $periodeId): array
     {
+        $assignedCourseIds = DB::table('penugasan_verifikator')
+            ->where('dosen_id', $verifierId)
+            ->where('periode_id', $periodeId)
+            ->pluck('course_id')
+            ->toArray();
+
+        if (!empty($assignedCourseIds)) {
+            $total = DB::table('soal')
+                ->where('periode_id', $periodeId)
+                ->whereIn('mata_kuliah_id', $assignedCourseIds)
+                ->whereNull('deleted_at')
+                ->where('status', '!=', 'draft')
+                ->count();
+
+            $done = DB::table('soal')
+                ->where('periode_id', $periodeId)
+                ->whereIn('mata_kuliah_id', $assignedCourseIds)
+                ->whereNull('deleted_at')
+                ->whereIn('status', ['approved', 'revisi', 'rejected'])
+                ->count();
+
+            return [
+                'total' => $total,
+                'pending' => $total - $done,
+                'done' => $done
+            ];
+        }
+
+        // Fallback to old penugasan table if penugasan_verifikator is empty
         $targetDosenIds = DB::table('penugasan')
             ->where('verifier_id', $verifierId)
             ->where('periode_id', $periodeId)

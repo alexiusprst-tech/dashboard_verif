@@ -126,9 +126,10 @@ class DosenSeeder extends Seeder
                     'email'          => strtolower($data['kode_dosen']) . '@telkomuniversity.ac.id',
                     'password'       => Hash::make('password'),
                     'prodi_id'       => $prodiId,
-                    'is_super_admin' => false,
-                    'is_coordinator' => false,
-                    'tipe_dosen'     => $tipe,
+                    'is_super_admin'    => false,
+                    'is_coordinator'    => false,
+                    'is_koordinator_mk' => false,
+                    'tipe_dosen'        => $tipe,
                     'semester_lb'    => $semesterLb,
                     'status_aktif'   => true,
                 ]

@@ -41,46 +41,36 @@ const COMMON_ITEMS: NavItem[] = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'PLO & CLO', href: '/plo-clo', icon: GraduationCap },
     { label: 'Mata Kuliah', href: '/matkul', icon: BookMarked },
-    { label: 'Master CLO', href: '/clo-master', icon: Tag },
 ];
 
 const DOSEN_ITEMS: NavItem[] = [
     { label: 'Soal Saya', href: '/soal', icon: FileText },
 ];
 
-const PIC_ITEMS: NavItem[] = [
+const VERIFIKATOR_ITEMS: NavItem[] = [
     { label: 'Verifikasi Soal', href: '/verifikasi', icon: CheckSquare },
 ];
 
 const BERITA_ACARA_ITEM: NavItem = { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList };
 
-const COORDINATOR_ITEMS: NavItem[] = [
-    { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
-];
-
 const SUPER_ADMIN_ITEMS: NavItem[] = [
     { label: 'Manajemen Dosen', href: '/dosen', icon: GraduationCap },
+    { label: 'Penugasan Verifikator', href: '/penugasan-verifikator', icon: Users },
     { label: 'Periode & Deadline', href: '/periode', icon: Calendar },
     { label: 'Kategori & Template', href: '/kategori', icon: Tag },
     { label: 'Template Berita Acara', href: '/template-ba', icon: Scroll },
-    { label: 'Penugasan PIC', href: '/penugasan-pic', icon: Users },
     { label: 'Broadcast', href: '/broadcast', icon: Megaphone },
     { label: 'Semua Soal', href: '/soal/semua', icon: FileText },
-    { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
-    { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
 ];
 
-const COORDINATOR_MANAGEMENT_ITEMS: NavItem[] = [
-    { label: 'Manajemen Dosen', href: '/dosen', icon: GraduationCap },
-];
-
-/* ── Build sections berdasarkan role + is_pic_active + is_super_admin ─ */
+/* ── Build sections berdasarkan role + isVerifikator + isSuperAdmin ─ */
 
 function buildNavSections(
-    role: 'coordinator' | 'pic' | 'dosen',
-    isPicActive: boolean,
+    role: string,
+    isVerifikatorActive: boolean,
     isSuperAdmin: boolean,
-    picPendingCount?: number,
+    isKoordinatorMk: boolean,
+    verifikatorPendingCount?: number,
 ): NavSection[] {
     const sections: NavSection[] = [
         { items: COMMON_ITEMS },
@@ -88,54 +78,32 @@ function buildNavSections(
 
     if (isSuperAdmin) {
         sections.push({ title: 'Soal', items: DOSEN_ITEMS });
-        sections.push({ title: 'Manajemen', items: SUPER_ADMIN_ITEMS });
+        sections.push({ title: 'Manajemen (Super Admin)', items: SUPER_ADMIN_ITEMS });
         return sections;
     }
 
-    if (role === 'coordinator') {
-        const soalItems = [
-            ...DOSEN_ITEMS,
-            ...(isPicActive
-                ? PIC_ITEMS.map((item) =>
-                      item.href === '/verifikasi' && picPendingCount
-                          ? { ...item, badge: picPendingCount }
-                          : item,
-                  )
-                : []),
-        ];
-        sections.push({ title: 'Soal', items: soalItems });
-        sections.push({
-            title: 'Manajemen',
-            items: [
-                ...COORDINATOR_MANAGEMENT_ITEMS,
-                { label: 'Penugasan PIC', href: '/penugasan-pic', icon: Users },
-                { label: 'Monitoring Prodi', href: '/monitoring', icon: BookOpen },
-                { label: 'Berita Acara', href: '/berita-acara', icon: ClipboardList },
-            ],
-        });
-        return sections;
+    const soalSectionItems: NavItem[] = [];
+
+    // Dosen / Koordinator MK dapat mengunggah / merevisi soal
+    if (isKoordinatorMk || role === 'koordinator_mk' || role === 'coordinator' || role === 'dosen') {
+        soalSectionItems.push(...DOSEN_ITEMS);
     }
 
-    // PIC / Verifikator atau Dosen biasa
-    if (role === 'pic' || isPicActive) {
-        const picItemsWithBadge = PIC_ITEMS.map((item) =>
-            item.href === '/verifikasi' && picPendingCount
-                ? { ...item, badge: picPendingCount }
+    // Dosen Verifikator dapat memverifikasi soal
+    if (isVerifikatorActive || role === 'verifikator' || role === 'pic') {
+        const verifikasiItems = VERIFIKATOR_ITEMS.map((item) =>
+            item.href === '/verifikasi' && verifikatorPendingCount
+                ? { ...item, badge: verifikatorPendingCount }
                 : item,
         );
-
-        sections.push({
-            title: 'Soal',
-            items: [
-                ...DOSEN_ITEMS,
-                ...picItemsWithBadge,
-                BERITA_ACARA_ITEM,
-            ],
-        });
+        soalSectionItems.push(...verifikasiItems);
+        soalSectionItems.push(BERITA_ACARA_ITEM);
     } else {
-        // Dosen biasa bisa upload soal & melihat Berita Acara
-        sections.push({ title: 'Soal', items: [...DOSEN_ITEMS, BERITA_ACARA_ITEM] });
+        // Non-verifikator juga dapat melihat status Berita Acara
+        soalSectionItems.push(BERITA_ACARA_ITEM);
     }
+
+    sections.push({ title: 'Soal & Verifikasi', items: soalSectionItems });
 
     return sections;
 }
@@ -190,9 +158,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
     const sections = buildNavSections(
         role,
-        user?.is_pic_active ?? false,
+        user?.is_verifikator_aktif ?? user?.is_pic_active ?? false,
         user?.is_super_admin ?? false,
-        /* picPendingCount — nanti bisa diambil via TanStack Query */
+        user?.is_koordinator_mk ?? user?.is_coordinator ?? false,
         undefined,
     );
 

@@ -90,8 +90,8 @@ class DosenApiTest extends TestCase
     {
         /** @var User $coordinator */
         $coordinator = User::factory()->create([
-            'is_super_admin' => false,
-            'is_coordinator' => true,
+            'is_super_admin'    => false,
+            'is_koordinator_mk' => true,
         ]);
 
         $response = $this->actingAs($coordinator, 'sanctum')->getJson('/api/dosen');
@@ -102,8 +102,8 @@ class DosenApiTest extends TestCase
     {
         /** @var User $regularDosen */
         $regularDosen = User::factory()->create([
-            'is_super_admin' => false,
-            'is_coordinator' => false,
+            'is_super_admin'    => false,
+            'is_koordinator_mk' => false,
         ]);
 
         $response = $this->actingAs($regularDosen, 'sanctum')->getJson('/api/dosen');

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Repositories\Contracts\UserRepositoryContract;
-use App\Repositories\Contracts\UserRoleRepositoryContract;
 use App\Repositories\Contracts\PeriodeRepositoryContract;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -12,19 +11,16 @@ use App\Models\User;
 class AuthService
 {
     protected UserRepositoryContract $userRepository;
-    protected UserRoleRepositoryContract $userRoleRepository;
     protected PeriodeRepositoryContract $periodeRepository;
     protected ActivityLogService $activityLogService;
 
     public function __construct(
         UserRepositoryContract $userRepository,
-        UserRoleRepositoryContract $userRoleRepository,
         PeriodeRepositoryContract $periodeRepository,
         ActivityLogService $activityLogService
     ) {
-        $this->userRepository     = $userRepository;
-        $this->userRoleRepository = $userRoleRepository;
-        $this->periodeRepository  = $periodeRepository;
+        $this->userRepository    = $userRepository;
+        $this->periodeRepository = $periodeRepository;
         $this->activityLogService = $activityLogService;
     }
 
@@ -50,21 +46,19 @@ class AuthService
         // Generate token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Ambil periode_id di mana user berperan PIC (dari user_roles)
-        $activePicPeriodes = $this->userRoleRepository->getActivePicPeriodes($user->id);
-
-        // Set virtual attribute is_pic_active berdasarkan periode aktif
+        // Set virtual attribute is_verifikator_aktif berdasarkan periode aktif
         $activePeriode = $this->periodeRepository->findActive();
-        $user->is_pic_active = $activePeriode
-            ? $activePicPeriodes->contains($activePeriode->id)
+        $user->is_verifikator_aktif = $activePeriode
+            ? $user->isVerifikatorPadaPeriode($activePeriode->id)
             : false;
+        // Keep is_pic_active for backward compatibility
+        $user->is_pic_active = $user->is_verifikator_aktif;
 
         $this->activityLogService->log('User melakukan login', 'Auth', $user->id);
 
         return [
-            'token'              => $token,
-            'user'               => $user,
-            'active_pic_periode' => $activePicPeriodes,   // array of periode_id
+            'token' => $token,
+            'user'  => $user,
         ];
     }
 
@@ -76,18 +70,17 @@ class AuthService
 
     public function me(User $user): array
     {
-        // Ambil periode_id di mana user berperan PIC (dari user_roles)
-        $activePicPeriodes = $this->userRoleRepository->getActivePicPeriodes($user->id);
-
-        // Set virtual attribute is_pic_active berdasarkan periode aktif
+        // Set virtual attribute is_verifikator_aktif berdasarkan periode aktif
         $activePeriode = $this->periodeRepository->findActive();
-        $user->is_pic_active = $activePeriode
-            ? $activePicPeriodes->contains($activePeriode->id)
+        $user->is_verifikator_aktif = $activePeriode
+            ? $user->isVerifikatorPadaPeriode($activePeriode->id)
             : false;
+        // Keep is_pic_active for backward compatibility
+        $user->is_pic_active = $user->is_verifikator_aktif;
 
         return [
-            'user'               => $user,
-            'active_pic_periode' => $activePicPeriodes,   // array of periode_id
+            'user' => $user,
         ];
     }
 }
+

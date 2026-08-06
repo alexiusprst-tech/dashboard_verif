@@ -11,28 +11,32 @@ class EloquentCloRepository implements CloRepositoryContract
 {
     public function findById(int $id): ?Clo
     {
-        return Clo::with(['mataKuliah', 'plo', 'creator'])->find($id);
+        return Clo::with(['plo', 'courses', 'creator'])->find($id);
     }
 
     public function findByMataKuliah(int $mataKuliahId): Collection
     {
         return Clo::with('plo')
-            ->where('mata_kuliah_id', $mataKuliahId)
+            ->whereHas('courses', function ($q) use ($mataKuliahId) {
+                $q->where('courses.id', $mataKuliahId);
+            })
             ->orderBy('kode')
             ->get();
     }
 
     public function findByPlo(int $ploId): Collection
     {
-        return Clo::where('plo_id', $ploId)->orderBy('kode')->get();
+        return Clo::with(['plo', 'courses'])->where('plo_id', $ploId)->orderBy('kode')->get();
     }
 
     public function paginate(array $filters, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Clo::with(['mataKuliah', 'plo', 'creator']);
+        $query = Clo::with(['plo', 'courses', 'creator']);
 
         if (!empty($filters['mata_kuliah_id'])) {
-            $query->where('mata_kuliah_id', $filters['mata_kuliah_id']);
+            $query->whereHas('courses', function ($q) use ($filters) {
+                $q->where('courses.id', $filters['mata_kuliah_id']);
+            });
         }
         if (!empty($filters['plo_id'])) {
             $query->where('plo_id', $filters['plo_id']);

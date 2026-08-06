@@ -24,10 +24,9 @@ class AuthController extends Controller
         $result = $this->authService->login($credentials['email'], $credentials['password']);
 
         return (new UserResource($result['user']))->additional([
-            'success'            => true,
-            'message'            => 'Login berhasil.',
-            'token'              => $result['token'],
-            'active_pic_periode' => $result['active_pic_periode']
+            'success' => true,
+            'message' => 'Login berhasil.',
+            'token'   => $result['token'],
         ])->response();
     }
 
@@ -46,9 +45,8 @@ class AuthController extends Controller
         $result = $this->authService->me($request->user());
 
         return (new UserResource($result['user']))->additional([
-            'success'            => true,
-            'message'            => 'Data profil berhasil diambil.',
-            'active_pic_periode' => $result['active_pic_periode']
+            'success' => true,
+            'message' => 'Data profil berhasil diambil.',
         ])->response();
     }
 }

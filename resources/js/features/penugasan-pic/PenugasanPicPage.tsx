@@ -75,14 +75,14 @@ export function PenugasanPicPage() {
                 successCount++;
                 lastRes = res;
             }
-            toast.success(`${successCount} Dosen berhasil ditugaskan sebagai PIC.`);
+            toast.success(`${successCount} Dosen berhasil ditugaskan sebagai Verifikator.`);
             if (lastRes?.warning) {
                 toast.warning(lastRes.warning);
             }
             setAssignModalOpen(false);
             refetch();
         } catch (e: any) {
-            toast.error(e.response?.data?.message || 'Gagal menyimpan penugasan PIC.');
+            toast.error(e.response?.data?.message || 'Gagal menyimpan penugasan verifikator.');
             refetch();
         }
     };
@@ -96,7 +96,7 @@ export function PenugasanPicPage() {
         if (!deleteId) return;
         try {
             await deleteMutation.mutateAsync(deleteId);
-            toast.success('Role PIC berhasil dicabut.');
+            toast.success('Penugasan verifikator berhasil dicabut.');
             refetch();
         } catch (e: any) {
             toast.error(e.response?.data?.message || 'Gagal mencabut penugasan.');
@@ -109,16 +109,16 @@ export function PenugasanPicPage() {
     return (
         <div className="flex flex-col gap-6">
             <PageHeader
-                title="Penugasan PIC Verifikator"
-                description="Tugaskan Dosen PIC yang bertanggung jawab memverifikasi seluruh soal ujian dalam periode aktif."
-                breadcrumb={[{ label: 'Penugasan PIC' }]}
+                title="Penugasan Dosen Verifikator"
+                description="Tugaskan Dosen Verifikator yang bertanggung jawab memverifikasi soal mata kuliah dalam periode aktif."
+                breadcrumb={[{ label: 'Penugasan Verifikator' }]}
                 action={
                     <button
                         onClick={() => setAssignModalOpen(true)}
                         className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] cursor-pointer"
                     >
                         <Plus size={16} />
-                        Tugaskan PIC
+                        Tugaskan Verifikator
                     </button>
                 }
             />

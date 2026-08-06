@@ -69,7 +69,7 @@ class DashboardService
         ];
     }
 
-    public function pic(User $user, ?int $periodeId = null): array
+    public function verifikator(User $user, ?int $periodeId = null): array
     {
         $activePeriode = $this->getPeriodeTarget($periodeId);
         if (!$activePeriode) {
@@ -85,24 +85,14 @@ class DashboardService
         ];
     }
 
+    public function pic(User $user, ?int $periodeId = null): array
+    {
+        return $this->verifikator($user, $periodeId);
+    }
+
     public function coordinator(?int $periodeId = null): array
     {
-        $activePeriode = $this->getPeriodeTarget($periodeId);
-        if (!$activePeriode) {
-            return [
-                'periode' => null,
-                'soal_status_counts' => [],
-                'progress' => null,
-                'progress_by_prodi' => []
-            ];
-        }
-
-        return [
-            'periode' => $activePeriode,
-            'soal_status_counts' => $this->dashboardRepository->countSoalByStatus($activePeriode->id),
-            'progress' => $this->dashboardRepository->progressByPeriode($activePeriode->id),
-            'progress_by_prodi' => $this->dashboardRepository->progressByProdi($activePeriode->id)
-        ];
+        return $this->superAdmin($periodeId);
     }
 
     public function uploadProgress(User $user, ?int $periodeId = null): array

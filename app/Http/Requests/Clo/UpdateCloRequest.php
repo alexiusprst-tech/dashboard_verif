@@ -22,35 +22,35 @@ class UpdateCloRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('clo');
-        $mataKuliahId = $this->mata_kuliah_id;
+        $ploId = $this->plo_id;
 
         return [
             'kode' => [
                 'required',
                 'string',
                 'max:30',
-                Rule::unique('clo', 'kode')->ignore($id)->where(function ($query) use ($mataKuliahId) {
-                    return $query->where('mata_kuliah_id', $mataKuliahId);
+                Rule::unique('clo', 'kode')->ignore($id)->where(function ($query) use ($ploId) {
+                    if ($ploId) {
+                        return $query->where('plo_id', $ploId);
+                    }
+                    return $query;
                 }),
             ],
-            'nama_clo'      => 'nullable|string|max:255',
-            'deskripsi'     => 'nullable|string',
-            'mata_kuliah_id'=> 'required|exists:courses,id',
-            'plo_id'        => 'required|exists:plo,id',
-            'periode_id'    => 'nullable|exists:periode,id',
+            'nama_clo'   => 'nullable|string|max:255',
+            'deskripsi'  => 'required|string',
+            'plo_id'     => 'required|exists:plo,id',
+            'periode_id' => 'nullable|exists:periode,id',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'kode.required' => 'Kode CLO wajib diisi.',
-            'kode.max' => 'Kode CLO maksimal 30 karakter.',
-            'kode.unique' => 'Kode CLO sudah terdaftar di mata kuliah ini.',
-            'mata_kuliah_id.required' => 'Mata Kuliah wajib dipilih.',
-            'mata_kuliah_id.exists' => 'Mata Kuliah tidak valid.',
+            'kode.required'   => 'Kode CLO wajib diisi.',
+            'kode.max'        => 'Kode CLO maksimal 30 karakter.',
+            'kode.unique'     => 'Kode CLO sudah terdaftar di PLO ini.',
             'plo_id.required' => 'PLO wajib dipilih.',
-            'plo_id.exists' => 'PLO tidak valid.',
+            'plo_id.exists'   => 'PLO tidak valid.',
         ];
     }
 }

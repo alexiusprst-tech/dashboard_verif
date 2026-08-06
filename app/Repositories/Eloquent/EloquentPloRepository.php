@@ -10,17 +10,14 @@ class EloquentPloRepository implements PloRepositoryContract
 {
     public function findById(int $id): ?Plo
     {
-        return Plo::with(['programStudi', 'mataKuliah', 'creator'])->find($id);
+        return Plo::with(['programStudi', 'creator', 'clo'])->withCount('clo')->find($id);
     }
 
     public function findByProdi(int $prodiId, int $perPage = 15, ?int $mataKuliahId = null, ?int $periodeId = null, ?string $search = null): LengthAwarePaginator
     {
-        $query = Plo::with(['programStudi', 'mataKuliah'])
+        $query = Plo::with(['programStudi'])
+            ->withCount('clo')
             ->where('prodi_id', $prodiId);
-
-        if ($mataKuliahId) {
-            $query->where('mata_kuliah_id', $mataKuliahId);
-        }
 
         if ($periodeId) {
             $query->where(function ($q) use ($periodeId) {

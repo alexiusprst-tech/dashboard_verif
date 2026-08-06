@@ -3,14 +3,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Modal } from '@/shared/components/ui/Modal';
-import type { Clo, CloFormData, Plo, MataKuliah } from '../types/plo.types';
+import type { Clo, CloFormData, Plo } from '../types/plo.types';
 
 const schema = z.object({
-    kode:           z.string().min(1, 'Kode CLO wajib diisi').max(20, 'Kode CLO maksimal 20 karakter'),
-    deskripsi:      z.string().min(1, 'Deskripsi CLO wajib diisi'),
-    plo_id:         z.coerce.number({ invalid_type_error: 'PLO wajib dipilih' }).min(1, 'PLO wajib dipilih'),
-    mata_kuliah_id: z.coerce.number({ invalid_type_error: 'Mata Kuliah wajib dipilih' }).min(1, 'Mata Kuliah wajib dipilih'),
-    periode_id:     z.coerce.number().optional(),
+    kode:        z.string().min(1, 'Kode CLO wajib diisi').max(20, 'Kode CLO maksimal 20 karakter'),
+    deskripsi:   z.string().min(1, 'Deskripsi CLO wajib diisi'),
+    plo_id:      z.coerce.number({ invalid_type_error: 'PLO wajib dipilih' }).min(1, 'PLO wajib dipilih'),
+    periode_id:  z.union([z.coerce.number(), z.literal('')]).optional().transform((val) => (val === '' ? undefined : val)),
 });
 
 interface CloModalProps {
@@ -19,8 +18,7 @@ interface CloModalProps {
     onSubmit: (data: CloFormData) => void;
     clo?: Clo | null;
     ploList: Plo[];
-    mataKuliahList: MataKuliah[];
-    /** Periode yang sedang aktif/dipilih — disertakan saat create/update CLO */
+    defaultPloId?: number;
     defaultPeriodeId?: string | number;
     loading?: boolean;
 }
@@ -31,7 +29,7 @@ export function CloModal({
     onSubmit,
     clo,
     ploList,
-    mataKuliahList,
+    defaultPloId,
     defaultPeriodeId,
     loading = false,
 }: CloModalProps) {
@@ -39,44 +37,36 @@ export function CloModal({
         register,
         handleSubmit,
         reset,
-        watch,
-        setValue,
         formState: { errors },
     } = useForm<CloFormData>({
         resolver: zodResolver(schema),
         defaultValues: {
-            kode:           '',
-            deskripsi:      '',
-            plo_id:         '',
-            mata_kuliah_id: '',
-            periode_id:     defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
+            kode:       '',
+            deskripsi:  '',
+            plo_id:     defaultPloId || '',
+            periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
         },
     });
 
-    const selectedMataKuliahId = watch('mata_kuliah_id');
-
-    // Tampilkan seluruh PLO yang tersedia di periode & prodi aktif agar pengguna bebas memilih PLO mana saja
-    const displayPloList = ploList;
-
     useEffect(() => {
-        if (clo) {
-            reset({
-                kode:           clo.kode,
-                deskripsi:      clo.deskripsi,
-                plo_id:         clo.plo_id || (clo.plo?.id ?? ''),
-                mata_kuliah_id: clo.mata_kuliah_id || (clo.mata_kuliah?.id ?? ''),
-                periode_id:     clo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
-            });
-        } else {
-            reset({
-                kode:           '',
-                deskripsi:      '',
-                plo_id:         '',
-                mata_kuliah_id: '',
-                periode_id:     defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
-            });
+        if (open) {
+            if (clo) {
+                reset({
+                    kode:       clo.kode,
+                    deskripsi:  clo.deskripsi,
+                    plo_id:     clo.plo_id || (clo.plo?.id ?? ''),
+                    periode_id: clo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
+                });
+            } else {
+                reset({
+                    kode:       '',
+                    deskripsi:  '',
+                    plo_id:     defaultPloId || (ploList.length > 0 ? ploList[0].id : ''),
+                    periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
+                });
+            }
         }
-    }, [clo, reset, open, defaultPeriodeId]);
+    }, [clo, reset, open, defaultPeriodeId, defaultPloId, ploList]);
 
     return (
         <Modal
@@ -109,42 +99,20 @@ export function CloModal({
             }
         >
             <form id="clo-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* 1. Mata Kuliah — Pilih Mata Kuliah */}
-                <div>
-                    <label htmlFor="mata_kuliah_id" className="block text-sm font-medium text-gray-700">
-                        Mata Kuliah <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                        id="mata_kuliah_id"
-                        {...register('mata_kuliah_id')}
-                        className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-                    >
-                        <option value="">Pilih Mata Kuliah</option>
-                        {mataKuliahList.map((mk) => (
-                            <option key={mk.id} value={mk.id}>
-                                {mk.kode_mk} - {mk.nama_mk}
-                            </option>
-                        ))}
-                    </select>
-                    {errors.mata_kuliah_id && (
-                        <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.mata_kuliah_id.message}</p>
-                    )}
-                </div>
-
-                {/* 2. PLO Relasi */}
+                {/* PLO Induk Dropdown — Wajib */}
                 <div>
                     <label htmlFor="plo_id" className="block text-sm font-medium text-gray-700">
-                        Pilih PLO Relasi <span className="text-red-500">*</span>
+                        Pilih PLO Induk <span className="text-red-500">*</span>
                     </label>
                     <select
                         id="plo_id"
                         {...register('plo_id')}
                         className="mt-1 block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                     >
-                        <option value="">Pilih PLO</option>
-                        {displayPloList.map((p) => (
+                        <option value="">— Pilih PLO Induk —</option>
+                        {ploList.map((p) => (
                             <option key={p.id} value={p.id}>
-                                {p.kode}{p.nama_plo ? ` - ${p.nama_plo}` : ''}{p.deskripsi ? ` (${p.deskripsi.substring(0, 50)}${p.deskripsi.length > 50 ? '...' : ''})` : ''}
+                                {p.kode}{p.deskripsi ? ` - ${p.deskripsi.substring(0, 60)}${p.deskripsi.length > 60 ? '...' : ''}` : ''}
                             </option>
                         ))}
                     </select>
@@ -160,7 +128,7 @@ export function CloModal({
                     <input
                         id="kode"
                         type="text"
-                        placeholder="Contoh: CLO-1"
+                        placeholder="Contoh: CLO-01"
                         {...register('kode')}
                         className="mt-1 block h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                     />
@@ -171,7 +139,7 @@ export function CloModal({
 
                 <div>
                     <label htmlFor="deskripsi" className="block text-sm font-medium text-gray-700">
-                        Deskripsi <span className="text-red-500">*</span>
+                        Deskripsi CLO <span className="text-red-500">*</span>
                     </label>
                     <textarea
                         id="deskripsi"

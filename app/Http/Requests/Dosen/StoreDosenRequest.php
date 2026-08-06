@@ -20,9 +20,10 @@ class StoreDosenRequest extends FormRequest
             'kode_dosen'   => 'required|string|max:30|unique:users,kode_dosen',
             'tipe_dosen'   => 'required|in:biasa,lb',
             'semester_lb'  => 'nullable|required_if:tipe_dosen,lb|in:ganjil,genap',
-            'prodi_id'       => 'nullable|exists:program_studi,id',
-            'is_coordinator' => 'boolean',
-            'status_aktif'   => 'boolean',
+            'prodi_id'          => 'nullable|exists:program_studi,id',
+            'is_koordinator_mk' => 'boolean',
+            'is_coordinator'    => 'boolean',
+            'status_aktif'      => 'boolean',
         ];
     }
 

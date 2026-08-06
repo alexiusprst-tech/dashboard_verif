@@ -876,10 +876,16 @@ export function DashboardPage() {
         return 'Selamat malam';
     };
 
-    const roleLabel = role === 'coordinator'
-        ? 'Koordinator'
-        : user?.is_pic_active
-        ? 'PIC Verifikator'
+    const isSuperAdmin = user?.is_super_admin ?? false;
+    const isKoordinatorMk = user?.is_koordinator_mk ?? user?.is_coordinator ?? false;
+    const isVerifikator = user?.is_verifikator_aktif ?? user?.is_pic_active ?? false;
+
+    const roleLabel = isSuperAdmin
+        ? 'Super Admin'
+        : isKoordinatorMk
+        ? 'Dosen Koordinator Mata Kuliah'
+        : isVerifikator
+        ? 'Dosen Verifikator'
         : 'Dosen';
 
     return (
@@ -896,30 +902,30 @@ export function DashboardPage() {
                     </p>
                 </div>
                 <Link
-                    to={role === 'coordinator' ? '/monitoring' : '/soal'}
+                    to={isSuperAdmin ? '/periode' : isKoordinatorMk ? '/soal' : isVerifikator ? '/verifikasi' : '/soal'}
                     className="hidden sm:flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-[var(--color-primary-dark)]"
                 >
-                    {role === 'coordinator' ? 'Lihat Monitoring' : 'Lihat Soal Saya'}
+                    {isSuperAdmin ? 'Manajemen System' : isKoordinatorMk ? 'Unggah Soal' : isVerifikator ? 'Antrian Verifikasi' : 'Soal Saya'}
                     <ArrowRight size={15} />
                 </Link>
             </div>
 
             {/* ── Role-based Dashboard ─────────────────────────── */}
-            {role === 'coordinator' && (
+            {(isSuperAdmin || role === 'super_admin' || role === 'coordinator') && (
                 <CoordinatorDashboard
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}
                     periodes={periodes}
                 />
             )}
-            {role === 'pic' && (
+            {!isSuperAdmin && (isVerifikator || role === 'verifikator' || role === 'pic') && (
                 <PicDashboard
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}
                     periodes={periodes}
                 />
             )}
-            {role === 'dosen' && (
+            {!isSuperAdmin && !isVerifikator && (
                 <DosenDashboard
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}

@@ -261,7 +261,7 @@ export function MatkulPage() {
                                             <th className="px-6 py-3">Nama Mata Kuliah</th>
                                             <th className="px-6 py-3 w-28 text-center">Kategori</th>
                                             <th className="px-6 py-3 w-16 text-center">SKS</th>
-                                            <th className="px-6 py-3 w-20 text-center">CLO</th>
+                                            <th className="px-6 py-3 w-28 text-center">Jumlah CLO</th>
                                             <th className="px-6 py-3 w-20 text-center">Aksi</th>
                                         </tr>
                                     </thead>
