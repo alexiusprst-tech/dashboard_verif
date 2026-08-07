@@ -61,37 +61,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Dosen Koordinator Mata Kuliah
-        User::updateOrCreate(
-            ['kode_dosen' => 'KOR001'],
-            [
-                'uuid' => (string) Str::uuid(),
-                'nama_lengkap' => 'Dosen Koordinator MK',
-                'email' => 'coordinator@telkomuniversity.ac.id',
-                'password' => Hash::make('password'),
-                'prodi_id' => $si->id,
-                'is_super_admin' => false,
-                'is_coordinator' => true,
-                'is_koordinator_mk' => true,
-                'status_aktif' => true,
-            ]
-        );
 
-        // Dosen Verifikator
-        User::updateOrCreate(
-            ['kode_dosen' => 'VER001'],
-            [
-                'uuid' => (string) Str::uuid(),
-                'nama_lengkap' => 'Dosen Verifikator Soal',
-                'email' => 'verifikator@telkomuniversity.ac.id',
-                'password' => Hash::make('password'),
-                'prodi_id' => $si->id,
-                'is_super_admin' => false,
-                'is_coordinator' => false,
-                'is_koordinator_mk' => false,
-                'status_aktif' => true,
-            ]
-        );
+        
 
         /*
         |--------------------------------------------------------------------------
@@ -253,6 +224,9 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        // Seed PLO and CLO master data
+        $this->call(PloCloSeeder::class);
 
         // Tidak ada penugasan PIC lama yang perlu di-seed.
         // Penugasan verifikator sudah di-seed di atas via tabel penugasan_verifikator.

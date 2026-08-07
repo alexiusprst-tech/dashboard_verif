@@ -274,7 +274,7 @@ export function BeritaAcaraPage() {
                                                 </button>
                                                 {r.file_docx_url && (
                                                     <a
-                                                        href={r.file_docx_url}
+                                                        href={`${r.file_docx_url}?token=${localStorage.getItem('auth_token')}`}
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-green-600 transition"
@@ -352,6 +352,16 @@ export function BeritaAcaraPage() {
                                     className="flex items-center gap-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 text-sm font-semibold transition"
                                 >
                                     <Download size={15} /> Unduh PDF
+                                </a>
+                            )}
+                            {selectedBa.file_docx_url && (
+                                <a
+                                    href={`${selectedBa.file_docx_url}?token=${localStorage.getItem('auth_token')}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center gap-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 px-3 py-2 text-sm font-semibold hover:bg-green-100 transition"
+                                >
+                                    <Download size={15} /> Unduh DOCX (Template)
                                 </a>
                             )}
                             <a

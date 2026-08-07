@@ -108,6 +108,11 @@ class User extends Authenticatable
         return (bool) $this->is_super_admin;
     }
 
+    public function isCoordinator(): bool
+    {
+        return (bool) $this->is_coordinator;
+    }
+
     public function isKoordinatorMk(): bool
     {
         // Fallback ke is_coordinator untuk backward compatibility
