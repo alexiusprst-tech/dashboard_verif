@@ -143,7 +143,7 @@ class DatabaseSeeder extends Seeder
         */
 
         if ($periode && $admin) {
-            $verifikatorUser = User::where('kode_dosen', 'VER001')->first();
+            $verifikatorUser = User::where('kode_dosen', 'QLB')->first();
             $dosenVerifikator2 = User::where('kode_dosen', 'SHC')->first();
 
             if ($verifikatorUser && $if2113) {

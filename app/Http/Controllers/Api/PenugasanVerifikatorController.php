@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\PenugasanVerifikatorService;
+use App\Services\NotifikasiService;
+use App\Enums\NotificationType;
+use App\Models\User;
+use App\Models\Periode;
 use App\Repositories\Contracts\PenugasanVerifikatorRepositoryContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,7 +16,8 @@ class PenugasanVerifikatorController extends Controller
 {
     public function __construct(
         protected PenugasanVerifikatorService $service,
-        protected PenugasanVerifikatorRepositoryContract $repository
+        protected PenugasanVerifikatorRepositoryContract $repository,
+        protected NotifikasiService $notifikasiService
     ) {}
 
     /**
@@ -105,19 +110,39 @@ class PenugasanVerifikatorController extends Controller
                     'message' => 'Belum ada data mata kuliah.'
                 ], 422);
             }
+
             $assignedCount = 0;
             foreach ($courses as $c) {
                 try {
+                    // Panggil service dengan flag suppress_notification agar tidak kirim per MK
                     $this->service->assign([
-                        'periode_id' => $validated['periode_id'],
-                        'course_id'  => $c->id,
-                        'dosen_id'   => $validated['dosen_id'],
+                        'periode_id'           => $validated['periode_id'],
+                        'course_id'            => $c->id,
+                        'dosen_id'             => $validated['dosen_id'],
+                        'suppress_notification' => true,   // notifikasi akan dikirim sekali di bawah
                     ], $request->user());
                     $assignedCount++;
                 } catch (\Throwable $e) {
                     // Abaikan jika sudah ditugaskan sebelumnya
                 }
             }
+
+            // Kirim SATU notifikasi ringkasan untuk bulk assign
+            if ($assignedCount > 0) {
+                $dosen   = User::find($validated['dosen_id']);
+                $periode = Periode::find($validated['periode_id']);
+                if ($dosen && $periode) {
+                    $this->notifikasiService->kirim(
+                        $dosen->id,
+                        'Penugasan Dosen Verifikator',
+                        "Anda telah ditugaskan oleh Administrator sebagai Dosen Verifikator untuk {$assignedCount} mata kuliah pada {$periode->nama_periode}. Silakan periksa tugas verifikasi Anda pada menu Verifikasi Soal.",
+                        NotificationType::Verifikasi,
+                        'penugasan_verifikator_bulk',
+                        $validated['periode_id']
+                    );
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => "Dosen verifikator berhasil ditugaskan ke {$assignedCount} mata kuliah.",

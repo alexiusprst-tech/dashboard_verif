@@ -98,20 +98,22 @@ class PenugasanDosenController extends Controller
         $periodeId = (int) $request->input('periode_id');
         $verifierId = (int) $request->input('verifier_id');
 
-        $isCoordinator = $user->isSuperAdmin() || $user->is_coordinator;
+        $isCoordinator = $user->isSuperAdmin() || $user->is_coordinator || $user->is_koordinator_mk;
 
         if (!$isCoordinator) {
             $isPic = app(\App\Repositories\Contracts\UserRoleRepositoryContract::class)->isActivePic($user->id, $periodeId);
-            if (!$isPic) {
+            $isVerifikator = $user->isVerifikatorPadaPeriode($periodeId);
+
+            if (!$isPic && !$isVerifikator) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Anda tidak memiliki penugasan PIC pada periode ini.'
+                    'message' => 'Anda tidak memiliki penugasan PIC/Verifikator pada periode ini.'
                 ], 403);
             }
             if ($verifierId !== $user->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Sebagai PIC, Anda hanya dapat menetapkan dosen target untuk diri Anda sendiri.'
+                    'message' => 'Sebagai PIC/Verifikator, Anda hanya dapat menetapkan dosen target untuk diri Anda sendiri.'
                 ], 403);
             }
         }
@@ -120,8 +122,8 @@ class PenugasanDosenController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $result['message'],
-            'data'    => $result['data'],
+            'message' => 'Dosen target berhasil ditugaskan.',
+            'data'    => $result,
         ]);
     }
 

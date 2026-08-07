@@ -44,6 +44,17 @@ class NotifikasiController extends Controller
         ]);
     }
 
+    public function unreadCount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $count = $this->notifikasiRepository->countUnreadByUser($user->id);
+
+        return response()->json([
+            'success'      => true,
+            'unread_count' => $count,
+        ]);
+    }
+
     public function readAll(Request $request): JsonResponse
     {
         $user = $request->user();

@@ -18,17 +18,17 @@ class ExampleTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_coordinator_can_login_with_seeded_credentials(): void
+    public function test_admin_can_login_with_seeded_credentials(): void
     {
         $this->seed();
 
         $response = $this->postJson('/api/auth/login', [
-            'email'    => 'coordinator@telkomuniversity.ac.id',
+            'email'    => 'admin@telkomuniversity.ac.id',
             'password' => 'password',
         ]);
 
         $response->assertOk();
         $response->assertJsonPath('success', true);
-        $response->assertJsonPath('data.email', 'coordinator@telkomuniversity.ac.id');
+        $response->assertJsonPath('data.email', 'admin@telkomuniversity.ac.id');
     }
 }

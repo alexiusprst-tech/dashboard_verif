@@ -196,7 +196,7 @@ export function KelolaCloPage() {
             {course && (
                 <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-light)] flex items-center justify-center font-bold text-[var(--color-primary)] font-mono text-sm shrink-0">
+                        <div className="px-3 py-1.5 rounded-xl bg-[var(--color-primary-light)] border border-[var(--color-primary-light)] flex items-center justify-center font-bold text-[var(--color-primary)] font-mono text-xs shrink-0 whitespace-nowrap">
                             {course.kode_mk}
                         </div>
                         <div>
