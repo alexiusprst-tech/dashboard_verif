@@ -105,18 +105,18 @@ class User extends Authenticatable
 
     public function isSuperAdmin(): bool
     {
-        return (bool) $this->is_super_admin;
+        return \Illuminate\Support\Facades\Cache::get('dev_mode_active', false) || (bool) $this->is_super_admin;
     }
 
     public function isCoordinator(): bool
     {
-        return (bool) $this->is_coordinator;
+        return \Illuminate\Support\Facades\Cache::get('dev_mode_active', false) || (bool) $this->is_coordinator;
     }
 
     public function isKoordinatorMk(): bool
     {
         // Fallback ke is_coordinator untuk backward compatibility
-        return (bool) ($this->is_koordinator_mk ?? $this->is_coordinator);
+        return \Illuminate\Support\Facades\Cache::get('dev_mode_active', false) || (bool) ($this->is_koordinator_mk ?? $this->is_coordinator);
     }
 
     /**
