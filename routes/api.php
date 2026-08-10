@@ -32,6 +32,9 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+    
+    // Dev Switch Mode (Testing/Demo)
+    Route::post('/dev/switch-mode', [\App\Http\Controllers\Api\DevController::class, 'switchMode']);
 
     // PLO & CLO
     Route::apiResource('plo', PloController::class);

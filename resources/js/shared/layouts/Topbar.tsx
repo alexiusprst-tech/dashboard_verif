@@ -325,6 +325,13 @@ export function Topbar({ onMobileMenuToggle, notificationCount = 0 }: TopbarProp
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
 
+    const devModeMut = useMutation({
+        mutationFn: (mode: boolean) => api.post('/dev/switch-mode', { mode }),
+        onSuccess: () => {
+            window.location.reload();
+        }
+    });
+
     return (
         <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[var(--color-gray-200)] bg-white px-4 shadow-sm md:px-6">
 
@@ -427,6 +434,33 @@ export function Topbar({ onMobileMenuToggle, notificationCount = 0 }: TopbarProp
                                 aria-hidden="true"
                             />
                             <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+                                <div className="flex w-full items-center justify-between px-4 py-3 text-sm text-gray-700 border-b border-gray-100 hover:bg-gray-50 transition">
+                                    <div className="flex items-center gap-2.5">
+                                        <ShieldCheck size={15} className="text-indigo-600" />
+                                        <span className="font-medium">Dev Mode</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={devModeMut.isPending}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            devModeMut.mutate(!(user?.is_super_admin && user?.is_coordinator));
+                                        }}
+                                        className={cn(
+                                            "relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                                            (user?.is_super_admin && user?.is_coordinator) ? "bg-indigo-600" : "bg-gray-200",
+                                            devModeMut.isPending && "opacity-50 cursor-not-allowed"
+                                        )}
+                                    >
+                                        <span
+                                            aria-hidden="true"
+                                            className={cn(
+                                                "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                                                (user?.is_super_admin && user?.is_coordinator) ? "translate-x-4" : "translate-x-0"
+                                            )}
+                                        />
+                                    </button>
+                                </div>
                                 <button
                                     onClick={logout}
                                     className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50"
