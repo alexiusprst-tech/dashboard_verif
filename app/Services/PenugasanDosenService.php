@@ -52,7 +52,7 @@ class PenugasanDosenService
             throw new BusinessException('Verifier PIC tidak ditemukan.', 404);
         }
 
-        $assignments = DB::transaction(function () use ($periodeId, $verifierId, $targetDosenIds, $assignedBy) {
+        $assignments = DB::transaction(function () use ($periodeId, $verifierId, $targetDosenIds, $assignedBy, $verifier, $periode) {
             $created = [];
             foreach ($targetDosenIds as $targetId) {
                 $targetId = (int) $targetId;
@@ -85,14 +85,16 @@ class PenugasanDosenService
                     ]);
                     $created[] = $newAssignment;
 
-                    // Kirim notifikasi ke akun dosen target
+                    // Kirim notifikasi khusus ke akun dosen target
                     $targetUser = User::find($targetId);
                     if ($targetUser) {
-                        $picName = $assignedBy->nama_lengkap ?? 'PIC Verifikator';
+                        $verifierName = $verifier ? $verifier->nama_lengkap : ($assignedBy->nama_lengkap ?? 'Dosen Verifikator');
+                        $periodeName  = $periode ? $periode->nama_periode : 'periode ini';
+
                         $this->notifikasiService->kirim(
                             $targetId,
-                            'Anda Ditetapkan sebagai Dosen Target Verifikasi',
-                            "Soal ujian Anda akan diverifikasi oleh {$picName} pada periode ini. Pastikan semua berkas soal telah diunggah sesuai ketentuan.",
+                            'Penugasan Dosen Target Verifikasi',
+                            "Anda telah ditetapkan sebagai Dosen Target pengampu mata kuliah pada {$periodeName}. Soal ujian Anda akan diverifikasi oleh Dosen Verifikator ({$verifierName}). Silakan siapkan dan unggah berkas soal Anda pada menu Soal Saya.",
                             NotificationType::Info,
                             'penugasan_dosen',
                             $newAssignment->id

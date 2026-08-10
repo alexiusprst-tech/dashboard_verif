@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Bell,
@@ -91,8 +91,25 @@ function NotificationPanel({
     onClose: () => void;
 }) {
     const qc = useQueryClient();
+    const navigate = useNavigate();
     const panelRef = useRef<HTMLDivElement>(null);
     const [selectedNotif, setSelectedNotif] = useState<Notifikasi | null>(null);
+
+    // Determine the target route based on the notification reference_type
+    const getActionRoute = (notif: Notifikasi): { label: string; route: string } | null => {
+        switch (notif.reference_type) {
+            case 'penugasan_verifikator':
+                return { label: 'Buka Halaman Verifikasi', route: '/verifikasi' };
+            case 'penugasan_pic':
+                return { label: 'Buka Halaman Penugasan PIC', route: '/penugasan-pic' };
+            case 'penugasan_dosen':
+                return { label: 'Buka Soal Saya', route: '/soal' };
+            case 'soal':
+                return { label: 'Lihat Detail Soal', route: '/soal' };
+            default:
+                return null;
+        }
+    };
 
     // Close on outside click
     useEffect(() => {
@@ -116,7 +133,9 @@ function NotificationPanel({
             };
         },
         enabled: open,
-        staleTime: 10_000,
+        staleTime: 0,
+        refetchInterval: open ? 30_000 : false,   // poll setiap 30 detik saat panel terbuka
+        refetchOnWindowFocus: true,
     });
 
     const markOneMut = useMutation({
@@ -304,6 +323,25 @@ function NotificationPanel({
                                 {selectedNotif.pesan}
                             </p>
                         </div>
+
+                        {/* Tombol aksi langsung ke halaman terkait */}
+                        {(() => {
+                            const action = getActionRoute(selectedNotif);
+                            if (!action) return null;
+                            return (
+                                <button
+                                    onClick={() => {
+                                        navigate(action.route);
+                                        setSelectedNotif(null);
+                                        onClose();
+                                    }}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-95"
+                                >
+                                    <ArrowRight size={15} />
+                                    {action.label}
+                                </button>
+                            );
+                        })()}
                     </div>
                 )}
             </Modal>
@@ -313,17 +351,23 @@ function NotificationPanel({
 
 /* ── Topbar Props ───────────────────────────────────────────── */
 
-interface TopbarProps {
-    onMobileMenuToggle: () => void;
-    notificationCount?: number;
-}
-
-/* ── Topbar Component ───────────────────────────────────────── */
-
-export function Topbar({ onMobileMenuToggle, notificationCount = 0 }: TopbarProps) {
+export function Topbar({ onMobileMenuToggle }: { onMobileMenuToggle: () => void }) {
     const { user, logout } = useAuth();
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [notifOpen, setNotifOpen] = useState(false);
+    const [notifOpen, setNotifOpen]       = useState(false);
+
+    // ── Real-time unread count: polling setiap 30 detik ──
+    const { data: unreadData } = useQuery({
+        queryKey: ['notifikasi-unread-count'],
+        queryFn: async () => {
+            const res = await api.get('/notifikasi/unread-count');
+            return res.data.unread_count as number;
+        },
+        staleTime: 0,
+        refetchInterval: 30_000,         // poll setiap 30 detik
+        refetchOnWindowFocus: true,      // refresh saat user kembali ke tab
+    });
+    const notificationCount = unreadData ?? 0;
 
     const devModeMut = useMutation({
         mutationFn: (mode: boolean) => api.post('/dev/switch-mode', { mode }),

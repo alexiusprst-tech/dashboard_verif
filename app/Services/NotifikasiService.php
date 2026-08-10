@@ -25,14 +25,30 @@ class NotifikasiService
         ?string $refType = null,
         ?int $refId = null
     ): Notifikasi {
+        // Hindari notifikasi duplikat: jika sudah ada notif dengan reference yang sama, lewati
+        if ($refType && $refId) {
+            $sudahAda = Notifikasi::where('user_id', $userId)
+                ->where('reference_type', $refType)
+                ->where('reference_id', $refId)
+                ->exists();
+
+            if ($sudahAda) {
+                return Notifikasi::where('user_id', $userId)
+                    ->where('reference_type', $refType)
+                    ->where('reference_id', $refId)
+                    ->latest()
+                    ->first();
+            }
+        }
+
         return $this->notifikasiRepository->create([
-            'user_id' => $userId,
-            'judul' => $judul,
-            'pesan' => $pesan,
-            'tipe' => $tipe->value,
-            'is_read' => false,
+            'user_id'        => $userId,
+            'judul'          => $judul,
+            'pesan'          => $pesan,
+            'tipe'           => $tipe->value,
+            'is_read'        => false,
             'reference_type' => $refType,
-            'reference_id' => $refId,
+            'reference_id'   => $refId,
         ]);
     }
 

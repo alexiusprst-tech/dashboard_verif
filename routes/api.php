@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\Api\SoalController;
 use App\Http\Controllers\Api\DosenController;
 use App\Http\Controllers\Api\PenugasanController;
+use App\Http\Controllers\Api\PenugasanDosenController;
 use App\Http\Controllers\Api\VerifikasiController;
 use App\Http\Controllers\Api\BeritaAcaraController;
 use App\Http\Controllers\Api\BroadcastController;
@@ -145,10 +146,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/questions/{id}/revision-history', [SoalController::class, 'revisionHistory']);
     Route::apiResource('soal', SoalController::class);
 
-    // Manajemen Dosen (GET: koordinator_mk+, POST/PUT/DELETE: super_admin)
-    Route::get('/dosen/search', [DosenController::class, 'search'])->middleware('koordinator_mk');
-    Route::get('/dosen', [DosenController::class, 'index'])->middleware('koordinator_mk');
-    Route::get('/dosen/{dosen}', [DosenController::class, 'show'])->middleware('koordinator_mk');
+    // Manajemen Dosen (GET: semua user terautentikasi, POST/PUT/DELETE: super_admin)
+    Route::get('/dosen/search', [DosenController::class, 'search']);
+    Route::get('/dosen', [DosenController::class, 'index']);
+    Route::get('/dosen/{dosen}', [DosenController::class, 'show']);
     Route::post('/dosen', [DosenController::class, 'store'])->middleware('super_admin');
     Route::put('/dosen/{dosen}', [DosenController::class, 'update'])->middleware('super_admin');
     Route::patch('/dosen/{dosen}', [DosenController::class, 'update'])->middleware('super_admin');
@@ -163,9 +164,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/penugasan', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'index']);
     Route::post('/penugasan', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'store'])->middleware('super_admin');
     Route::delete('/penugasan/{id}', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'destroy'])->middleware('super_admin');
-    Route::get('/penugasan-dosen', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'index']);
-    Route::post('/penugasan-dosen', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'store']);
-    Route::delete('/penugasan-dosen/{id}', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'destroy']);
+    // Penugasan Dosen Target (PIC / Verifikator / Admin)
+    Route::get('/penugasan-dosen', [PenugasanDosenController::class, 'index']);
+    Route::post('/penugasan-dosen', [PenugasanDosenController::class, 'store']);
+    Route::delete('/penugasan-dosen/{id}', [PenugasanDosenController::class, 'destroy']);
 
     // Verifikasi (Dosen Verifikator)
     Route::get('/verifikasi/tugas-saya', [VerifikasiController::class, 'tugasSaya'])->middleware('verifikator');
@@ -186,6 +188,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Notifikasi
     Route::get('/notifikasi', [NotifikasiController::class, 'index']);
+    Route::get('/notifikasi/unread-count', [NotifikasiController::class, 'unreadCount']);
     Route::patch('/notifikasi/{id}/read', [NotifikasiController::class, 'read']);
     Route::patch('/notifikasi/read-all', [NotifikasiController::class, 'readAll']);
 

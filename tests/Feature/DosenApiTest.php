@@ -98,7 +98,7 @@ class DosenApiTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_non_coordinator_cannot_access_dosen_crud(): void
+    public function test_non_super_admin_cannot_create_or_modify_dosen(): void
     {
         /** @var User $regularDosen */
         $regularDosen = User::factory()->create([
@@ -106,7 +106,21 @@ class DosenApiTest extends TestCase
             'is_koordinator_mk' => false,
         ]);
 
-        $response = $this->actingAs($regularDosen, 'sanctum')->getJson('/api/dosen');
+        $response = $this->actingAs($regularDosen, 'sanctum')->postJson('/api/dosen', [
+            'name' => 'Testing Unauthorized',
+        ]);
         $response->assertForbidden();
+    }
+
+    public function test_regular_dosen_can_search_and_list_dosen(): void
+    {
+        /** @var User $regularDosen */
+        $regularDosen = User::factory()->create([
+            'is_super_admin'    => false,
+            'is_koordinator_mk' => false,
+        ]);
+
+        $response = $this->actingAs($regularDosen, 'sanctum')->getJson('/api/dosen/search?q=');
+        $response->assertOk();
     }
 }

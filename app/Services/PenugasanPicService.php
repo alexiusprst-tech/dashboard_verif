@@ -10,20 +10,25 @@ use App\Exceptions\BusinessException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
+use App\Enums\NotificationType;
+
 class PenugasanPicService
 {
     protected UserRoleRepositoryContract $userRoleRepository;
     protected PeriodeRepositoryContract $periodeRepository;
     protected ActivityLogService $activityLogService;
+    protected NotifikasiService $notifikasiService;
 
     public function __construct(
         UserRoleRepositoryContract $userRoleRepository,
         PeriodeRepositoryContract $periodeRepository,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        NotifikasiService $notifikasiService
     ) {
         $this->userRoleRepository = $userRoleRepository;
         $this->periodeRepository = $periodeRepository;
         $this->activityLogService = $activityLogService;
+        $this->notifikasiService = $notifikasiService;
     }
 
     /**
@@ -75,8 +80,24 @@ class PenugasanPicService
             $assignedBy->id
         );
 
+        $userRoleLoaded = $userRole->load(['user', 'role', 'periode', 'assignedByUser']);
+
+        // Kirim notifikasi khusus ke dosen yang ditugaskan sebagai PIC
+        if ($userRoleLoaded->user) {
+            $periodeName = $userRoleLoaded->periode ? $userRoleLoaded->periode->nama_periode : 'periode ini';
+
+            $this->notifikasiService->kirim(
+                $userId,
+                'Penugasan PIC Verifikator',
+                "Anda telah ditugaskan oleh Administrator sebagai PIC Verifikator untuk {$periodeName}. Anda dapat mengelola pemetaan dosen target dan melakukan verifikasi soal.",
+                NotificationType::Verifikasi,
+                'penugasan_pic',
+                $userRoleLoaded->id
+            );
+        }
+
         return [
-            'user_role' => $userRole->load(['user', 'role', 'periode', 'assignedByUser']),
+            'user_role' => $userRoleLoaded,
             'pic_count' => $picCount,
             'warning'   => $warning,
         ];
