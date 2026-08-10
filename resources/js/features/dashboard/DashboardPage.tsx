@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { formatDate } from '@/shared/lib/utils';
+import api from '@/shared/lib/api';
 import { UploadProgressWidget } from './components/UploadProgressWidget';
 import { BroadcastWidget } from './components/BroadcastWidget';
 
@@ -127,7 +128,9 @@ function StatCard({ label, value, icon, color, bg, border = 'border-gray-200', t
 
 /* ── Periode Banner ─────────────────────────────────────────── */
 
-function PeriodeBanner({ periode }: { periode: DashboardPeriode | null }) {
+function PeriodeBanner({ periode, isLoading = false }: { periode: DashboardPeriode | null, isLoading?: boolean }) {
+    if (isLoading) return null;
+
     if (!periode) {
         return (
             <div className="flex items-center gap-3 rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-5 py-4">
@@ -137,32 +140,7 @@ function PeriodeBanner({ periode }: { periode: DashboardPeriode | null }) {
         );
     }
 
-    const deadline = new Date(periode.tanggal_deadline);
-    const now = new Date();
-    const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    const isUrgent = diffDays <= 7;
-
-    return (
-        <div className={`flex items-center justify-between rounded-2xl border px-5 py-4 ${isUrgent ? 'border-red-200 bg-red-50' : 'border-[var(--color-primary-light)] bg-[var(--color-primary-light)]'}`}>
-            <div className="flex items-center gap-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isUrgent ? 'bg-red-100' : 'bg-[var(--color-primary)]/10'}`}>
-                    <CalendarClock size={18} className={isUrgent ? 'text-red-600' : 'text-[var(--color-primary)]'} />
-                </div>
-                <div>
-                    <p className={`text-sm font-bold ${isUrgent ? 'text-red-800' : 'text-[var(--color-secondary)]'}`}>
-                        Periode Aktif: <span className="font-extrabold">{periode.nama_periode}</span>
-                    </p>
-                    <p className={`text-xs mt-0.5 ${isUrgent ? 'text-red-600' : 'text-[var(--color-primary)]'}`}>
-                        Deadline: {formatDate(periode.tanggal_deadline)}
-                        {diffDays > 0 ? ` — ${diffDays} hari lagi` : ' — Sudah lewat!'}
-                    </p>
-                </div>
-            </div>
-            {isUrgent && (
-                <span className="animate-pulse rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">SEGERA!</span>
-            )}
-        </div>
-    );
+    return null;
 }
 
 /* ── Custom Recharts Tooltip ────────────────────────────────── */
@@ -348,11 +326,12 @@ interface RoleDashboardProps {
     selectedPeriodeId: string;
     setSelectedPeriodeId: (id: string) => void;
     periodes: DashboardPeriode[];
+    activePeriode: DashboardPeriode | null;
 }
 
 /* ── Coordinator Dashboard ─────────────────────────────────── */
 
-function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: RoleDashboardProps) {
+function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activePeriode }: RoleDashboardProps) {
     const [chartType, setChartType] = useState<'donut' | 'bar'>('donut');
     const { data, isLoading } = useQuery({
         queryKey: ['dashboard', 'coordinator', selectedPeriodeId],
@@ -362,15 +341,24 @@ function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periode
             });
             return res.data.data;
         },
+        staleTime: 0,
     });
 
-    const counts = data?.soal_status_counts ?? { draft: 0, submitted: 0, in_review: 0, approved: 0, revisi: 0, rejected: 0 };
+    const raw = data?.soal_status_counts;
+    const counts = {
+        draft:      raw?.draft      ?? 0,
+        submitted:  raw?.submitted  ?? 0,
+        in_review:  raw?.in_review  ?? 0,
+        approved:   raw?.approved   ?? 0,
+        revisi:     raw?.revisi     ?? 0,
+        rejected:   raw?.rejected   ?? 0,
+    };
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const progress = data?.progress;
 
     return (
         <div className="flex flex-col gap-5">
-            <PeriodeBanner periode={data?.periode ?? null} />
+            <PeriodeBanner periode={activePeriode} isLoading={isLoading} />
 
             {/* Top Stats */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -540,7 +528,7 @@ function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periode
 
 /* ── Dosen Dashboard ────────────────────────────────────────── */
 
-function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: RoleDashboardProps) {
+function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activePeriode }: RoleDashboardProps) {
     const { user } = useAuth();
     const { data, isLoading } = useQuery({
         queryKey: ['dashboard', 'dosen', selectedPeriodeId],
@@ -550,14 +538,23 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: R
             });
             return res.data.data;
         },
+        staleTime: 0,
     });
 
-    const counts = data?.soal_status_counts ?? { draft: 0, submitted: 0, in_review: 0, approved: 0, revisi: 0, rejected: 0 };
+    const raw = data?.soal_status_counts;
+    const counts = {
+        draft:      raw?.draft      ?? 0,
+        submitted:  raw?.submitted  ?? 0,
+        in_review:  raw?.in_review  ?? 0,
+        approved:   raw?.approved   ?? 0,
+        revisi:     raw?.revisi     ?? 0,
+        rejected:   raw?.rejected   ?? 0,
+    };
     const totalSoal = Object.values(counts).reduce((a, b) => a + b, 0);
 
     return (
         <div className="flex flex-col gap-5">
-            <PeriodeBanner periode={data?.periode ?? null} />
+            <PeriodeBanner periode={activePeriode} isLoading={isLoading} />
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <StatCard label="Total Soal Saya" value={isLoading ? '…' : totalSoal} icon={<FileText size={18} />} color="text-[var(--color-primary)]" bg="bg-[var(--color-primary-light)]" to="/soal" />
@@ -651,7 +648,7 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: R
 
 /* ── PIC Dashboard ──────────────────────────────────────────── */
 
-function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: RoleDashboardProps) {
+function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activePeriode }: RoleDashboardProps) {
     const { data: dosenData, isLoading: dosenLoading } = useQuery({
         queryKey: ['dashboard', 'dosen', selectedPeriodeId],
         queryFn: async (): Promise<DosenData> => {
@@ -670,11 +667,20 @@ function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: Rol
             });
             return res.data.data;
         },
+        staleTime: 0,
     });
 
     const isLoading = dosenLoading || picLoading;
 
-    const counts = dosenData?.soal_status_counts ?? { draft: 0, submitted: 0, in_review: 0, approved: 0, revisi: 0, rejected: 0 };
+    const rawCounts = dosenData?.soal_status_counts;
+    const counts = {
+        draft:      rawCounts?.draft      ?? 0,
+        submitted:  rawCounts?.submitted  ?? 0,
+        in_review:  rawCounts?.in_review  ?? 0,
+        approved:   rawCounts?.approved   ?? 0,
+        revisi:     rawCounts?.revisi     ?? 0,
+        rejected:   rawCounts?.rejected   ?? 0,
+    };
     const totalSoalSaya = Object.values(counts).reduce((a, b) => a + b, 0);
 
     const summary = picData?.summary ?? { total: 0, pending: 0, done: 0 };
@@ -687,7 +693,7 @@ function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes }: Rol
 
     return (
         <div className="flex flex-col gap-5">
-            <PeriodeBanner periode={picData?.periode ?? dosenData?.periode ?? null} />
+            <PeriodeBanner periode={activePeriode} isLoading={isLoading} />
 
             {/* Dosen Stats Cards */}
             <div>
@@ -860,13 +866,20 @@ export function DashboardPage() {
     const { user, role } = useAuth();
     const [selectedPeriodeId, setSelectedPeriodeId] = useState<string>('');
 
-    const { data: periodes = [] } = useQuery<DashboardPeriode[]>({
+    const { data: periodes = [], isLoading: periodesLoading } = useQuery<DashboardPeriode[]>({
         queryKey: ['periodes', 'list'],
         queryFn: async () => {
             const res = await api.get('/periode', { params: { per_page: 50 } });
             return res.data?.data ?? [];
         },
+        // Update otomatis saat pengguna kembali ke tab browser
+        staleTime: 0,
+        refetchOnWindowFocus: true,
+        refetchOnMount: true,
     });
+
+    // Tentukan periode aktif langsung dari daftar periode
+    const activePeriode = periodes.find((p) => p.status === 'aktif') ?? null;
 
     const greeting = () => {
         const h = new Date().getHours();
@@ -916,6 +929,7 @@ export function DashboardPage() {
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}
                     periodes={periodes}
+                    activePeriode={periodesLoading ? null : activePeriode}
                 />
             )}
             {!isSuperAdmin && (isVerifikator || role === 'verifikator' || role === 'pic') && (
@@ -923,6 +937,7 @@ export function DashboardPage() {
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}
                     periodes={periodes}
+                    activePeriode={periodesLoading ? null : activePeriode}
                 />
             )}
             {!isSuperAdmin && !isVerifikator && (
@@ -930,6 +945,7 @@ export function DashboardPage() {
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}
                     periodes={periodes}
+                    activePeriode={periodesLoading ? null : activePeriode}
                 />
             )}
         </div>
