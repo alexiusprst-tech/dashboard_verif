@@ -27,7 +27,7 @@ class EloquentUserRepository implements UserRepositoryContract
                   ->orWhereRaw('lower(nama_lengkap) like ?', ["%{$lowerQuery}%"]);
             })
             ->where('status_aktif', true)
-            ->where('is_super_admin', false)
+            ->where('kode_dosen', '!=', 'ADM001')
             ->orderBy('nama_lengkap')
             ->paginate($perPage);
     }
@@ -54,7 +54,9 @@ class EloquentUserRepository implements UserRepositoryContract
 
     public function paginateDosen(?string $search = null, ?int $prodiId = null, ?string $tipeDosen = null, int $perPage = 15): LengthAwarePaginator
     {
-        $query = User::with('prodi')->where('is_super_admin', false);
+        // Ganti filter is_super_admin menjadi pengecualian khusus untuk akun admin utama (ADM001)
+        // Agar saat Dev Mode aktif (semua jadi super admin), data dosen tetap muncul.
+        $query = User::with('prodi')->where('kode_dosen', '!=', 'ADM001');
 
         if ($search) {
             $lower = strtolower($search);
