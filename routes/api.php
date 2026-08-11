@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\Api\SoalController;
 use App\Http\Controllers\Api\DosenController;
-use App\Http\Controllers\Api\PenugasanController;
 use App\Http\Controllers\Api\PenugasanDosenController;
 use App\Http\Controllers\Api\VerifikasiController;
 use App\Http\Controllers\Api\BeritaAcaraController;
@@ -178,6 +177,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/penugasan-verifikator', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'store'])->middleware('super_admin');
     Route::delete('/penugasan-verifikator/{id}', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'destroy'])->middleware('super_admin');
 
+    // Penugasan Koordinator (Super Admin)
+    Route::get('/penugasan-koordinator', [\App\Http\Controllers\Api\KoordinatorAssignmentController::class, 'index']);
+    Route::post('/penugasan-koordinator', [\App\Http\Controllers\Api\KoordinatorAssignmentController::class, 'store'])->middleware('super_admin');
+    Route::put('/penugasan-koordinator/{id}', [\App\Http\Controllers\Api\KoordinatorAssignmentController::class, 'update'])->middleware('super_admin');
+    Route::delete('/penugasan-koordinator/{id}', [\App\Http\Controllers\Api\KoordinatorAssignmentController::class, 'destroy'])->middleware('super_admin');
+
     // Endpoints penugasan lama untuk backward compatibility
     Route::get('/penugasan', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'index']);
     Route::post('/penugasan', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'store'])->middleware('super_admin');
@@ -215,6 +220,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/coordinator', [DashboardController::class, 'superAdmin'])->middleware('super_admin');
     Route::get('/dashboard/dosen', [DashboardController::class, 'dosen']);
     Route::get('/dashboard/upload-progress', [DashboardController::class, 'uploadProgress']);
-    Route::get('/dashboard/verifikator', [DashboardController::class, 'pic'])->middleware('verifikator');
-    Route::get('/dashboard/pic', [DashboardController::class, 'pic'])->middleware('verifikator');
+    Route::get('/dashboard/verifikator', [DashboardController::class, 'verifikator'])->middleware('verifikator');
+    Route::get('/dashboard/pic', [DashboardController::class, 'verifikator'])->middleware('verifikator');
 });

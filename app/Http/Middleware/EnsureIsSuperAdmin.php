@@ -17,7 +17,7 @@ class EnsureIsSuperAdmin
         }
 
         if (!$user->isSuperAdmin()) {
-            abort(403, 'Anda tidak memiliki hak akses sebagai Coordinator.');
+            abort(403, 'Anda tidak memiliki hak akses sebagai Super Admin.');
         }
 
         return $next($request);

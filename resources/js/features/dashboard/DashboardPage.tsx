@@ -201,7 +201,7 @@ function StatusPieChart({ counts }: { counts: SoalStatusCounts }) {
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                         </Pie>
-                        <Tooltip content={<CustomChartTooltip />} />
+
                     </PieChart>
                 </ResponsiveContainer>
                 {/* Center total text */}
@@ -246,7 +246,7 @@ function StatusBarChart({ counts }: { counts: SoalStatusCounts }) {
                 <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<CustomChartTooltip />} />
+
                     <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                         {data.map((entry, index) => (
                             <Cell key={`bar-${index}`} fill={entry.color} />
@@ -511,7 +511,7 @@ function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periode
                     <QuickActions
                         actions={[
                             { label: 'Kelola Periode', desc: 'Buat & aktifkan periode baru', icon: <CalendarClock size={16} />, to: '/periode', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
-                            { label: 'Penugasan PIC', desc: 'Assign verifikator ke dosen', icon: <Users size={16} />, to: '/penugasan-pic', color: 'text-blue-600', bg: 'bg-blue-50' },
+                            { label: 'Penugasan Verifikator', desc: 'Assign verifikator ke dosen', icon: <Users size={16} />, to: '/penugasan-verifikator', color: 'text-blue-600', bg: 'bg-blue-50' },
                             { label: 'Kategori & Template', desc: 'Kelola template soal DOCX', icon: <BookOpen size={16} />, to: '/kategori', color: 'text-purple-600', bg: 'bg-purple-50' },
                             { label: 'Broadcast', desc: 'Kirim pengumuman ke dosen', icon: <Megaphone size={16} />, to: '/broadcast', color: 'text-green-600', bg: 'bg-green-50' },
                             { label: 'Monitoring', desc: 'Pantau progres verifikasi', icon: <TrendingUp size={16} />, to: '/monitoring', color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -787,7 +787,7 @@ function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activ
                                                     <Cell key={`pic-cell-${index}`} fill={entry.color} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip content={<CustomChartTooltip />} />
+
                                         </PieChart>
                                     </ResponsiveContainer>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

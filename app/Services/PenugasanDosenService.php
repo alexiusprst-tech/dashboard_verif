@@ -30,7 +30,7 @@ class PenugasanDosenService
     }
 
     /**
-     * Daftarkan Dosen-Dosen Target yang akan diverifikasi oleh PIC Verifikator.
+     * Daftarkan Dosen-Dosen Target yang akan diverifikasi oleh Dosen Verifikator.
      *
      * @param  array{periode_id: int, verifier_id: int, target_dosen_ids: int[]}  $data
      * @param  User  $assignedBy
@@ -49,7 +49,7 @@ class PenugasanDosenService
 
         $verifier = User::find($verifierId);
         if (!$verifier) {
-            throw new BusinessException('Verifier PIC tidak ditemukan.', 404);
+            throw new BusinessException('Verifier tidak ditemukan.', 404);
         }
 
         $assignments = DB::transaction(function () use ($periodeId, $verifierId, $targetDosenIds, $assignedBy, $verifier, $periode) {
@@ -57,9 +57,9 @@ class PenugasanDosenService
             foreach ($targetDosenIds as $targetId) {
                 $targetId = (int) $targetId;
 
-                // BR-003: PIC dilarang memverifikasi soal buatannya sendiri
+                // BR-003: Verifikator dilarang memverifikasi soal buatannya sendiri
                 if ($verifierId === $targetId) {
-                    throw new BusinessException('PIC tidak boleh memverifikasi soal buatannya sendiri.', 422);
+                    throw new BusinessException('Verifikator tidak boleh memverifikasi soal buatannya sendiri.', 422);
                 }
 
                 // Cek apakah target dosen sudah diassign ke verifier lain
@@ -106,20 +106,20 @@ class PenugasanDosenService
         });
 
         $this->activityLogService->log(
-            "Memetakan " . count($targetDosenIds) . " Dosen Target ke PIC ID {$verifierId} untuk periode ID {$periodeId}.",
-            'Pemetaan PIC',
+            "Memetakan " . count($targetDosenIds) . " Dosen Target ke Verifikator ID {$verifierId} untuk periode ID {$periodeId}.",
+            'Pemetaan Verifikator',
             $assignedBy->id
         );
 
         return [
             'success' => true,
-            'message' => 'Pemetaan Dosen Target ke PIC berhasil disimpan.',
+            'message' => 'Pemetaan Dosen Target ke Verifikator berhasil disimpan.',
             'data'    => $assignments,
         ];
     }
 
     /**
-     * Cabut tugas verifikasi Dosen Target dari PIC.
+     * Cabut tugas verifikasi Dosen Target dari Verifikator.
      */
     public function cabut(int $id, User $currentUser): void
     {
@@ -131,8 +131,8 @@ class PenugasanDosenService
         $this->penugasanRepository->delete($penugasan);
 
         $this->activityLogService->log(
-            "Mencabut tugas verifikasi dosen target ID {$penugasan->target_dosen_id} dari PIC ID {$penugasan->verifier_id}.",
-            'Pemetaan PIC',
+            "Mencabut tugas verifikasi dosen target ID {$penugasan->target_dosen_id} dari Verifikator ID {$penugasan->verifier_id}.",
+            'Pemetaan Verifikator',
             $currentUser->id
         );
     }

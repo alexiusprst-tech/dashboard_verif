@@ -22,6 +22,10 @@ interface CloItem {
     kode: string;
     deskripsi: string;
     mata_kuliah_id?: number | null;
+    plo?: {
+        id: number;
+        kode: string;
+    } | null;
 }
 
 export function KelolaCloPage() {
@@ -271,6 +275,14 @@ export function KelolaCloPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-0.5">
                                             <span className="font-bold text-xs text-gray-800 font-mono">{clo.kode}</span>
+                                            {clo.plo && (
+                                                <>
+                                                    <span className="text-gray-300 text-[10px]">→</span>
+                                                    <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-blue-600 border border-blue-100">
+                                                        {clo.plo.kode}
+                                                    </span>
+                                                </>
+                                            )}
                                             {clo.mata_kuliah_id && (
                                                 <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
                                                     Digunakan di MK lain
@@ -376,7 +388,17 @@ export function KelolaCloPage() {
                                         className="mt-0.5 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <span className="font-bold text-xs text-[var(--color-primary)] font-mono block mb-0.5">{clo.kode}</span>
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className="font-bold text-xs text-[var(--color-primary)] font-mono block">{clo.kode}</span>
+                                            {clo.plo && (
+                                                <>
+                                                    <span className="text-gray-300 text-[10px]">→</span>
+                                                    <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-blue-600 border border-blue-100">
+                                                        {clo.plo.kode}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-gray-600 line-clamp-2">{clo.deskripsi}</p>
                                     </div>
                                 </div>

@@ -43,7 +43,7 @@ const ROUTE_LABELS: Record<string, string> = {
     '/soal/semua':    'Semua Soal',
     '/verifikasi':    'Verifikasi Soal',
     '/berita-acara':  'Berita Acara',
-    '/penugasan-pic': 'Penugasan PIC',
+    '/penugasan-verifikator': 'Penugasan Verifikator',
     '/periode':       'Periode & Deadline',
     '/kategori':      'Kategori & Template',
     '/broadcast':     'Broadcast',
@@ -101,7 +101,7 @@ function NotificationPanel({
             case 'penugasan_verifikator':
                 return { label: 'Buka Halaman Verifikasi', route: '/verifikasi' };
             case 'penugasan_pic':
-                return { label: 'Buka Halaman Penugasan PIC', route: '/penugasan-pic' };
+                return { label: 'Buka Halaman Penugasan Verifikator', route: '/penugasan-verifikator' };
             case 'penugasan_dosen':
                 return { label: 'Buka Soal Saya', route: '/soal' };
             case 'soal':
@@ -458,14 +458,14 @@ export function Topbar({ onMobileMenuToggle }: { onMobileMenuToggle: () => void 
                                         ? 'Super Admin'
                                         : user?.is_coordinator
                                         ? 'Koordinator'
-                                        : user?.email === 'pic@telkomuniversity.ac.id' || user?.kode_dosen === 'PIC001'
-                                        ? 'PIC'
+                                        : user?.email === 'verifikator@telkomuniversity.ac.id' || user?.kode_dosen === 'VRF001'
+                                        ? 'Verifikator'
                                         : 'Dosen'}
                                 </span>
-                                {user?.is_pic_active && (
+                                {user?.is_verifikator_aktif && (
                                     <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/80 leading-none">
                                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        PIC Aktif
+                                        Verifikator Aktif
                                     </span>
                                 )}
                             </div>

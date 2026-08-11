@@ -85,10 +85,6 @@ class DashboardService
         ];
     }
 
-    public function pic(User $user, ?int $periodeId = null): array
-    {
-        return $this->verifikator($user, $periodeId);
-    }
 
     public function coordinator(?int $periodeId = null): array
     {

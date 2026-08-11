@@ -23,6 +23,10 @@ interface Clo {
     kode: string;
     deskripsi: string;
     mata_kuliah_id?: number | null;
+    plo?: {
+        id: number;
+        kode: string;
+    } | null;
 }
 
 /* ── Helper: Badge ──────────────────────────────────────────── */
@@ -195,6 +199,14 @@ export function MatkulDetailPage() {
                                     <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-mono font-semibold text-gray-600">
                                         {clo.kode}
                                     </span>
+                                    {clo.plo && (
+                                        <>
+                                            <span className="text-gray-300 text-[10px]">→</span>
+                                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-mono font-semibold text-blue-600 border border-blue-100">
+                                                {clo.plo.kode}
+                                            </span>
+                                        </>
+                                    )}
                                 </div>
                                 <p className="text-sm text-gray-700 leading-relaxed">{clo.deskripsi}</p>
                             </div>

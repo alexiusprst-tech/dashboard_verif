@@ -30,7 +30,11 @@ class BeritaAcaraController extends Controller
         $filters = $request->only(['periode_id', 'verifier_id']);
         $perPage = $request->query('per_page', 15);
 
-        if ($user->isSuperAdmin() || $user->isCoordinator()) {
+        $isRealSuperAdmin = (bool) $user->is_super_admin;
+        $activePeriode = app(\App\Repositories\Contracts\PeriodeRepositoryContract::class)->findActive();
+        $isRealCoordinator = ($activePeriode && $user->isKoordinatorPadaPeriode($activePeriode->id)) || (bool) ($user->is_koordinator_mk ?? $user->is_coordinator);
+
+        if ($isRealSuperAdmin || $isRealCoordinator) {
             // Super Admin & Coordinator bisa melihat seluruh BA
         } else {
             // Dosen & PIC melihat BA di mana mereka adalah verifikator atau soal milik mereka ada di BA tersebut
@@ -52,7 +56,8 @@ class BeritaAcaraController extends Controller
 
         // Super Admin menentukan PIC (verifier) yang BA-nya digenerate via verifier_id.
         // PIC generate Berita Acara miliknya sendiri — verifier otomatis = diri sendiri.
-        if ($authUser->isSuperAdmin()) {
+        $isRealSuperAdmin = (bool) $authUser->is_super_admin;
+        if ($isRealSuperAdmin) {
             $verifier = \App\Models\User::findOrFail((int) $data['verifier_id']);
         } else {
             $verifier = $authUser;
@@ -91,8 +96,12 @@ class BeritaAcaraController extends Controller
         }
 
         $user = $request->user();
-        $isOwnerOrVerifier = $user->isSuperAdmin()
-            || $user->isCoordinator()
+        $isRealSuperAdmin = (bool) $user->is_super_admin;
+        $activePeriode = app(\App\Repositories\Contracts\PeriodeRepositoryContract::class)->findActive();
+        $isRealCoordinator = ($activePeriode && $user->isKoordinatorPadaPeriode($activePeriode->id)) || (bool) ($user->is_koordinator_mk ?? $user->is_coordinator);
+
+        $isOwnerOrVerifier = $isRealSuperAdmin
+            || $isRealCoordinator
             || $ba->verifier_id === $user->id
             || $ba->items()->whereHas('soal', function ($q) use ($user) {
                 $q->where('dosen_id', $user->id);

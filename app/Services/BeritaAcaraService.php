@@ -197,7 +197,7 @@ class BeritaAcaraService
             throw new BusinessException('Berita Acara tidak ditemukan.', 404);
         }
 
-        if ($ba->verifier_id !== $verifier->id && !$verifier->isSuperAdmin()) {
+        if ($ba->verifier_id !== $verifier->id && !(bool)$verifier->is_super_admin) {
             throw new BusinessException('Anda tidak berwenang untuk meregenerasi Berita Acara ini.', 403);
         }
 
@@ -270,7 +270,7 @@ class BeritaAcaraService
             throw new BusinessException('Berita Acara tidak ditemukan.', 404);
         }
 
-        if (!$user->isSuperAdmin() && $ba->verifier_id !== $user->id) {
+        if (!(bool)$user->is_super_admin && $ba->verifier_id !== $user->id) {
             throw new BusinessException('Anda tidak berwenang untuk mengakses Berita Acara ini.', 403);
         }
 

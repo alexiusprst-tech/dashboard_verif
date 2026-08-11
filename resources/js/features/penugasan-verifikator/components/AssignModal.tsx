@@ -44,10 +44,10 @@ export function AssignModal({
     });
 
     // Autocomplete states
-    const [picSearch, setPicSearch]       = useState('');
+    const [picSearch, setVerifikatorSearch]       = useState('');
     const [allDosen, setAllDosen]         = useState<any[]>([]);
-    const [picResults, setPicResults]     = useState<any[]>([]);
-    const [selectedPics, setSelectedPics] = useState<any[]>([]);
+    const [picResults, setVerifikatorResults]     = useState<any[]>([]);
+    const [selectedVerifikators, setSelectedVerifikators] = useState<any[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const [submitError, setSubmitError]   = useState('');
 
@@ -56,16 +56,16 @@ export function AssignModal({
             reset({
                 periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : '',
             });
-            setPicSearch('');
-            setSelectedPics([]);
-            setPicResults([]);
+            setVerifikatorSearch('');
+            setSelectedVerifikators([]);
+            setVerifikatorResults([]);
             setShowDropdown(false);
             setSubmitError('');
 
             // Ambil semua dosen aktif
             api.get('/dosen/search', { params: { q: '', per_page: 200 } }).then((res) => {
                 setAllDosen(res.data.data);
-                setPicResults(res.data.data);
+                setVerifikatorResults(res.data.data);
             });
         }
     }, [open, defaultPeriodeId, reset]);
@@ -75,42 +75,42 @@ export function AssignModal({
         const query = picSearch.trim().toLowerCase();
         // Saring dosen yang belum dipilih saja
         const unselectedDosen = allDosen.filter(
-            (d) => !selectedPics.some((p) => p.id === d.id)
+            (d) => !selectedVerifikators.some((p) => p.id === d.id)
         );
 
         if (!query) {
-            setPicResults(unselectedDosen);
+            setVerifikatorResults(unselectedDosen);
         } else {
             const filtered = unselectedDosen.filter(
                 (d) =>
                     d.nama_lengkap.toLowerCase().includes(query) ||
                     (d.kode_dosen && d.kode_dosen.toLowerCase().includes(query))
             );
-            setPicResults(filtered);
+            setVerifikatorResults(filtered);
         }
-    }, [picSearch, allDosen, selectedPics]);
+    }, [picSearch, allDosen, selectedVerifikators]);
 
-    const handleSelectPic = (dosen: any) => {
-        if (!selectedPics.some((p) => p.id === dosen.id)) {
-            setSelectedPics((prev) => [...prev, dosen]);
+    const handleSelectVerifikator = (dosen: any) => {
+        if (!selectedVerifikators.some((p) => p.id === dosen.id)) {
+            setSelectedVerifikators((prev) => [...prev, dosen]);
         }
-        setPicSearch('');
+        setVerifikatorSearch('');
         setShowDropdown(false);
         setSubmitError('');
     };
 
-    const handleRemovePic = (id: number) => {
-        setSelectedPics((prev) => prev.filter((p) => p.id !== id));
+    const handleRemoveVerifikator = (id: number) => {
+        setSelectedVerifikators((prev) => prev.filter((p) => p.id !== id));
     };
 
     const handleFormSubmit = (formData: { periode_id: number | string }) => {
-        if (selectedPics.length === 0) {
-            setSubmitError('Pilih minimal satu dosen PIC.');
+        if (selectedVerifikators.length === 0) {
+            setSubmitError('Pilih minimal satu dosen Verifikator.');
             return;
         }
         onSubmit({
             periode_id: Number(formData.periode_id),
-            pic_dosen_ids: selectedPics.map((p) => p.id),
+            pic_dosen_ids: selectedVerifikators.map((p) => p.id),
         });
     };
 
@@ -118,7 +118,7 @@ export function AssignModal({
         <Modal
             open={open}
             onClose={onClose}
-            title="Tugaskan Dosen sebagai PIC"
+            title="Tugaskan Dosen sebagai Verifikator"
             size="lg"
             footer={
                 <>
@@ -140,7 +140,7 @@ export function AssignModal({
                             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         )}
                         <UserCheck size={15} />
-                        Assign PIC
+                        Assign Verifikator
                     </button>
                 </>
             }
@@ -168,10 +168,10 @@ export function AssignModal({
                     )}
                 </div>
 
-                {/* Dosen PIC — Autocomplete / Dropdown Combobox */}
+                {/* Dosen Verifikator — Autocomplete / Dropdown Combobox */}
                 <div className="relative">
                     <label className="block text-sm font-medium text-gray-700">
-                        Dosen yang Ditugaskan sebagai PIC <span className="text-red-500">*</span>
+                        Dosen yang Ditugaskan sebagai Verifikator <span className="text-red-500">*</span>
                     </label>
                     <p className="mt-0.5 text-xs text-gray-400">
                         Anda dapat memilih lebih dari satu dosen untuk ditugaskan sekaligus.
@@ -187,7 +187,7 @@ export function AssignModal({
                             type="text"
                             value={picSearch}
                             onChange={(e) => {
-                                setPicSearch(e.target.value);
+                                setVerifikatorSearch(e.target.value);
                                 setShowDropdown(true);
                             }}
                             onFocus={() => setShowDropdown(true)}
@@ -212,9 +212,9 @@ export function AssignModal({
                     </div>
 
                     {/* Tag list dosen terpilih */}
-                    {selectedPics.length > 0 && (
+                    {selectedVerifikators.length > 0 && (
                         <div className="mt-2.5 flex flex-wrap gap-2 rounded-lg border border-purple-100 bg-purple-50/20 p-2.5">
-                            {selectedPics.map((pic) => (
+                            {selectedVerifikators.map((pic) => (
                                 <span
                                     key={pic.id}
                                     className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-purple-200 pl-2.5 pr-1.5 py-1 text-xs font-medium text-gray-800 shadow-sm"
@@ -227,7 +227,7 @@ export function AssignModal({
                                     )}
                                     <button
                                         type="button"
-                                        onClick={() => handleRemovePic(pic.id)}
+                                        onClick={() => handleRemoveVerifikator(pic.id)}
                                         className="rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
                                         title="Hapus"
                                     >
@@ -245,7 +245,7 @@ export function AssignModal({
                                 picResults.map((d) => (
                                     <li
                                         key={d.id}
-                                        onMouseDown={() => handleSelectPic(d)}
+                                        onMouseDown={() => handleSelectVerifikator(d)}
                                         className="cursor-pointer px-3.5 py-2.5 hover:bg-gray-50 text-gray-700 transition-colors"
                                     >
                                         <div className="flex items-center justify-between">

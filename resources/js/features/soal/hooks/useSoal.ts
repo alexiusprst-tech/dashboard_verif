@@ -9,10 +9,11 @@ export function useSoalList(params: {
     search: string;
     periode_id?: string;
     status?: string;
-}) {
+}, options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: [QUERY_KEY, params],
         queryFn: () => getSoalList(params),
+        ...options,
     });
 }
 

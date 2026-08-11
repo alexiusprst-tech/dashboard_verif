@@ -1,6 +1,6 @@
 # Sistem Verifikasi Soal
 
-Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara) soal ujian oleh dosen, dengan alur penugasan PIC (Person in Charge) yang bersifat dinamis per periode. Fokus penggunaan saat ini untuk **Program Studi Sistem Informasi**.
+Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara) soal ujian oleh dosen, dengan alur penugasan Verifikator dan Koordinator Mata Kuliah yang bersifat dinamis per periode. Fokus penggunaan saat ini untuk **Program Studi Sistem Informasi**.
 
 ---
 
@@ -42,9 +42,9 @@ Poin penting sistem:
 
 | Role | Sifat | Deskripsi Singkat |
 |---|---|---|
-| **Super Admin** | Permanen | Mengelola keseluruhan sistem: user/dosen, periode & deadline, kategori & template soal/BA, penugasan verifikator, broadcast, monitoring prodi, dan berita acara. |
-| **Dosen Koordinator Mata Kuliah** | Permanen | Mengelola data dosen prodi, mengunggah soal ujian (PDF) untuk mata kuliah yang dikoordinasikannya, dan memantau progres verifikasi. |
-| **Dosen Verifikator** | Dinamis (penugasan per mata kuliah per periode) | Dosen yang ditugaskan memverifikasi soal (approve/revisi/reject) untuk mata kuliah tertentu, memantau progres verifikasi tugasnya, dan meng-generate Berita Acara. |
+| **Super Admin** | Permanen | Mengelola keseluruhan sistem: user/dosen, periode & deadline, kategori & template soal/BA, penugasan verifikator, penugasan koordinator, broadcast, monitoring prodi, dan berita acara. |
+| **Dosen Koordinator Mata Kuliah** | Dinamis (penugasan per mata kuliah per periode) | Mengelola relasi CLO dengan Mata Kuliah, mengunggah soal ujian (PDF) untuk mata kuliah yang dikoordinasikannya, dan memantau progres verifikasi. |
+| **Dosen Verifikator** | Dinamis (penugasan per dosen per periode) | Dosen yang ditugaskan memverifikasi soal (approve/revisi/reject) untuk mata kuliah tertentu, memantau progres verifikasi tugasnya, dan meng-generate Berita Acara. |
 
 ### Matriks Hak Akses
 
@@ -98,26 +98,25 @@ Poin penting sistem:
 - Melihat, mengunduh, dan mencetak Berita Acara seluruh PIC
 - CRUD PLO & CLO serta Upload Soal (sebagai Dosen Pengampu)
 
-### PIC (Person in Charge)
-- Dihubungkan secara dinamis per periode akademik
+### Dosen Verifikator
+- Dihubungkan secara dinamis per periode akademik via penugasan
 - Mengakses antrean verifikasi soal ujian pada periode tugasnya
 - Memberikan keputusan verifikasi (Approve / Perlu Revisi / Reject) dan catatan verifikator
-- Dashboard Monitoring Progres Verifikasi PIC
+- Dashboard Monitoring Progres Verifikasi
 - Generate, preview, dan cetak Berita Acara (opsi: BA saja, Soal saja, atau BA + Soal)
 
-### Dosen (Biasa & LB)
-- Role dasar untuk seluruh dosen pengampu
-- CRUD PLO & CLO khusus periode aktif
-- Upload berkas soal (PDF) sesuai mata kuliah yang diampu sebelum deadline
+### Dosen Koordinator Mata Kuliah
+- Dihubungkan secara dinamis per periode akademik via penugasan
+- Memiliki otoritas mengelola pemetaan Mata Kuliah ke CLO/PLO
+- Mengunggah berkas soal (PDF)
 - Memantau status soal (Submitted, In Review, Revisi, Approved, Rejected) dan riwayat revisi
-- Menerima notifikasi & broadcast dari sistem/admin
 
 ---
 
 ## 5. State Machine Soal
 
 ```
-Draft → Submitted → In Review (oleh dosen dengan role PIC)
+Draft → Submitted → In Review (oleh dosen Verifikator)
                         │
           ┌─────────────┼─────────────┐
           ▼             ▼             ▼
@@ -454,10 +453,10 @@ Berita Acara dirancang sebagai dokumen yang di-generate otomatis (bukan diketik 
 
 Hal-hal yang sudah difinalisasi dan diimplementasikan:
 
-- ✅ **Empat Peran Pengguna (Role & Akses)**: Super Admin, Coordinator, PIC (dinamis per periode via `user_roles`), dan Dosen (Biasa/LB).
+- ✅ **Tiga Peran Pengguna (Role & Akses)**: Super Admin, Koordinator Mata Kuliah (dinamis per periode via penugasan), Verifikator (dinamis per periode via penugasan).
 - ✅ **Berita Acara per Role**:
-  - Dosen dengan role **PIC** dapat meng-generate Berita Acara untuk tugas verifikasinya sendiri secara mandiri.
-  - **Super Admin** dapat memfilter daftar Berita Acara dengan opsi **"— Semua PIC —"** (menampilkan Berita Acara seluruh PIC secara bersamaan) atau memilih PIC spesifik.
+  - Dosen dengan role **Verifikator** dapat meng-generate Berita Acara untuk tugas verifikasinya sendiri secara mandiri.
+  - **Super Admin** dapat memfilter daftar Berita Acara dengan opsi **"— Semua Verifikator —"** (menampilkan Berita Acara seluruh Verifikator secara bersamaan) atau memilih Verifikator spesifik.
 - ✅ **Riwayat Verifikasi Lengkap (Full Verification Audit Trail)**:
   - Mengembalikan seluruh rekam jejak keputusan verifikasi (`Disetujui`, `Perlu Revisi`, dan `Ditolak`) beserta nama verifikator, timestamp, dan catatan lengkap.
   - Komponen Accordion & Timeline menampilkan badge indikator warna dinamis (🟢 Disetujui, 🟡 Perlu Revisi, 🔴 Ditolak).

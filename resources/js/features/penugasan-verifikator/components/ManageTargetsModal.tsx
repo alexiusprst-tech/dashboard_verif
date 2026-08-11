@@ -129,7 +129,7 @@ export function ManageTargetsModal({ open, onClose, verifier, periodeId }: Manag
         <Modal
             open={open}
             onClose={onClose}
-            title={`Kelola Target Verifikasi: ${verifier?.dosen?.nama_lengkap ?? 'PIC'}`}
+            title={`Kelola Target Verifikasi: ${verifier?.dosen?.nama_lengkap ?? 'Verifikator'}`}
             size="lg"
         >
             <div className="space-y-6">
@@ -208,7 +208,7 @@ export function ManageTargetsModal({ open, onClose, verifier, periodeId }: Manag
                     ) : assignedTargets.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
                             <GraduationCap size={32} strokeWidth={1.5} className="text-gray-400 mb-1.5" />
-                            <p className="text-xs text-gray-500 font-medium">Belum ada dosen yang ditugaskan ke PIC ini.</p>
+                            <p className="text-xs text-gray-500 font-medium">Belum ada dosen yang ditugaskan ke Verifikator ini.</p>
                             <p className="text-[11px] text-gray-400">Cari dosen di atas untuk menetapkan target verifikasi.</p>
                         </div>
                     ) : (

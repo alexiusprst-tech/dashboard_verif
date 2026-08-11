@@ -10,7 +10,8 @@ import { PloDetailPage } from '@/features/plo-clo/PloDetailPage';
 import { SoalPage } from '@/features/soal/SoalPage';
 import { VerifikasiPage } from '@/features/verifikasi/VerifikasiPage';
 import { BeritaAcaraPage } from '@/features/berita-acara/BeritaAcaraPage';
-import { PenugasanPicPage } from '@/features/penugasan-pic/PenugasanPicPage';
+import { PenugasanKoordinatorPage } from '@/features/penugasan-koordinator/PenugasanKoordinatorPage';
+import { PenugasanVerifikatorPage } from '@/features/penugasan-verifikator/PenugasanVerifikatorPage';
 import { PeriodePage } from '@/features/periode/PeriodePage';
 import { KategoriPage } from '@/features/kategori/KategoriPage';
 import { BroadcastPage } from '@/features/broadcast/BroadcastPage';
@@ -33,7 +34,7 @@ import { KelolaCloPage } from '@/features/matkul/KelolaCloPage';
  * Route guard (autentikasi) dihandle di MainLayout:
  * jika belum login → redirect ke /login.
  *
- * Route guard per-role (mis. hanya Super Admin yang boleh ke /penugasan-pic)
+ * Route guard per-role (mis. hanya Super Admin yang boleh ke /penugasan-verifikator)
  * akan ditambahkan sebagai wrapper component per route saat fitur dibangun.
  */
 export const router = createBrowserRouter([
@@ -89,14 +90,15 @@ export const router = createBrowserRouter([
             },
 
             {
-                path: 'penugasan-verifikator',
-                element: <PenugasanPicPage />,
+                path: 'penugasan-koordinator',
+                element: <PenugasanKoordinatorPage />,
             },
 
             {
-                path: 'penugasan-pic',
-                element: <Navigate to="/penugasan-verifikator" replace />,
+                path: 'penugasan-verifikator',
+                element: <PenugasanVerifikatorPage />,
             },
+
 
             {
                 path: 'periode',

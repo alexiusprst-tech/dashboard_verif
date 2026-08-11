@@ -35,6 +35,7 @@ export function SoalPage() {
 
     // Helpers lists
     const [periodes, setPeriodes] = useState<Periode[]>([]);
+    const [isPeriodeLoaded, setIsPeriodeLoaded] = useState(false);
 
     // Detail Modal states
     const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -51,6 +52,7 @@ export function SoalPage() {
             setPeriodes(res.data.data);
             const active = res.data.data.find((p: any) => p.status === 'aktif');
             if (active) setPeriodeId(String(active.id));
+            setIsPeriodeLoaded(true);
         });
     }, []);
 
@@ -65,7 +67,7 @@ export function SoalPage() {
         search,
         periode_id: periodeId || undefined,
         status: statusFilter || undefined,
-    });
+    }, { enabled: isPeriodeLoaded });
 
     const uploadMutation = useUploadSoal();
     const deleteMutation = useDeleteSoal();

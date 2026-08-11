@@ -40,14 +40,14 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function pic(Request $request): JsonResponse
+    public function verifikator(Request $request): JsonResponse
     {
         $periodeId = $request->query('periode_id');
-        $data = $this->dashboardService->pic($request->user(), $periodeId ? (int)$periodeId : null);
+        $data = $this->dashboardService->verifikator($request->user(), $periodeId ? (int)$periodeId : null);
 
         return response()->json([
             'success' => true,
-            'message' => 'Data dashboard PIC berhasil diambil.',
+            'message' => 'Data dashboard Verifikator berhasil diambil.',
             'data' => $data
         ]);
     }

@@ -8,10 +8,10 @@ import {
     FileText,
     RefreshCw,
     AlertTriangle,
-    TrendingUp,
     Users,
     BookOpen,
     ChevronRight,
+    CalendarClock,
 } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
@@ -104,6 +104,21 @@ export function MonitoringPage() {
     const [soalPage, setSoalPage] = useState(1);
     const [soalPerPage] = useState(10);
     const [selectedStatus, setSelectedStatus] = useState('');
+    const [periodes, setPeriodes] = useState<any[]>([]);
+    const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
+
+    useQuery({
+        queryKey: ['monitoring-periode'],
+        queryFn: async () => {
+            const res = await api.get('/periode', { params: { per_page: 50 } });
+            const data = res.data.data;
+            setPeriodes(data);
+            const active = data.find((p: any) => p.status === 'aktif');
+            if (active) setSelectedPeriodeId(String(active.id));
+            else if (data.length > 0) setSelectedPeriodeId(String(data[0].id));
+            return data;
+        },
+    });
 
     /* Dashboard data */
     const dashEndpoint =
@@ -112,20 +127,24 @@ export function MonitoringPage() {
             : '/dashboard/dosen';
 
     const { data: dashData, isLoading: dashLoading, refetch: refetchDash } = useQuery({
-        queryKey: ['monitoring-dashboard', dashEndpoint],
+        queryKey: ['monitoring-dashboard', dashEndpoint, selectedPeriodeId],
         queryFn: async () => {
-            const res = await api.get(dashEndpoint);
+            const res = await api.get(dashEndpoint, {
+                params: { periode_id: selectedPeriodeId || undefined },
+            });
             return res.data.data;
         },
+        enabled: !!selectedPeriodeId,
     });
 
     /* Soal list */
     const { data: soalData, isLoading: soalLoading, refetch: refetchSoal } = useQuery({
-        queryKey: ['monitoring-soal', soalPage, soalPerPage, selectedStatus],
+        queryKey: ['monitoring-soal', soalPage, soalPerPage, selectedStatus, selectedPeriodeId],
         queryFn: async () => {
             const params: Record<string, any> = {
                 page: soalPage,
                 per_page: soalPerPage,
+                periode_id: selectedPeriodeId || undefined,
             };
             if (selectedStatus) params.status = selectedStatus;
             const res = await api.get('/soal', { params });
@@ -134,6 +153,7 @@ export function MonitoringPage() {
                 meta: res.data.meta,
             };
         },
+        enabled: !!selectedPeriodeId,
     });
 
     const handleRefresh = () => {
@@ -153,12 +173,29 @@ export function MonitoringPage() {
                 description="Pantau status verifikasi soal secara real-time dan lihat progres per program studi."
                 breadcrumb={[{ label: 'Monitoring' }]}
                 action={
-                    <button
-                        onClick={handleRefresh}
-                        className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition"
-                    >
-                        <RefreshCw size={15} /> Refresh Data
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 shadow-sm">
+                            <CalendarClock size={14} className="text-[var(--color-primary)] flex-shrink-0" />
+                            <select
+                                value={selectedPeriodeId}
+                                onChange={(e) => { setSelectedPeriodeId(e.target.value); setSoalPage(1); }}
+                                className="bg-transparent text-sm font-semibold text-gray-700 focus:outline-none cursor-pointer pr-4"
+                            >
+                                <option value="">Periode Aktif</option>
+                                {periodes.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.nama_periode} {p.status === 'aktif' ? '(Aktif)' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <button
+                            onClick={handleRefresh}
+                            className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition"
+                        >
+                            <RefreshCw size={15} /> Refresh Data
+                        </button>
+                    </div>
                 }
             />
 

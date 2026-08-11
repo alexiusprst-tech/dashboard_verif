@@ -15,7 +15,7 @@ import type { Periode } from '@/features/periode/types/periode.types';
 import { usePenugasanList, useCreatePenugasan, useDeletePenugasan } from './hooks/usePenugasan';
 import { AssignModal } from './components/AssignModal';
 
-export function PenugasanPicPage() {
+export function PenugasanKoordinatorPage() {
     const { toast } = useToast();
 
     // Periode selection
@@ -63,26 +63,26 @@ export function PenugasanPicPage() {
         setPage(1);
     };
 
-    const handleSaveAssignment = async (data: { periode_id: number; pic_dosen_ids: number[] }) => {
+    const handleSaveAssignment = async (data: { periode_id: number; koordinator_dosen_ids: number[] }) => {
         try {
             let successCount = 0;
             let lastRes: any = null;
-            for (const picId of data.pic_dosen_ids) {
+            for (const koordinatorId of data.koordinator_dosen_ids) {
                 const res = await createMutation.mutateAsync({
                     periode_id: data.periode_id,
-                    pic_dosen_id: picId,
+                    user_id: koordinatorId,
                 });
                 successCount++;
                 lastRes = res;
             }
-            toast.success(`${successCount} Dosen berhasil ditugaskan sebagai Verifikator.`);
+            toast.success(`${successCount} Dosen berhasil ditugaskan sebagai Koordinator Mata Kuliah.`);
             if (lastRes?.warning) {
                 toast.warning(lastRes.warning);
             }
             setAssignModalOpen(false);
             refetch();
         } catch (e: any) {
-            toast.error(e.response?.data?.message || 'Gagal menyimpan penugasan verifikator.');
+            toast.error(e.response?.data?.message || 'Gagal menyimpan penugasan koordinator.');
             refetch();
         }
     };
@@ -96,7 +96,7 @@ export function PenugasanPicPage() {
         if (!deleteId) return;
         try {
             await deleteMutation.mutateAsync(deleteId);
-            toast.success('Penugasan verifikator berhasil dicabut.');
+            toast.success('Penugasan koordinator berhasil dicabut.');
             refetch();
         } catch (e: any) {
             toast.error(e.response?.data?.message || 'Gagal mencabut penugasan.');
@@ -109,16 +109,16 @@ export function PenugasanPicPage() {
     return (
         <div className="flex flex-col gap-6">
             <PageHeader
-                title="Penugasan Dosen Verifikator"
-                description="Tugaskan Dosen Verifikator yang bertanggung jawab memverifikasi soal mata kuliah dalam periode aktif."
-                breadcrumb={[{ label: 'Penugasan Verifikator' }]}
+                title="Penugasan Dosen Koordinator"
+                description="Tugaskan Dosen Koordinator yang bertanggung jawab mengelola dan mengevaluasi soal mata kuliah dalam periode aktif."
+                breadcrumb={[{ label: 'Penugasan Koordinator' }]}
                 action={
                     <button
                         onClick={() => setAssignModalOpen(true)}
                         className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] cursor-pointer"
                     >
                         <Plus size={16} />
-                        Tugaskan Verifikator
+                        Tugaskan Koordinator
                     </button>
                 }
             />
@@ -156,7 +156,7 @@ export function PenugasanPicPage() {
                                     />
                                 </th>
                                 <th className="px-6 py-4 w-16">No</th>
-                                <th className="px-6 py-4">Dosen PIC</th>
+                                <th className="px-6 py-4">Dosen Koordinator</th>
                                 <th className="px-6 py-4 w-32 text-center">Role</th>
                                 <th className="px-6 py-4 w-48">Ditugaskan Oleh</th>
                                 <th className="px-6 py-4 w-48">Tanggal Penugasan</th>
@@ -181,12 +181,12 @@ export function PenugasanPicPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-xs font-bold text-[var(--color-primary)]">
-                                                    {r.dosen?.nama_lengkap?.charAt(0).toUpperCase() || 'P'}
+                                                    {r.user?.nama_lengkap?.charAt(0).toUpperCase() || 'P'}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="font-semibold text-gray-800">{r.dosen?.nama_lengkap || '—'}</span>
+                                                    <span className="font-semibold text-gray-800">{r.user?.nama_lengkap || '—'}</span>
                                                     <span className="text-[10px] text-gray-400 font-medium">
-                                                        {r.dosen?.kode_dosen || '—'}
+                                                        {r.user?.kode_dosen || '—'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -194,7 +194,7 @@ export function PenugasanPicPage() {
                                         <td className="px-6 py-4 text-center">
                                             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary-light)] px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">
                                                 <UserCheck size={11} />
-                                                PIC
+                                                Koordinator
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
@@ -208,7 +208,7 @@ export function PenugasanPicPage() {
                                                 <button
                                                     onClick={() => handleOpenDelete(r.id)}
                                                     className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[var(--color-danger)] transition cursor-pointer"
-                                                    title="Cabut Role PIC"
+                                                    title="Cabut Role Koordinator"
                                                 >
                                                     <MinusCircle size={15} />
                                                 </button>
@@ -252,8 +252,8 @@ export function PenugasanPicPage() {
                 onClose={() => setDeleteConfirmOpen(false)}
                 onConfirm={handleConfirmDelete}
                 loading={deleteMutation.isPending}
-                title="Cabut Role PIC"
-                message="Apakah Anda yakin ingin mencabut role PIC dari dosen ini? Dosen tidak akan lagi dapat memverifikasi soal di periode ini. Tindakan ini dapat dibatalkan dengan menugaskannya kembali."
+                title="Cabut Role Koordinator"
+                message="Apakah Anda yakin ingin mencabut role Koordinator dari dosen ini? Dosen tidak akan lagi dapat mengelola soal di periode ini. Tindakan ini dapat dibatalkan dengan menugaskannya kembali."
                 confirmLabel="Cabut"
             />
         </div>

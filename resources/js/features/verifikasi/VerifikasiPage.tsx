@@ -18,7 +18,7 @@ import { useTugasSaya, useSubmitVerifikasi } from './hooks/useVerifikasi';
 import { VerifikasiModal } from './components/VerifikasiModal';
 import { TimelineCard } from '@/features/soal/components/TimelineCard';
 import { RevisionHistoryAccordion } from '@/features/soal/components/RevisionHistoryAccordion';
-import { ManageTargetsModal } from '@/features/penugasan-pic/components/ManageTargetsModal';
+import { ManageTargetsModal } from '@/features/penugasan-verifikator/components/ManageTargetsModal';
 
 export function VerifikasiPage() {
     const { user } = useAuth();

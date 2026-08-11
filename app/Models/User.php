@@ -82,6 +82,12 @@ class User extends Authenticatable
         return $this->hasMany(PenugasanVerifikator::class, 'dosen_id');
     }
 
+    /** Penugasan sebagai Koordinator (per periode) — BR-02, BR-03, BR-04 */
+    public function koordinatorAssignments(): HasMany
+    {
+        return $this->hasMany(KoordinatorAssignment::class, 'user_id');
+    }
+
     /** Verifikasi yang pernah dilakukan oleh user ini */
     public function verifications(): HasMany
     {
@@ -122,8 +128,29 @@ class User extends Authenticatable
 
     public function isKoordinatorMk(): bool
     {
-        // Fallback ke is_coordinator untuk backward compatibility
-        return $this->isDevModeActive() || (bool) ($this->is_koordinator_mk ?? $this->is_coordinator);
+        if ($this->isDevModeActive()) {
+            return true;
+        }
+
+        // Cek assignment Koordinator pada periode aktif
+        $activePeriode = app(\App\Repositories\Contracts\PeriodeRepositoryContract::class)->findActive();
+        if ($activePeriode && $this->isKoordinatorPadaPeriode($activePeriode->id)) {
+            return true;
+        }
+
+        // Fallback ke boolean flag untuk backward compatibility
+        return (bool) ($this->is_koordinator_mk ?? $this->is_coordinator);
+    }
+
+    /**
+     * Cek apakah user adalah Koordinator pada periode tertentu.
+     * Query ke tabel koordinator_assignments.
+     */
+    public function isKoordinatorPadaPeriode(int $periodeId): bool
+    {
+        return $this->koordinatorAssignments()
+            ->where('periode_id', $periodeId)
+            ->exists();
     }
 
     /**

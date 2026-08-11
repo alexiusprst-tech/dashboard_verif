@@ -27,7 +27,7 @@ interface NavItem {
     href: string;
     icon: React.ElementType;
     badge?: number;
-    roles?: Array<'coordinator' | 'dosen' | 'pic'>;
+    roles?: Array<'koordinator' | 'verifikator'>;
 }
 
 interface NavSection {
@@ -55,6 +55,7 @@ const BERITA_ACARA_ITEM: NavItem = { label: 'Berita Acara', href: '/berita-acara
 
 const SUPER_ADMIN_ITEMS: NavItem[] = [
     { label: 'Manajemen Dosen', href: '/dosen', icon: GraduationCap },
+    { label: 'Penugasan Koordinator', href: '/penugasan-koordinator', icon: Users },
     { label: 'Penugasan Verifikator', href: '/penugasan-verifikator', icon: Users },
     { label: 'Periode & Deadline', href: '/periode', icon: Calendar },
     { label: 'Kategori & Template', href: '/kategori', icon: Tag },
@@ -84,13 +85,13 @@ function buildNavSections(
 
     const soalSectionItems: NavItem[] = [];
 
-    // Dosen / Koordinator MK dapat mengunggah / merevisi soal
-    if (isKoordinatorMk || role === 'koordinator_mk' || role === 'coordinator' || role === 'dosen') {
+    // Koordinator MK dapat mengunggah / merevisi soal
+    if (isKoordinatorMk || role === 'koordinator') {
         soalSectionItems.push(...DOSEN_ITEMS);
     }
 
-    // Dosen Verifikator dapat memverifikasi soal
-    if (isVerifikatorActive || role === 'verifikator' || role === 'pic') {
+    // Verifikator dapat memverifikasi soal
+    if (isVerifikatorActive || role === 'verifikator') {
         const verifikasiItems = VERIFIKATOR_ITEMS.map((item) =>
             item.href === '/verifikasi' && verifikatorPendingCount
                 ? { ...item, badge: verifikatorPendingCount }

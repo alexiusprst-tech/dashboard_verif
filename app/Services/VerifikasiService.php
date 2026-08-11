@@ -44,7 +44,7 @@ class VerifikasiService
             throw new BusinessException('Soal sudah disetujui (Approved) dan tidak dapat diverifikasi kembali.', 422);
         }
 
-        $tipeVerifikator = 'pic';
+        $tipeVerifikator = TipeVerifikator::Verifikator->value;
         $status = VerifikasiStatus::from($data['status']);
 
         $verification = DB::transaction(function () use ($soal, $verifier, $tipeVerifikator, $status, $data) {
@@ -67,7 +67,7 @@ class VerifikasiService
         });
 
         // Kirim notifikasi ke dosen pembuat soal
-        $tipeVerifLabel = 'PIC';
+        $tipeVerifLabel = 'Verifikator';
         $statusLabel = $status->label();
         
         $this->notifikasiService->kirim(

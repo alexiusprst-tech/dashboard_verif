@@ -19,7 +19,7 @@ import api from '@/shared/lib/api';
  * - Redirect ke /login jika belum autentikasi
  * - Sidebar collapsible di desktop, drawer di mobile
  * - Topbar sticky di atas area konten
- * - Sync data user dari /auth/me saat pertama load (agar is_pic_active fresh)
+ * - Sync data user dari /auth/me saat pertama load (agar is_verifikator_aktif fresh)
  */
 export function MainLayout() {
     const { isAuthenticated, updateUser } = useAuth();
@@ -40,8 +40,8 @@ export function MainLayout() {
     });
 
     // Sync data user dari server saat pertama load.
-    // Ini memastikan is_pic_active selalu up-to-date (mis. setelah super admin
-    // assign role PIC tanpa user perlu logout-login ulang).
+    // Ini memastikan is_verifikator_aktif selalu up-to-date (mis. setelah super admin
+    // assign role Verifikator tanpa user perlu logout-login ulang).
     useEffect(() => {
         if (!isAuthenticated) return;
 

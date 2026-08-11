@@ -39,11 +39,11 @@ class EnsureIsKoordinatorMk
             return $next($request);
         }
 
-        // Dosen Koordinator Mata Kuliah diizinkan
+        // Dosen Koordinator Mata Kuliah diizinkan (cek via model yang sudah mempertimbangkan assignment dan fallback)
         if ($user->isKoordinatorMk()) {
             return $next($request);
         }
 
-        abort(403, 'Anda tidak memiliki hak akses sebagai Koordinator Mata Kuliah.');
+        abort(403, 'Anda tidak memiliki hak akses sebagai Koordinator Mata Kuliah pada periode aktif.');
     }
 }

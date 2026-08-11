@@ -8,7 +8,7 @@ import {
 
 /* ── Types ─────────────────────────────────────────────────── */
 
-export type UserRole = 'super_admin' | 'koordinator_mk' | 'verifikator' | 'dosen' | 'coordinator' | 'pic';
+export type UserRole = 'super_admin' | 'koordinator' | 'verifikator';
 
 export interface AuthUser {
     id: number;
@@ -45,9 +45,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 function deriveRole(user: AuthUser): UserRole {
     if (user.is_super_admin) return 'super_admin';
-    if (user.is_koordinator_mk || user.is_coordinator) return 'koordinator_mk';
-    if (user.is_verifikator_aktif || user.is_pic_active) return 'verifikator';
-    return 'dosen';
+    if (user.is_koordinator_mk || user.is_coordinator) return 'koordinator';
+    return 'verifikator'; // Fallback for anyone else since BR-07 mandates only 3 roles
 }
 
 /* ── Provider ──────────────────────────────────────────────── */
@@ -86,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(updatedUser);
     }, []);
 
-    const role: UserRole = user ? deriveRole(user) : 'dosen';
+    const role: UserRole = user ? deriveRole(user) : 'verifikator';
 
     return (
         <AuthContext.Provider

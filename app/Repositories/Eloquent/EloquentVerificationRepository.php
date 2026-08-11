@@ -23,7 +23,7 @@ class EloquentVerificationRepository implements VerificationRepositoryContract
     public function findLatestBySoal(int $soalId): ?Verification
     {
         return Verification::where('soal_id', $soalId)
-            ->where('tipe_verifikator', TipeVerifikator::Pic->value)
+            ->where('tipe_verifikator', TipeVerifikator::Verifikator->value)
             ->orderByDesc('verified_at')
             ->first();
     }
@@ -48,7 +48,7 @@ class EloquentVerificationRepository implements VerificationRepositoryContract
     {
         return Verification::with(['soal.dosen', 'soal.mataKuliah', 'soal.clo', 'soal.template.kategori'])
             ->where('verifier_id', $verifierId)
-            ->where('tipe_verifikator', TipeVerifikator::Pic->value)
+            ->where('tipe_verifikator', TipeVerifikator::Verifikator->value)
             ->where('status', VerifikasiStatus::Approved->value)
             ->whereHas('soal', fn($q) => $q->where('periode_id', $periodeId))
             ->orderByDesc('verified_at')
