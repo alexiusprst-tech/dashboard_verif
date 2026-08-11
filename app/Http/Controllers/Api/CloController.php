@@ -3,23 +3,35 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Clo\ImportCloRequest;
 use App\Http\Requests\Clo\StoreCloRequest;
 use App\Http\Requests\Clo\UpdateCloRequest;
 use App\Http\Resources\CloResource;
 use App\Repositories\Contracts\CloRepositoryContract;
+use App\Services\CloExportService;
+use App\Services\CloImportService;
 use App\Services\CloService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CloController extends Controller
 {
     protected CloService $cloService;
     protected CloRepositoryContract $cloRepository;
+    protected CloImportService $cloImportService;
+    protected CloExportService $cloExportService;
 
-    public function __construct(CloService $cloService, CloRepositoryContract $cloRepository)
-    {
+    public function __construct(
+        CloService $cloService,
+        CloRepositoryContract $cloRepository,
+        CloImportService $cloImportService,
+        CloExportService $cloExportService
+    ) {
         $this->cloService = $cloService;
         $this->cloRepository = $cloRepository;
+        $this->cloImportService = $cloImportService;
+        $this->cloExportService = $cloExportService;
     }
 
     public function index(Request $request): JsonResponse
@@ -94,5 +106,32 @@ class CloController extends Controller
             'success' => true,
             'message' => 'CLO berhasil dihapus.'
         ]);
+    }
+
+    public function previewImport(ImportCloRequest $request): JsonResponse
+    {
+        $preview = $this->cloImportService->preview($request->file('file'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Preview import CLO berhasil diambil.',
+            'data' => $preview,
+        ]);
+    }
+
+    public function import(ImportCloRequest $request): JsonResponse
+    {
+        $result = $this->cloImportService->import($request->file('file'), $request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => "Import CLO berhasil. {$result['created']} data disimpan.",
+            'data' => $result,
+        ]);
+    }
+
+    public function export(): StreamedResponse
+    {
+        return $this->cloExportService->export();
     }
 }

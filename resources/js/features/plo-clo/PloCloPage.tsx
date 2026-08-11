@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, Upload, Eye, Edit2, MinusCircle, Calendar, Layers, GraduationCap } from 'lucide-react';
@@ -9,6 +9,7 @@ import { Pagination } from '@/shared/components/ui/Pagination';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import { SkeletonTable } from '@/shared/components/ui/Skeleton';
+import { Modal } from '@/shared/components/ui/Modal';
 import { useToast } from '@/shared/hooks/useToast';
 import { useAuth } from '@/shared/hooks/useAuth';
 import api from '@/shared/lib/api';
@@ -16,6 +17,9 @@ import api from '@/shared/lib/api';
 import type { Plo, Clo, ProgramStudi, MataKuliah } from './types/plo.types';
 import { usePloList, useCreatePlo, useUpdatePlo, useDeletePlo } from './hooks/usePlo';
 import { useCloList, useCreateClo, useUpdateClo, useDeleteClo } from './hooks/useClo';
+import { previewImportPlo, importPlo, exportPlo } from './api/ploApi';
+import { previewImportClo, importClo, exportClo } from './api/cloApi';
+import { downloadTemplate } from './api/curriculumApi';
 import { PloModal } from './components/PloModal';
 import { CloModal } from './components/CloModal';
 
@@ -53,6 +57,13 @@ export function PloCloPage() {
     // Confirm delete states
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<{ type: 'plo' | 'clo'; id: number } | null>(null);
+    const [importPreviewOpen, setImportPreviewOpen] = useState(false);
+    const [importPreviewLoading, setImportPreviewLoading] = useState(false);
+    const [importProcessing, setImportProcessing] = useState(false);
+    const [importPreviewResult, setImportPreviewResult] = useState<import('./types/plo.types').ImportPreviewResult<import('./types/plo.types').PloImportPreviewRow> | import('./types/plo.types').ImportPreviewResult<import('./types/plo.types').CloImportPreviewRow> | null>(null);
+    const [currentImportFile, setCurrentImportFile] = useState<File | null>(null);
+    const [currentImportType, setCurrentImportType] = useState<'plo' | 'clo'>('plo');
+    const [importSheetName, setImportSheetName] = useState<string>('');
 
     // Fetch Program Studi, Courses & Periodes
     useEffect(() => {
@@ -124,6 +135,8 @@ export function PloCloPage() {
     const deleteCloMutation = useDeleteClo();
 
     // Reset filter helper
+    const canManagePloClo = Boolean(user?.is_super_admin || user?.is_koordinator_mk || user?.is_coordinator);
+
     const handleResetFilter = () => {
         setSearch('');
         setSelectedPloFilter('');
@@ -209,46 +222,77 @@ export function PloCloPage() {
             setDeleteTarget(null);
         }
     };
+    // Handle import preview and export download
+    const handleImportExcel = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-    // Export Excel
-    const handleExportExcel = () => {
+        setCurrentImportFile(file);
+        setCurrentImportType(activeTab);
+        setImportPreviewLoading(true);
+        setImportPreviewOpen(true);
+
         try {
-            let csvContent = "data:text/csv;charset=utf-8,";
-            if (activeTab === 'plo') {
-                csvContent += "No,Kode PLO,Deskripsi,Jumlah CLO,Tanggal Dibuat\n";
-                const rows = ploResponse?.data || [];
-                rows.forEach((r, idx) => {
-                    csvContent += `"${idx + 1}","${r.kode}","${r.deskripsi.replace(/"/g, '""')}","${r.clo_count || 0}","${r.created_at}"\n`;
-                });
-            } else {
-                csvContent += "No,Kode CLO,Deskripsi,PLO,Tanggal Dibuat\n";
-                const rows = cloResponse?.data || [];
-                rows.forEach((r, idx) => {
-                    csvContent += `"${idx + 1}","${r.kode}","${r.deskripsi.replace(/"/g, '""')}","${r.plo?.kode || ''}","${r.created_at}"\n`;
-                });
-            }
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", activeTab === 'plo' ? "data_plo.csv" : "data_clo.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            toast.success('Excel/CSV berhasil diexport');
-        } catch (e) {
-            toast.error('Gagal mengeksport data');
+            const preview = activeTab === 'plo'
+                ? await previewImportPlo(file, importSheetName || undefined)
+                : await previewImportClo(file, importSheetName || undefined);
+
+            setImportPreviewResult(preview as any);
+            toast.success(`Preview import ${activeTab.toUpperCase()} berhasil.`);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Gagal memproses file import.');
+            setImportPreviewOpen(false);
+        } finally {
+            setImportPreviewLoading(false);
+            e.target.value = '';
         }
     };
 
-    const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        toast.info(`Membaca file ${file.name}...`);
-        setTimeout(() => {
-            toast.success('Import berhasil!');
-            if (activeTab === 'plo') refetchPlo();
-            else refetchClo();
-        }, 1500);
+    const handleConfirmImport = async () => {
+        if (!currentImportFile) return;
+
+        setImportProcessing(true);
+
+        try {
+            if (currentImportType === 'plo') {
+                await importPlo(currentImportFile, importSheetName || undefined);
+                refetchPlo();
+            } else {
+                await importClo(currentImportFile, importSheetName || undefined);
+                refetchClo();
+            }
+
+            toast.success(`${currentImportType.toUpperCase()} berhasil diimport.`);
+            setImportPreviewOpen(false);
+            setImportPreviewResult(null);
+            setCurrentImportFile(null);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Gagal mengimpor file.');
+        } finally {
+            setImportProcessing(false);
+        }
+    };
+
+    const downloadBlob = (blob: Blob, name: string) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = name;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            const blob = activeTab === 'plo' ? await exportPlo() : await exportClo();
+            const filename = `${activeTab}_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            downloadBlob(blob, filename);
+            toast.success('File export berhasil diunduh.');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Gagal men-download file export.');
+        }
     };
 
     return (
@@ -259,23 +303,55 @@ export function PloCloPage() {
                 breadcrumb={[{ label: 'PLO & CLO' }]}
                 action={
                     <div className="flex flex-wrap gap-2">
-                        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
-                            <Upload size={16} />
-                            Import Excel
-                            <input
-                                type="file"
-                                accept=".xlsx,.xls,.csv"
-                                className="hidden"
-                                onChange={handleImportExcel}
-                            />
-                        </label>
-                        <button
-                            onClick={handleExportExcel}
-                            className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 cursor-pointer"
-                        >
-                            <Download size={16} />
-                            Export Excel
-                        </button>
+                        {canManagePloClo && (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Sheet name (optional)"
+                                    value={importSheetName}
+                                    onChange={(e) => setImportSheetName(e.target.value)}
+                                    className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
+                                />
+                                <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
+                                    <Upload size={16} />
+                                    Import Excel
+                                    <input
+                                        type="file"
+                                        accept=".xlsx,.xls"
+                                        className="hidden"
+                                        onChange={handleImportExcel}
+                                    />
+                                </label>
+                            </div>
+                        )}
+                        {canManagePloClo && (
+                            <button
+                                onClick={handleExportExcel}
+                                className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 cursor-pointer"
+                            >
+                                <Download size={16} />
+                                Export Excel
+                            </button>
+                        )}
+                        {canManagePloClo && (
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const type = activeTab === 'plo' ? 'plos' : 'clos_mapping';
+                                        const blob = await downloadTemplate(type);
+                                        const filename = `template_${type}.xlsx`;
+                                        downloadBlob(blob, filename);
+                                        toast.success('Template berhasil diunduh.');
+                                    } catch (err: any) {
+                                        toast.error(err?.response?.data?.message || 'Gagal mengunduh template.');
+                                    }
+                                }}
+                                className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 cursor-pointer"
+                            >
+                                <Download size={16} />
+                                Download Template
+                            </button>
+                        )}
                         <button
                             onClick={activeTab === 'plo' ? handleOpenAddPlo : handleOpenAddClo}
                             className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] cursor-pointer"
@@ -606,6 +682,125 @@ export function PloCloPage() {
                 defaultPeriodeId={selectedPeriodeId}
                 loading={createCloMutation.isPending || updateCloMutation.isPending}
             />
+
+            <Modal
+                open={importPreviewOpen}
+                onClose={() => setImportPreviewOpen(false)}
+                title={`Preview Import ${currentImportType.toUpperCase()}`}
+                description={`Tinjau status validasi sebelum menyimpan ${currentImportType.toUpperCase()} dari file Excel.`}
+                size="xl"
+                footer={
+                    <div className="flex items-center justify-end gap-3">
+                        <button
+                            onClick={() => setImportPreviewOpen(false)}
+                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                            Tutup
+                        </button>
+                        <button
+                            onClick={handleConfirmImport}
+                            disabled={importPreviewLoading || importProcessing || ((importPreviewResult?.invalid ?? 0) > 0)}
+                            className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {importProcessing ? 'Mengimpor...' : 'Import Sekarang'}
+                        </button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    {importPreviewLoading ? (
+                        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+                            Memproses file import...
+                        </div>
+                    ) : importPreviewResult ? (
+                        <>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                    <p className="text-xs uppercase tracking-wide text-gray-500">Total Baris</p>
+                                    <p className="mt-2 text-2xl font-semibold text-gray-900">{importPreviewResult.total}</p>
+                                </div>
+                                <div className="rounded-xl border border-gray-200 bg-green-50 p-4">
+                                    <p className="text-xs uppercase tracking-wide text-gray-500">Valid</p>
+                                    <p className="mt-2 text-2xl font-semibold text-green-700">{importPreviewResult.valid}</p>
+                                </div>
+                                <div className="rounded-xl border border-gray-200 bg-red-50 p-4">
+                                    <p className="text-xs uppercase tracking-wide text-gray-500">Invalid</p>
+                                    <p className="mt-2 text-2xl font-semibold text-red-700">{importPreviewResult.invalid}</p>
+                                </div>
+                            </div>
+
+                            {importPreviewResult.invalid > 0 && (
+                                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                                    File import memiliki baris yang tidak valid. Perbaiki file terlebih dahulu dan ulangi preview.
+                                </div>
+                            )}
+
+                            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                                <table className="min-w-full divide-y divide-gray-200 text-left text-sm text-gray-600">
+                                    <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-700">
+                                        <tr>
+                                            <th className="px-4 py-3">Baris</th>
+                                            {currentImportType === 'plo' ? (
+                                                <>
+                                                    <th className="px-4 py-3">Kode PLO</th>
+                                                    <th className="px-4 py-3">Deskripsi</th>
+                                                    <th className="px-4 py-3">Kode Prodi</th>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <th className="px-4 py-3">Kode MK</th>
+                                                    <th className="px-4 py-3">Kode CLO</th>
+                                                    <th className="px-4 py-3">Deskripsi</th>
+                                                    <th className="px-4 py-3">Kode PLO</th>
+                                                </>
+                                            )}
+                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3">Pesan Error</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {importPreviewResult.rows.slice(0, 20).map((row: any) => (
+                                            <tr key={row.row} className={row.status === 'invalid' ? 'bg-red-50' : ''}>
+                                                <td className="px-4 py-3 font-medium text-gray-900">{row.row}</td>
+                                                {currentImportType === 'plo' ? (
+                                                    <>
+                                                        <td className="px-4 py-3">{row.kode_plo}</td>
+                                                        <td className="px-4 py-3">{row.deskripsi}</td>
+                                                        <td className="px-4 py-3">{row.kode_prodi}</td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td className="px-4 py-3">{row.kode_mk}</td>
+                                                        <td className="px-4 py-3">{row.kode_clo}</td>
+                                                        <td className="px-4 py-3">{row.deskripsi}</td>
+                                                        <td className="px-4 py-3">{row.kode_plo}</td>
+                                                    </>
+                                                )}
+                                                <td className="px-4 py-3">
+                                                    <span className={row.status === 'valid' ? 'rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700' : 'rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700'}>
+                                                        {row.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-700">
+                                                    {row.errors.length > 0 ? row.errors.join(' · ') : '—'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {importPreviewResult.rows.length > 20 && (
+                                <p className="text-xs text-gray-500">Menampilkan 20 baris pertama. Jika file lebih besar, pastikan semua baris sudah valid.</p>
+                            )}
+                        </>
+                    ) : (
+                        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+                            Pilih file Excel untuk melihat preview import.
+                        </div>
+                    )}
+                </div>
+            </Modal>
 
             <ConfirmDialog
                 open={deleteConfirmOpen}

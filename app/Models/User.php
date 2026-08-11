@@ -27,6 +27,7 @@ class User extends Authenticatable
         'is_super_admin',
         'is_coordinator',
         'is_koordinator_mk',
+        'dev_mode_enabled',
         'tipe_dosen',
         'semester_lb',
         'status_aktif',
@@ -45,6 +46,7 @@ class User extends Authenticatable
             'is_super_admin'    => 'boolean',
             'is_coordinator'    => 'boolean',
             'is_koordinator_mk' => 'boolean',
+            'dev_mode_enabled'  => 'boolean',
             'status_aktif'      => 'boolean',
             'last_login_at'     => 'datetime',
         ];
@@ -103,20 +105,25 @@ class User extends Authenticatable
 
     /* ── Helpers ────────────────────────────────────────────── */
 
+    public function isDevModeActive(): bool
+    {
+        return (bool) ($this->dev_mode_enabled ?? false);
+    }
+
     public function isSuperAdmin(): bool
     {
-        return \Illuminate\Support\Facades\Cache::get('dev_mode_active', false) || (bool) $this->is_super_admin;
+        return $this->isDevModeActive() || (bool) $this->is_super_admin;
     }
 
     public function isCoordinator(): bool
     {
-        return \Illuminate\Support\Facades\Cache::get('dev_mode_active', false) || (bool) $this->is_coordinator;
+        return $this->isDevModeActive() || (bool) $this->is_coordinator;
     }
 
     public function isKoordinatorMk(): bool
     {
         // Fallback ke is_coordinator untuk backward compatibility
-        return \Illuminate\Support\Facades\Cache::get('dev_mode_active', false) || (bool) ($this->is_koordinator_mk ?? $this->is_coordinator);
+        return $this->isDevModeActive() || (bool) ($this->is_koordinator_mk ?? $this->is_coordinator);
     }
 
     /**

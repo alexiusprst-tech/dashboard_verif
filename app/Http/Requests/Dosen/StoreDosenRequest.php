@@ -24,6 +24,7 @@ class StoreDosenRequest extends FormRequest
             'is_koordinator_mk' => 'boolean',
             'is_coordinator'    => 'boolean',
             'status_aktif'      => 'boolean',
+            'dev_mode_enabled'  => 'boolean',
         ];
     }
 

@@ -3,23 +3,35 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Plo\ImportPloRequest;
 use App\Http\Requests\Plo\StorePloRequest;
 use App\Http\Requests\Plo\UpdatePloRequest;
 use App\Http\Resources\PloResource;
 use App\Repositories\Contracts\PloRepositoryContract;
+use App\Services\PloExportService;
+use App\Services\PloImportService;
 use App\Services\PloService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PloController extends Controller
 {
     protected PloService $ploService;
     protected PloRepositoryContract $ploRepository;
+    protected PloImportService $ploImportService;
+    protected PloExportService $ploExportService;
 
-    public function __construct(PloService $ploService, PloRepositoryContract $ploRepository)
-    {
+    public function __construct(
+        PloService $ploService,
+        PloRepositoryContract $ploRepository,
+        PloImportService $ploImportService,
+        PloExportService $ploExportService
+    ) {
         $this->ploService = $ploService;
         $this->ploRepository = $ploRepository;
+        $this->ploImportService = $ploImportService;
+        $this->ploExportService = $ploExportService;
     }
 
     public function index(Request $request): JsonResponse
@@ -97,5 +109,32 @@ class PloController extends Controller
             'success' => true,
             'message' => 'PLO berhasil dihapus.'
         ]);
+    }
+
+    public function previewImport(ImportPloRequest $request): JsonResponse
+    {
+        $preview = $this->ploImportService->preview($request->file('file'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Preview import PLO berhasil diambil.',
+            'data' => $preview,
+        ]);
+    }
+
+    public function import(ImportPloRequest $request): JsonResponse
+    {
+        $result = $this->ploImportService->import($request->file('file'), $request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => "Import PLO berhasil. {$result['created']} data disimpan.",
+            'data' => $result,
+        ]);
+    }
+
+    public function export(): StreamedResponse
+    {
+        return $this->ploExportService->export();
     }
 }

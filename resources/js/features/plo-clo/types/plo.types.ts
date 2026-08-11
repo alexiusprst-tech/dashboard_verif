@@ -44,6 +44,36 @@ export interface CloFormData {
     periode_id?: number;
 }
 
+export interface PloImportPreviewRow {
+    row: number;
+    kode_plo: string;
+    deskripsi: string;
+    kode_prodi: string;
+    status: 'valid' | 'invalid';
+    errors: string[];
+}
+
+export interface CloImportPreviewRow {
+    row: number;
+    kode_mk: string;
+    kode_clo: string;
+    deskripsi: string;
+    kode_plo: string;
+    status: 'valid' | 'invalid';
+    errors: string[];
+}
+
+export interface ImportPreviewResult<T> {
+    total: number;
+    valid: number;
+    invalid: number;
+    rows: T[];
+    errors: Array<{
+        row: number;
+        errors: string[];
+    }>;
+}
+
 /* ── Pagination Meta ────────────────────────────────────────── */
 
 export interface PaginatedResponse<T> {

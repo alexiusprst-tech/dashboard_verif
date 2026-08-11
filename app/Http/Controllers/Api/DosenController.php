@@ -43,6 +43,7 @@ class DosenController extends Controller
         $data['is_koordinator_mk'] = $request->boolean('is_koordinator_mk', $request->boolean('is_coordinator', false));
         $data['is_coordinator'] = $data['is_koordinator_mk'];
         $data['status_aktif'] = $request->boolean('status_aktif', true);
+        $data['dev_mode_enabled'] = $request->boolean('dev_mode_enabled', false);
 
         $user = $this->userRepository->create($data);
 
@@ -91,6 +92,9 @@ class DosenController extends Controller
                 : $request->boolean('is_coordinator');
             $data['is_koordinator_mk'] = $val;
             $data['is_coordinator'] = $val;
+        }
+        if ($request->has('dev_mode_enabled')) {
+            $data['dev_mode_enabled'] = $request->boolean('dev_mode_enabled');
         }
 
         $updated = $this->userRepository->update($user, $data);

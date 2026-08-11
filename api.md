@@ -188,6 +188,92 @@ Semua respon REST API menggunakan amplop JSON tersentralisasi demi menjamin kons
 - **Auth:** `auth:sanctum`
 - **HTTP Caching:** Response dikirim dengan header `Cache-Control: private, max-age=300, ETag` untuk mengurangi latensi jaringan frontend.
 
+### 4.2 PLO Endpoints
+
+#### 4.2.1 List PLO
+- **URL:** `GET /plo`
+- **Auth:** `auth:sanctum`
+- **Query Params:**
+  - `prodi_id` (integer, required kecuali default otomatis mengambil Prodi Sistem Informasi)
+  - `mata_kuliah_id` (integer, optional)
+  - `periode_id` (integer, optional)
+  - `search` (string, optional)
+  - `per_page` (integer, optional, default 15)
+- **Response `200 OK`:** Paginasi daftar PLO.
+
+#### 4.2.2 Get Detail PLO
+- **URL:** `GET /plo/{id}`
+- **Auth:** `auth:sanctum`
+- **Response `200 OK`:** Detil PLO.
+
+#### 4.2.3 Preview Import PLO
+- **URL:** `POST /plo/preview-import`
+- **Auth:** `auth:sanctum`, middleware: `koordinator_mk`
+- **Content-Type:** `multipart/form-data`
+- **Form Field:**
+  - `file` (file, required, `xls` atau `xlsx`, max 10MB)
+- **Response `200 OK`:** Ringkasan baris import dengan status validasi.
+- **Response `422 Unprocessable`:** File tidak valid atau format header salah.
+
+#### 4.2.4 Import PLO
+- **URL:** `POST /plo/import`
+- **Auth:** `auth:sanctum`, middleware: `koordinator_mk`
+- **Content-Type:** `multipart/form-data`
+- **Form Field:**
+  - `file` (file, required, `xls` atau `xlsx`, max 10MB)
+- **Response `200 OK`:** Hasil import berhasil dan jumlah baris yang disimpan.
+
+#### 4.2.5 Export PLO
+- **URL:** `GET /plo/export`
+- **Auth:** `auth:sanctum`, middleware: `koordinator_mk`
+- **Response:** File Excel (`.xlsx`) dengan kolom:
+  - `kode_plo`
+  - `deskripsi`
+  - `kode_prodi`
+
+### 4.3 CLO Endpoints
+
+#### 4.3.1 List CLO
+- **URL:** `GET /clo`
+- **Auth:** `auth:sanctum`
+- **Query Params:**
+  - `mata_kuliah_id` (integer, optional)
+  - `plo_id` (integer, optional)
+  - `search` (string, optional)
+  - `per_page` (integer, optional, default 15)
+- **Response `200 OK`:** Paginasi daftar CLO.
+
+#### 4.3.2 Get Detail CLO
+- **URL:** `GET /clo/{id}`
+- **Auth:** `auth:sanctum`
+- **Response `200 OK`:** Detil CLO.
+
+#### 4.3.3 Preview Import CLO
+- **URL:** `POST /clo/preview-import`
+- **Auth:** `auth:sanctum`, middleware: `koordinator_mk`
+- **Content-Type:** `multipart/form-data`
+- **Form Field:**
+  - `file` (file, required, `xls` atau `xlsx`, max 10MB)
+- **Response `200 OK`:** Ringkasan validasi setiap baris CLO.
+- **Response `422 Unprocessable`:** File tidak valid, header salah, atau data CLO tidak lengkap.
+
+#### 4.3.4 Import CLO
+- **URL:** `POST /clo/import`
+- **Auth:** `auth:sanctum`, middleware: `koordinator_mk`
+- **Content-Type:** `multipart/form-data`
+- **Form Field:**
+  - `file` (file, required, `xls` atau `xlsx`, max 10MB)
+- **Response `200 OK`:** Hasil import berhasil dengan jumlah CLO baru yang disimpan.
+
+#### 4.3.5 Export CLO
+- **URL:** `GET /clo/export`
+- **Auth:** `auth:sanctum`, middleware: `koordinator_mk`
+- **Response:** File Excel (`.xlsx`) dengan kolom:
+  - `kode_mk`
+  - `kode_clo`
+  - `deskripsi`
+  - `kode_plo`
+
 ---
 
 ## 5. Unggah & Kelola Soal Endpoints

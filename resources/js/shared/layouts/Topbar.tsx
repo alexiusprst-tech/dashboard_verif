@@ -369,6 +369,18 @@ export function Topbar({ onMobileMenuToggle }: { onMobileMenuToggle: () => void 
     });
     const notificationCount = unreadData ?? 0;
 
+    const { data: devModeStatus } = useQuery({
+        queryKey: ['dev-mode-status'],
+        queryFn: async () => {
+            const res = await api.get('/dev/status');
+            return res.data.active as boolean;
+        },
+        staleTime: 30_000,
+        refetchOnWindowFocus: true,
+        enabled: !!user,
+    });
+    const isDevModeActive = devModeStatus ?? false;
+
     const devModeMut = useMutation({
         mutationFn: (mode: boolean) => api.post('/dev/switch-mode', { mode }),
         onSuccess: () => {
@@ -395,7 +407,6 @@ export function Topbar({ onMobileMenuToggle }: { onMobileMenuToggle: () => void 
 
             {/* ── Right: notifications + user menu ── */}
             <div className="flex items-center gap-2">
-
                 {/* ── Notification Bell + Panel ── */}
                 <div className="relative">
                     <button
@@ -488,11 +499,11 @@ export function Topbar({ onMobileMenuToggle }: { onMobileMenuToggle: () => void 
                                         disabled={devModeMut.isPending}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            devModeMut.mutate(!(user?.is_super_admin && user?.is_coordinator));
+                                            devModeMut.mutate(!isDevModeActive);
                                         }}
                                         className={cn(
                                             "relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                                            (user?.is_super_admin && user?.is_coordinator) ? "bg-indigo-600" : "bg-gray-200",
+                                            isDevModeActive ? "bg-indigo-600" : "bg-gray-200",
                                             devModeMut.isPending && "opacity-50 cursor-not-allowed"
                                         )}
                                     >
@@ -500,7 +511,7 @@ export function Topbar({ onMobileMenuToggle }: { onMobileMenuToggle: () => void 
                                             aria-hidden="true"
                                             className={cn(
                                                 "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                                                (user?.is_super_admin && user?.is_coordinator) ? "translate-x-4" : "translate-x-0"
+                                                isDevModeActive ? "translate-x-4" : "translate-x-0"
                                             )}
                                         />
                                     </button>

@@ -33,13 +33,31 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
-    
+
     // Dev Switch Mode (Testing/Demo)
     Route::post('/dev/switch-mode', [\App\Http\Controllers\Api\DevController::class, 'switchMode']);
+    Route::get('/dev/status', [\App\Http\Controllers\Api\DevController::class, 'status']);
 
     // PLO & CLO
-    Route::apiResource('plo', PloController::class);
-    Route::apiResource('clo', CloController::class);
+    Route::apiResource('plo', PloController::class)->only(['index', 'show']);
+    Route::middleware('koordinator_mk')->group(function () {
+        Route::apiResource('plo', PloController::class)->only(['store', 'update', 'destroy']);
+        Route::post('/plo/preview-import', [PloController::class, 'previewImport']);
+        Route::post('/plo/import', [PloController::class, 'import']);
+        Route::get('/plo/export', [PloController::class, 'export']);
+
+        Route::apiResource('clo', CloController::class)->only(['store', 'update', 'destroy']);
+        Route::post('/clo/preview-import', [CloController::class, 'previewImport']);
+        Route::post('/clo/import', [CloController::class, 'import']);
+        Route::get('/clo/export', [CloController::class, 'export']);
+
+        // Curriculum import wizard
+        Route::post('/curriculum/preview-import', [\App\Http\Controllers\Api\CurriculumController::class, 'previewImport']);
+        Route::post('/curriculum/import-wizard', [\App\Http\Controllers\Api\CurriculumController::class, 'importWizard']);
+        Route::get('/curriculum/template/{type}', [\App\Http\Controllers\Api\CurriculumController::class, 'template']);
+    });
+
+    Route::apiResource('clo', CloController::class)->only(['index', 'show']);
 
     // Program Studi & Courses helper
     Route::get('/program-studi', function () {

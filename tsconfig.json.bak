@@ -21,10 +21,10 @@
     "noFallthroughCasesInSwitch": true,
 
     /* Path alias */
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./resources/js/*"],
-      "*": ["./*"]
+      "@/*": ["resources/js/*"]
     }
   },
-  "include": ["./resources/js"]
+  "include": ["resources/js"]
 }

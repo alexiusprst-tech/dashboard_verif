@@ -1,5 +1,11 @@
 import api from '@/shared/lib/api';
-import type { Plo, PloFormData, PaginatedResponse } from '../types/plo.types';
+import type {
+    Plo,
+    PloFormData,
+    PaginatedResponse,
+    ImportPreviewResult,
+    PloImportPreviewRow,
+} from '../types/plo.types';
 
 const BASE = '/plo';
 
@@ -42,4 +48,25 @@ export async function updatePlo(id: number, payload: Partial<PloFormData>): Prom
 
 export async function deletePlo(id: number): Promise<void> {
     await api.delete(`${BASE}/${id}`);
+}
+
+export async function previewImportPlo(file: File, sheet?: string): Promise<ImportPreviewResult<PloImportPreviewRow>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (sheet) formData.append('sheet', sheet);
+    const { data } = await api.post(`${BASE}/preview-import`, formData);
+    return data.data;
+}
+
+export async function importPlo(file: File, sheet?: string): Promise<{ created: number; total: number }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (sheet) formData.append('sheet', sheet);
+    const { data } = await api.post(`${BASE}/import`, formData);
+    return data.data;
+}
+
+export async function exportPlo(): Promise<Blob> {
+    const response = await api.get(`${BASE}/export`, { responseType: 'blob' });
+    return response.data;
 }

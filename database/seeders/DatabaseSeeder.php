@@ -62,7 +62,7 @@ class DatabaseSeeder extends Seeder
         );
 
 
-        
+
 
         /*
         |--------------------------------------------------------------------------
@@ -226,7 +226,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // Seed PLO and CLO master data
-        $this->call(PloCloSeeder::class);
+        // PLO/CLO seeder removed — handled via import wizard or separate seeder when needed.
 
         // Tidak ada penugasan PIC lama yang perlu di-seed.
         // Penugasan verifikator sudah di-seed di atas via tabel penugasan_verifikator.

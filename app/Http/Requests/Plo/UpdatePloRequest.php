@@ -42,7 +42,7 @@ class UpdatePloRequest extends FormRequest
                 }),
             ],
             'nama_plo'   => 'nullable|string|max:255',
-            'deskripsi'  => 'nullable|string',
+            'deskripsi'  => 'required|string',
             'prodi_id'   => 'required|exists:program_studi,id',
             'periode_id' => 'nullable|exists:periode,id',
         ];

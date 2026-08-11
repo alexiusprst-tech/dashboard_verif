@@ -17,6 +17,7 @@ export interface DosenUser {
     is_super_admin: boolean;
     is_koordinator_mk?: boolean;
     is_coordinator?: boolean;
+    dev_mode_enabled?: boolean;
     is_verifikator_aktif?: boolean;
     is_pic_active?: boolean;
     status_aktif: boolean;
@@ -34,5 +35,6 @@ export interface DosenFormData {
     prodi_id: number | string | '';
     is_koordinator_mk?: boolean;
     is_coordinator?: boolean;
+    dev_mode_enabled?: boolean;
     status_aktif: boolean;
 }
