@@ -101,13 +101,12 @@ class PenugasanDosenController extends Controller
         $isCoordinator = $user->isSuperAdmin() || $user->is_coordinator || $user->is_koordinator_mk;
 
         if (!$isCoordinator) {
-            $isPic = app(\App\Repositories\Contracts\UserRoleRepositoryContract::class)->isActivePic($user->id, $periodeId);
             $isVerifikator = $user->isVerifikatorPadaPeriode($periodeId);
 
-            if (!$isPic && !$isVerifikator) {
+            if (!$isVerifikator) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Anda tidak memiliki penugasan PIC/Verifikator pada periode ini.'
+                    'message' => 'Anda tidak memiliki penugasan Verifikator pada periode ini.'
                 ], 403);
             }
             if ($verifierId !== $user->id) {

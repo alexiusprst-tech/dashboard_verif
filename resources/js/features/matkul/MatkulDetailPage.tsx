@@ -131,11 +131,11 @@ export function MatkulDetailPage() {
                         <BookMarked size={18} className="text-[var(--color-primary)]" />
                     </div>
                     <div>
-                        <p className="text-xs text-gray-400 font-medium">Kode Mata Kuliah</p>
+                        <p className="text-xs text-gray-400 font-medium">KodeMK</p>
                         <p className="font-bold text-gray-800 font-mono">{course.kode_mk}</p>
                     </div>
                     <div className="ml-6">
-                        <p className="text-xs text-gray-400 font-medium">Nama Mata Kuliah</p>
+                        <p className="text-xs text-gray-400 font-medium">NamaMK</p>
                         <p className="font-bold text-gray-800">{course.nama_mk}</p>
                     </div>
                 </div>

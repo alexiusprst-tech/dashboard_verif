@@ -896,7 +896,7 @@ export function DashboardPage() {
     const roleLabel = isSuperAdmin
         ? 'Super Admin'
         : isKoordinatorMk
-        ? 'Dosen Koordinator Mata Kuliah'
+        ? 'Dosen Koordinator MK'
         : isVerifikator
         ? 'Dosen Verifikator'
         : 'Dosen';

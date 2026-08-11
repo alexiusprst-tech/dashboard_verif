@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Master;
+namespace App\Services;
 
 use App\Models\Clo;
 use App\Models\Course;

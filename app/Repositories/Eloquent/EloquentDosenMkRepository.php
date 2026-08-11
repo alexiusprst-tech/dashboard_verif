@@ -2,16 +2,16 @@
 
 namespace App\Repositories\Eloquent;
 
-use App\Models\DosenMataKuliah;
-use App\Repositories\Contracts\DosenMataKuliahRepositoryContract;
+use App\Models\DosenMk;
+use App\Repositories\Contracts\DosenMkRepositoryContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-class EloquentDosenMataKuliahRepository implements DosenMataKuliahRepositoryContract
+class EloquentDosenMkRepository implements DosenMkRepositoryContract
 {
     public function findByDosenAndPeriode(int $dosenId, int $periodeId): Collection
     {
-        return DosenMataKuliah::with(['mataKuliah'])
+        return DosenMk::with(['mataKuliah'])
             ->where('dosen_id', $dosenId)
             ->where('periode_id', $periodeId)
             ->get();
@@ -19,25 +19,25 @@ class EloquentDosenMataKuliahRepository implements DosenMataKuliahRepositoryCont
 
     public function isDosenAmpu(int $dosenId, int $mataKuliahId, int $periodeId): bool
     {
-        return DosenMataKuliah::where('dosen_id', $dosenId)
+        return DosenMk::where('dosen_id', $dosenId)
             ->where('mata_kuliah_id', $mataKuliahId)
             ->where('periode_id', $periodeId)
             ->exists();
     }
 
-    public function create(array $data): DosenMataKuliah
+    public function create(array $data): DosenMk
     {
-        return DosenMataKuliah::create($data);
+        return DosenMk::create($data);
     }
 
-    public function delete(DosenMataKuliah $dosenMataKuliah): bool
+    public function delete(DosenMk $DosenMk): bool
     {
-        return (bool) $dosenMataKuliah->delete();
+        return (bool) $DosenMk->delete();
     }
 
     public function paginate(int $periodeId, ?int $dosenId = null, int $perPage = 15): LengthAwarePaginator
     {
-        $query = DosenMataKuliah::with(['dosen', 'mataKuliah', 'createdByUser'])
+        $query = DosenMk::with(['dosen', 'mataKuliah', 'createdByUser'])
             ->where('periode_id', $periodeId);
 
         if ($dosenId !== null) {

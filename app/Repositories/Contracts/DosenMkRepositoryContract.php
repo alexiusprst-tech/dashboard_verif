@@ -2,11 +2,11 @@
 
 namespace App\Repositories\Contracts;
 
-use App\Models\DosenMataKuliah;
+use App\Models\DosenMk;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-interface DosenMataKuliahRepositoryContract
+interface DosenMkRepositoryContract
 {
     /**
      * Ambil semua pemetaan matkul untuk dosen di periode tertentu.
@@ -21,12 +21,12 @@ interface DosenMataKuliahRepositoryContract
     /**
      * Buat pemetaan baru.
      */
-    public function create(array $data): DosenMataKuliah;
+    public function create(array $data): DosenMk;
 
     /**
      * Hapus pemetaan.
      */
-    public function delete(DosenMataKuliah $dosenMataKuliah): bool;
+    public function delete(DosenMk $DosenMk): bool;
 
     /**
      * List pemetaan per periode (paginated), opsional filter per dosen.

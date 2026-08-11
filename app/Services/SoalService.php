@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Repositories\Contracts\SoalRepositoryContract;
 use App\Repositories\Contracts\PeriodeRepositoryContract;
 use App\Repositories\Contracts\TemplateRepositoryContract;
-use App\Repositories\Contracts\DosenMataKuliahRepositoryContract;
+use App\Repositories\Contracts\DosenMkRepositoryContract;
 use App\Models\Soal;
 use App\Models\Periode;
 use App\Models\User;
@@ -23,20 +23,20 @@ class SoalService
     protected SoalRepositoryContract $soalRepository;
     protected PeriodeRepositoryContract $periodeRepository;
     protected TemplateRepositoryContract $templateRepository;
-    protected DosenMataKuliahRepositoryContract $dosenMataKuliahRepository;
+    protected DosenMkRepositoryContract $DosenMkRepository;
     protected ActivityLogService $activityLogService;
 
     public function __construct(
         SoalRepositoryContract $soalRepository,
         PeriodeRepositoryContract $periodeRepository,
         TemplateRepositoryContract $templateRepository,
-        DosenMataKuliahRepositoryContract $dosenMataKuliahRepository,
+        DosenMkRepositoryContract $DosenMkRepository,
         ActivityLogService $activityLogService
     ) {
         $this->soalRepository             = $soalRepository;
         $this->periodeRepository          = $periodeRepository;
         $this->templateRepository         = $templateRepository;
-        $this->dosenMataKuliahRepository  = $dosenMataKuliahRepository;
+        $this->DosenMkRepository  = $DosenMkRepository;
         $this->activityLogService         = $activityLogService;
     }
 
@@ -71,12 +71,12 @@ class SoalService
         // ── Aturan 2: Mata kuliah harus ada di pemetaan dosen periode ini ─────────
         // Jika pemetaan dosen_mata_kuliah belum diatur sama sekali untuk periode ini,
         // lewati validasi agar dosen tetap bisa upload (mode setup awal).
-        $totalMapping = \App\Models\DosenMataKuliah::where('periode_id', $periode->id)->count();
+        $totalMapping = \App\Models\DosenMk::where('periode_id', $periode->id)->count();
         if ($totalMapping === 0) {
             return; // Pemetaan belum dikonfigurasi — izinkan upload
         }
 
-        if (!$this->dosenMataKuliahRepository->isDosenAmpu($user->id, $mataKuliahId, $periode->id)) {
+        if (!$this->DosenMkRepository->isDosenAmpu($user->id, $mataKuliahId, $periode->id)) {
             throw new BusinessException(
                 'Mata kuliah yang dipilih tidak termasuk dalam penugasan mengajar Anda pada periode ini. ' .
                 'Hubungi Super Admin untuk memperbarui pemetaan mata kuliah.',

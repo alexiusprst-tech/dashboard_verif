@@ -121,7 +121,7 @@ export function MatkulPage() {
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Cari kode atau nama mata kuliah…"
+                        placeholder="Cari kode atau NamaMK…"
                         className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none border-none ring-0"
                     />
                     {search && (
@@ -258,7 +258,7 @@ export function MatkulPage() {
                                         <tr>
                                             <th className="px-6 py-3 w-12">No</th>
                                             <th className="px-6 py-3 w-36">Kode MK</th>
-                                            <th className="px-6 py-3">Nama Mata Kuliah</th>
+                                            <th className="px-6 py-3">NamaMK</th>
                                             <th className="px-6 py-3 w-28 text-center">Kategori</th>
                                             <th className="px-6 py-3 w-16 text-center">SKS</th>
                                             <th className="px-6 py-3 w-28 text-center">Jumlah CLO</th>

@@ -71,9 +71,9 @@ class User extends Authenticatable
     }
 
     /** Pemetaan mata kuliah yang diampu oleh dosen ini per periode */
-    public function dosenMataKuliah(): HasMany
+    public function DosenMk(): HasMany
     {
-        return $this->hasMany(DosenMataKuliah::class, 'dosen_id');
+        return $this->hasMany(DosenMk::class, 'dosen_id');
     }
 
     /** Penugasan sebagai verifikator (per mata kuliah per periode) */
