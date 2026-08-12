@@ -18,6 +18,8 @@ akhir dokumen ini.
 
 ### 1.1 Overview — Percabangan dari Aktor SuperAdmin
 
+**Konteks akses**: Hanya ada **1 akun SuperAdmin** (single role access) di dalam seluruh sistem.
+
 Berdasarkan diagram, SuperAdmin punya 5 titik masuk (4 garis solid + 1 implisit dari BR):
 
 ```
@@ -185,8 +187,9 @@ Dosen Koordinator MK
    └── Melihat Status Verifikasi
 ```
 
-**Konteks akses**: Koordinator hanya dapat mengakses MK yang ditugaskan kepadanya pada
-semester aktif (via `koordinator_assignments`).
+**Konteks akses**: 
+- **Maksimal 1 Koordinator per MK per semester**.
+- Koordinator hanya dapat mengakses MK yang ditugaskan kepadanya pada semester aktif (via `koordinator_assignments`).
 
 ### 2.2 Flow — Mengunduh Template Soal
 
@@ -277,8 +280,9 @@ Dosen Verifikator
    └── Memverifikasi Soal
 ```
 
-**Konteks akses**: Verifikator hanya dapat mengakses soal untuk MK yang ditugaskan
-kepadanya (via `penugasan_verifikator`).
+**Konteks akses**: 
+- **Saat ini dibatasi hanya 1 orang Verifikator** untuk seluruh sistem (akan diupdate di masa depan).
+- Verifikator hanya dapat mengakses soal untuk MK yang ditugaskan kepadanya (via `penugasan_verifikator`).
 
 ### 3.2 Flow — Memverifikasi Soal
 

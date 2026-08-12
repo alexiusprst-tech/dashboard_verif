@@ -38,9 +38,9 @@ Berdasarkan use case diagram (C), tiga aktor terkonfirmasi:
 
 | Aktor (istilah diagram) | Istilah setara di notulensi (B) | Jumlah Potensial (D) |
 |---------------------------|-------------------------------------|------------------------|
-| SuperAdmin | Super Admin | 1–2 (admin prodi) |
-| Dosen Koordinator MK | Koordinator | Sebagian dari 22+ dosen tetap prodi |
-| Dosen Verifikator | Verifikator | Sebagian dari 22+ dosen tetap prodi |
+| SuperAdmin | Super Admin | **1 (Single role access)** |
+| Dosen Koordinator MK | Koordinator | **Maksimal 1 orang per MK per semester** |
+| Dosen Verifikator | Verifikator | **Saat ini dibatasi 1 orang untuk seluruh sistem** (akan diupdate di masa depan) |
 
 **Data Dosen Aktual (D)**: Prodi S1 Sistem Informasi memiliki:
 - **20 Dosen Tetap Prodi** dengan JFA: NJFA (11), Asisten Ahli (6), Lektor (3)
@@ -275,9 +275,9 @@ sini untuk menghindari drift antar dokumen — `AGENTS.md` adalah rujukan tungga
 
 | Role | Responsibility (dari sumber) | Akses (dari sumber) | Batasan Akses |
 |------|-------------------------------|------------------------|------------------|
-| **SuperAdmin** | Mengelola master data (CLO, PLO, mata kuliah via import wizard — lihat resolusi Section 2.3 Vision doc; dosen via CRUD); mengelola tahun ajaran/periode; mengelola kategori soal; menentukan dosen verifikator (termasuk menentukan MK); menunjuk/mengganti Koordinator per semester | Akses ke seluruh use case bercabang dari aktor SuperAdmin pada diagram (C); kewenangan menunjuk/mengganti Koordinator dan menunjuk Verifikator (B, BR-03–05) | `NEEDS CONFIRMATION` — tidak ada pembatasan eksplisit yang disebutkan (mis. apakah SuperAdmin bisa langsung memverifikasi soal juga) |
-| **Koordinator (Dosen Koordinator MK)** | Mengunduh template soal; mengunggah soal dan revisinya; melihat status verifikasi | Use case bercabang dari aktor "Dosen Koordinator MK" pada diagram (C); terikat mata kuliah yang menjadi tanggung jawabnya pada semester berjalan (B, Section 6) | Hanya dapat mengakses soal untuk MK yang ditugaskan padanya di semester aktif — `CONFIRMED` dari implementasi `SoalPolicy` |
-| **Verifikator (Dosen Verifikator)** | Memverifikasi soal (Approve/Revision/Reject); memberikan catatan verifikasi; mencetak berita acara | Use case bercabang dari aktor "Dosen Verifikator" pada diagram (C); terikat ke MK yang ditugaskan via `penugasan_verifikator` | Hanya dapat memverifikasi soal untuk MK yang ditugaskan — `CONFIRMED` dari implementasi `SoalPolicy` |
+| **SuperAdmin** | Mengelola master data (CLO, PLO, mata kuliah via import wizard — lihat resolusi Section 2.3 Vision doc; dosen via CRUD); mengelola tahun ajaran/periode; mengelola kategori soal; menentukan dosen verifikator (termasuk menentukan MK); menunjuk/mengganti Koordinator per semester | Akses ke seluruh use case bercabang dari aktor SuperAdmin pada diagram (C); kewenangan menunjuk/mengganti Koordinator dan menunjuk Verifikator (B, BR-03–05) | **Hanya ada 1 akun dengan role SuperAdmin di dalam sistem.** |
+| **Koordinator (Dosen Koordinator MK)** | Mengunduh template soal; mengunggah soal dan revisinya; melihat status verifikasi | Use case bercabang dari aktor "Dosen Koordinator MK" pada diagram (C); terikat mata kuliah yang menjadi tanggung jawabnya pada semester berjalan (B, Section 6) | **Hanya boleh ada 1 Koordinator per MK per semester.** Hanya dapat mengakses soal untuk MK yang ditugaskan padanya di semester aktif — `CONFIRMED` dari implementasi `SoalPolicy` |
+| **Verifikator (Dosen Verifikator)** | Memverifikasi soal (Approve/Revision/Reject); memberikan catatan verifikasi; mencetak berita acara | Use case bercabang dari aktor "Dosen Verifikator" pada diagram (C); terikat ke MK yang ditugaskan via `penugasan_verifikator` | **Saat ini role Verifikator dibatasi hanya untuk 1 orang (satu akun memverifikasi semua soal).** Hanya dapat memverifikasi soal untuk MK yang ditugaskan — `CONFIRMED` dari implementasi `SoalPolicy` |
 
 Jangan mengarang permission yang tidak didukung sumber di atas.
 
