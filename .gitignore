@@ -2,6 +2,10 @@
 node_modules/
 vendor/
 
+# Ignore agent directories
+.Agents/
+.agents/
+
 # Ignore environment variables
 .env
 .env.*
