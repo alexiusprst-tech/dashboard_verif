@@ -271,6 +271,7 @@ Jangan lakukan, kecuali ada requirement eksplisit baru yang secara spesifik memi
   ke library lain tanpa requirement eksplisit baru.
 - Membuat migration baru di Section 8 tanpa verifikasi skema existing lebih dulu.
 - Implementasi CRUD penuh untuk CLO/PLO/Mata Kuliah tanpa resolusi konflik Section 10.
+- **DILARANG MUTLAK** melakukan commit, push, pull, atau merge secara langsung ke branch `main`. Semua penggabungan dari branch fitur wajib dilakukan ke branch `main-new` terlebih dahulu sebelum diproses lebih lanjut.
 
 `[SPEC]` `[BR]` `[AUDIT]`
 
