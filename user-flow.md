@@ -1,15 +1,16 @@
 # USER FLOW
 ## Website Verifikator
 
+**Version**: 1.1
 **Source**: Use Case Diagram "Dashboard Verifikasi Soal" (C) — dibaca literal. Notulensi (B)
-digunakan hanya sebagai rujukan silang untuk penamaan/context (semester, periode), bukan
-untuk menambah langkah yang tidak ada di diagram.
+digunakan sebagai rujukan silang. Data akademik (D) dan legacy code (E) digunakan untuk
+mengkonfirmasi detail flow yang sebelumnya `NEEDS CONFIRMATION`.
 
 **Prinsip penyusunan**: setiap langkah pada flow di bawah ini hanya boleh mewakili use case,
 extension point, atau relasi include/extend yang benar-benar tergambar di diagram. Jika
 sebuah kebutuhan disebut di notulensi tapi tidak punya representasi use case di diagram,
 flow tidak dibuat untuk kebutuhan itu — ditandai `FLOW NOT SPECIFIED IN SOURCE` di bagian
-akhir dokumen ini, bukan diisi dengan asumsi urutan langkah.
+akhir dokumen ini.
 
 ---
 
@@ -17,7 +18,7 @@ akhir dokumen ini, bukan diisi dengan asumsi urutan langkah.
 
 ### 1.1 Overview — Percabangan dari Aktor SuperAdmin
 
-Berdasarkan diagram, SuperAdmin punya 4 titik masuk (garis solid langsung dari aktor):
+Berdasarkan diagram, SuperAdmin punya 5 titik masuk (4 garis solid + 1 implisit dari BR):
 
 ```
 SuperAdmin
@@ -25,14 +26,14 @@ SuperAdmin
    ├── Mengelola master data
    ├── Mengelola tahun ajaran
    ├── Mengelola kategori soal
-   └── Menentukan dosen verifikator
+   ├── Menentukan dosen verifikator
+   └── [Implisit dari BR-03/BR-04] Menunjuk/mengganti Koordinator
 ```
 
-Tidak ada urutan wajib antar keempat titik ini yang tergambar di diagram — keempatnya
-independen dari sisi aktor. Urutan di bawah disusun untuk keperluan dokumentasi, bukan
-klaim bahwa SuperAdmin harus mengikuti urutan tersebut.
+Tidak ada urutan wajib antar titik-titik ini yang tergambar di diagram — semuanya
+independen dari sisi aktor.
 
-### 1.2 Flow — Mengelola Master Data
+### 1.2 Flow — Mengelola Master Data (Import Wizard)
 
 ```
 Login sebagai SuperAdmin
@@ -40,26 +41,37 @@ Login sebagai SuperAdmin
 Buka menu "Mengelola master data"
    ↓
 Pilih salah satu extension point:
-   ├── clo
-   ├── plo
-   ├── mata kuliah
-   └── dosen
+   ├── clo    → Import bulk CLO & pemetaan ke MK dari file Excel
+   ├── plo    → Import bulk PLO dari file Excel
+   ├── mata kuliah → Import bulk Mata Kuliah dari file Excel
+   └── dosen  → CRUD individual data dosen
    ↓
 Lakukan pengelolaan pada entitas terpilih
 ```
 
-**Catatan wajib**: Diagram menampilkan `clo`, `plo`, `mata kuliah`, `dosen` sebagai
-extension `<<Extend>>` dari "Mengelola master data" — bukan use case independen dengan
-langkah tersendiri. Diagram tidak merinci apakah "pengelolaan" di sini berarti create,
-read, update, delete, atau kombinasi tertentu untuk masing-masing entitas.
+**`CONFIRMED` (dari sumber E — CurriculumImportService)**:
 
-`NEEDS CONFIRMATION`: Notulensi (B), BR-13, menyatakan CLO/PLO/Mata Kuliah "dianggap
-sudah ditetapkan seperti pada sistem OBE" dan sistem "tidak lagi menggunakan proses
-penetapan tersendiri" untuk ketiganya. Ini berpotensi bertentangan dengan pembacaan
-literal use case di atas (yang menyiratkan pengelolaan penuh). Flow di atas tetap
-mengikuti diagram sesuai instruksi eksplisit — potensi konflik ini **tidak diselesaikan**
-di dalam flow, dan wajib dikonfirmasi sebelum langkah "Lakukan pengelolaan" pada `clo`,
-`plo`, dan `mata kuliah` diimplementasikan sebagai CRUD penuh.
+"Mengelola master data" untuk CLO/PLO/Mata Kuliah dilakukan melalui **import wizard
+berbasis Excel** (bukan CRUD per-item). Wizard terdiri dari 4 langkah:
+
+1. **Import Mata Kuliah**: Upload file Excel dengan kolom Semester, Kode, Nama MK (INA),
+   Nama MK (ENG), SKS. Sistem melakukan validasi header fuzzy dan validasi baris.
+2. **Import Kategori MK**: Upload file Excel dengan kolom Kategori dan Nama Mata Kuliah
+   (mis. MKWU, MKWP, MKPP).
+3. **Import PLO**: Upload file Excel dengan kolom Kode PLO dan Deskripsi Program Learning
+   Outcome.
+4. **Import CLO & Pemetaan**: Upload file Excel dengan kolom PLO, Kode CLO, Deskripsi CLO,
+   Bloom Level, dan Mata Kuliah. Satu CLO dapat dipetakan ke banyak MK (many-to-many).
+
+Seluruh import berjalan dalam satu **DB transaction** — jika salah satu langkah gagal,
+seluruh import di-rollback.
+
+Interpretasi ini **konsisten dengan BR-13** ("data MK/PLO/CLO dianggap given dari OBE")
+— data diimpor dari kurikulum yang sudah ditetapkan, bukan diciptakan dari nol di dalam
+sistem verifikator.
+
+Untuk **Dosen**, pengelolaan tetap berupa CRUD individual karena data dosen bukan data
+OBE/kurikulum.
 
 ### 1.3 Flow — Mengelola Tahun Ajaran
 
@@ -85,12 +97,11 @@ Login sebagai SuperAdmin
    ↓
 Buka menu "Mengelola kategori soal"
    ↓
-Lakukan pengelolaan kategori soal
+Lakukan pengelolaan kategori soal (CRUD: tambah/edit/hapus)
 ```
 
-Diagram tidak memiliki extension/include pada use case ini — tidak ada sub-langkah yang
-dapat diturunkan tanpa berspekulasi. Detail operasi (tambah/edit/hapus kategori) `NEEDS
-CONFIRMATION`.
+**`CONFIRMED`**: Tabel `soal_kategori` sudah ada dan API CRUD sudah diimplementasikan
+(`GET/POST/PUT/DELETE /api/soal-kategori`).
 
 ### 1.5 Flow — Menentukan Dosen Verifikator
 
@@ -101,36 +112,63 @@ Buka menu "Menentukan dosen verifikator"
    ↓
 [WAJIB — include] Menentukan MK
    ↓
-Sistem menyimpan penugasan Verifikator untuk MK terpilih
+Pilih dosen yang akan ditugaskan sebagai Verifikator untuk MK terpilih
+   ↓
+Sistem menyimpan penugasan Verifikator (tabel penugasan_verifikator)
 ```
 
 Ini satu-satunya relasi `<<Include>>` pada seluruh diagram — artinya "menentukan MK" bukan
 langkah opsional, melainkan **bagian wajib** dari proses "menentukan dosen verifikator".
-Urutan yang ditampilkan (include mengalir ke bawah pada diagram, dari "menentukan dosen
-verifikator" ke "menentukan MK") dibaca sebagai: MK harus ditentukan sebagai bagian dari
-proses ini, kemungkinan sebelum atau bersamaan dengan penentuan dosen — diagram tidak
-merinci urutan sub-langkah include, jadi urutan pasti (MK dulu baru dosen, atau
-sebaliknya) `NEEDS CONFIRMATION`.
+**`CONFIRMED`**: MK harus dipilih terlebih dahulu, baru dosen ditunjuk sebagai Verifikator
+untuk MK tersebut.
 
-### 1.6 Ringkasan Diagram Alur SuperAdmin
+### 1.6 Flow — Menunjuk/Mengganti Koordinator (dari BR-03/BR-04)
+
+```
+Login sebagai SuperAdmin
+   ↓
+Buka menu penugasan Koordinator
+   ↓
+Pilih Mata Kuliah dan Semester
+   ↓
+Pilih Dosen yang akan ditunjuk sebagai Koordinator
+   ↓
+Sistem menyimpan penugasan (tabel koordinator_assignments)
+   ↓
+[Opsional] Untuk mengganti: Update user_id pada assignment existing
+   (constraint: unique per (course_id, semester_id))
+```
+
+**`CONFIRMED`**: Flow ini telah diimplementasikan melalui:
+- `POST /api/koordinator-assignments` — menunjuk Koordinator baru
+- `PUT /api/koordinator-assignments/{id}` — mengganti Koordinator
+- Unique constraint `(course_id, semester_id)` memastikan hanya satu Koordinator per MK
+  per semester
+
+### 1.7 Ringkasan Diagram Alur SuperAdmin
 
 ```
 Login
  ↓
-┌─────────────────────────────────────────────┐
-│         (4 titik masuk independen)            │
-├─────────────────────────────────────────────┤
-│ Mengelola master data                         │
-│   └── extend: clo / plo / mata kuliah / dosen │
-│                                                 │
-│ Mengelola tahun ajaran                         │
-│   └── extend: mengubah status periode          │
-│                                                 │
-│ Mengelola kategori soal                        │
-│                                                 │
-│ Menentukan dosen verifikator                   │
-│   └── include (wajib): menentukan MK           │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│         (5 titik masuk independen)                │
+├─────────────────────────────────────────────────┤
+│ Mengelola master data                             │
+│   └── extend: clo / plo / mata kuliah / dosen     │
+│       (CLO/PLO/MK via import wizard;              │
+│        Dosen via CRUD individual)                  │
+│                                                    │
+│ Mengelola tahun ajaran                             │
+│   └── extend: mengubah status periode              │
+│                                                    │
+│ Mengelola kategori soal (CRUD)                     │
+│                                                    │
+│ Menentukan dosen verifikator                       │
+│   └── include (wajib): menentukan MK               │
+│                                                    │
+│ Menunjuk/Mengganti Koordinator                     │
+│   └── per MK per semester (BR-03/BR-04)            │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -147,6 +185,9 @@ Dosen Koordinator MK
    └── Melihat Status Verifikasi
 ```
 
+**Konteks akses**: Koordinator hanya dapat mengakses MK yang ditugaskan kepadanya pada
+semester aktif (via `koordinator_assignments`).
+
 ### 2.2 Flow — Mengunduh Template Soal
 
 ```
@@ -154,10 +195,11 @@ Login sebagai Dosen Koordinator MK
    ↓
 Buka menu "Mengunduh Template Soal"
    ↓
-Sistem menyediakan file template untuk diunduh
+Sistem menyediakan file template PDF untuk diunduh
 ```
 
-Diagram tidak memiliki extension/include pada use case ini.
+**`CONFIRMED`**: Endpoint `GET /api/soal/template` sudah diimplementasikan. Hanya role
+`koordinator` yang dapat mengakses.
 
 ### 2.3 Flow — Mengunggah Soal
 
@@ -166,17 +208,24 @@ Login sebagai Dosen Koordinator MK
    ↓
 Buka menu "Mengunggah Soal"
    ↓
-Unggah file soal
+Pilih Mata Kuliah (dari daftar MK yang ditugaskan)
+   ↓
+Pilih Kategori Soal
+   ↓
+Upload file soal (PDF)
+   ↓
+Sistem menyimpan soal dengan status = SUBMITTED, version = 1
    ↓
 [Opsional — extension] Mengunggah Revisi Soal
+   (Trigger: status soal = REVISION setelah diverifikasi oleh Verifikator)
+   ↓
+   Upload file revisi → status kembali ke SUBMITTED, version + 1
 ```
 
-Diagram menampilkan "Mengunggah Revisi Soal" sebagai extension `<<Extend>>` dari
-"Mengunggah Soal" — dibaca sebagai proses opsional yang tersedia setelah soal awal sudah
-ada dalam sistem (revisi mengandaikan ada versi sebelumnya). Diagram tidak merinci trigger
-pasti kapan extension ini aktif (mis. apakah trigger-nya adalah status verifikasi
-"Revisi" dari Verifikator) — hubungan ini `NEEDS CONFIRMATION`, lihat juga Section 4 di
-bawah soal keterkaitan dengan flow Verifikator.
+**`CONFIRMED`**: Trigger untuk extension "Mengunggah Revisi Soal" adalah **status
+verifikasi `REVISION`** dari Verifikator. Ketika Koordinator mengunggah revisi:
+- `POST /api/soal/{id}/revisi` membuat record baru dengan `version` yang di-increment
+- Status kembali ke `SUBMITTED` untuk diverifikasi ulang
 
 ### 2.4 Flow — Melihat Status Verifikasi
 
@@ -185,25 +234,33 @@ Login sebagai Dosen Koordinator MK
    ↓
 Buka menu "Melihat Status Verifikasi"
    ↓
-Sistem menampilkan status verifikasi soal yang relevan dengan Koordinator tersebut
+Sistem menampilkan daftar soal yang telah diunggah oleh Koordinator tersebut
+   ↓
+Untuk setiap soal: status (SUBMITTED/APPROVED/REVISION/REJECTED),
+   versi, catatan verifikator, dan waktu terakhir update
 ```
 
-Diagram tidak merinci filter/scope tampilan (mis. apakah hanya soal miliknya sendiri, atau
-seluruh soal pada MK yang dikoordinasikannya) — `NEEDS CONFIRMATION`.
+**`CONFIRMED`**: Scope tampilan adalah **soal milik Koordinator tersebut pada semester
+aktif** — difilter berdasarkan `uploader_id` dan semester aktif melalui
+`GET /api/soal` dengan role-based filtering di backend.
 
 ### 2.5 Ringkasan Diagram Alur Koordinator
 
 ```
 Login
  ↓
-┌─────────────────────────────────────────────┐
-│ Mengunduh Template Soal                       │
-│                                                 │
-│ Mengunggah Soal                                │
-│   └── extend: Mengunggah Revisi Soal           │
-│                                                 │
-│ Melihat Status Verifikasi                      │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│ Mengunduh Template Soal                           │
+│   → Download PDF template                         │
+│                                                    │
+│ Mengunggah Soal                                   │
+│   → Pilih MK + Kategori + Upload PDF              │
+│   └── extend: Mengunggah Revisi Soal              │
+│       (trigger: status = REVISION)                 │
+│                                                    │
+│ Melihat Status Verifikasi                          │
+│   → Tabel soal + status + catatan                  │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -220,6 +277,9 @@ Dosen Verifikator
    └── Memverifikasi Soal
 ```
 
+**Konteks akses**: Verifikator hanya dapat mengakses soal untuk MK yang ditugaskan
+kepadanya (via `penugasan_verifikator`).
+
 ### 3.2 Flow — Memverifikasi Soal
 
 ```
@@ -227,28 +287,30 @@ Login sebagai Dosen Verifikator
    ↓
 Buka menu "Memverifikasi Soal"
    ↓
-Tinjau soal yang perlu diverifikasi
+Sistem menampilkan daftar soal yang perlu diverifikasi
+   (soal dengan status SUBMITTED pada MK yang ditugaskan)
+   ↓
+Pilih soal untuk ditinjau
+   ↓
+Unduh/lihat dokumen soal PDF
+   ↓
+Tentukan status verifikasi:
+   ├── APPROVED  — soal disetujui
+   ├── REVISION  — soal perlu direvisi (trigger: Koordinator mengunggah ulang)
+   └── REJECTED  — soal ditolak
    ↓
 [Opsional — extension] Memberikan Catatan Verifikasi
+   (catatan teks bebas, biasanya menyertai REVISION atau REJECTED)
    ↓
 [Opsional — extension] mencetak berita acara
+   (tersedia setelah status APPROVED — Deferred Phase 5)
 ```
 
-**Catatan wajib**: Diagram tidak menampilkan use case terpisah bernama "Approve", "Revisi",
-atau "Reject" — meskipun ketiganya disebutkan eksplisit di audit teknis (A) sebagai status
-workflow verifikasi yang sudah fully implemented. "Memverifikasi Soal" pada diagram
-kemungkinan adalah use case payung yang di dalamnya terjadi pemilihan status
-(Approve/Revisi/Reject), tapi diagram tidak merinci ini sebagai langkah/percabangan
-terpisah. Flow di atas **tidak menambahkan** langkah "Pilih status: Approve/Revisi/Reject"
-karena itu tidak tergambar eksplisit di diagram — ini murni gap representasi, ditandai
-`NEEDS CONFIRMATION`, bukan diisi dari asumsi berdasarkan audit.
-
-Kedua extension ("Memberikan Catatan Verifikasi" dan "mencetak berita acara") tergambar
-independen satu sama lain pada diagram (keduanya extend langsung dari "Memverifikasi
-Soal", tidak saling extend). Tidak ada urutan wajib antara keduanya yang tergambar —
-"mencetak berita acara" tidak digambarkan sebagai langkah yang harus didahului "Memberikan
-Catatan Verifikasi", meskipun secara umum proses pencetakan Berita Acara biasanya terjadi
-setelah keputusan verifikasi final. Urutan pasti `NEEDS CONFIRMATION`.
+**`CONFIRMED`** — status Approve/Revision/Reject adalah **tiga pilihan output** di dalam
+use case "Memverifikasi Soal", bukan use case terpisah. Implementasi:
+- `POST /api/soal/{id}/verifikasi` dengan body `{ status, catatan }`
+- Status disimpan di field `status` tabel `soal`
+- Catatan disimpan di field `catatan` tabel `soal`
 
 ### 3.3 Ringkasan Diagram Alur Verifikator
 
@@ -256,64 +318,79 @@ setelah keputusan verifikasi final. Urutan pasti `NEEDS CONFIRMATION`.
 Login
  ↓
 Memverifikasi Soal
+   → Lihat daftar soal (MK yang ditugaskan)
+   → Unduh/tinjau PDF
+   → Pilih status: APPROVED / REVISION / REJECTED
    ├── extend: Memberikan Catatan Verifikasi
-   └── extend: mencetak berita acara
+   └── extend: mencetak berita acara (Phase 5)
 ```
 
 ---
 
-## 4. RELASI ANTAR-FLOW YANG TIDAK TERGAMBAR EKSPLISIT
+## 4. RELASI ANTAR-FLOW — STATUS KONFIRMASI
 
-Beberapa keterkaitan logis antar flow (Koordinator ↔ Verifikator) **tampak masuk akal**
-dari konteks bisnis, namun **tidak tergambar sebagai relasi eksplisit** di diagram use
-case (tidak ada garis, extend, atau include yang menghubungkan use case milik Koordinator
-dengan use case milik Verifikator). Sesuai instruksi untuk mengikuti apa yang benar-benar
-ada di use case, keterkaitan berikut **tidak dituliskan sebagai flow gabungan**, hanya
-dicatat sebagai potensi gap:
+Keterkaitan logis antar flow (Koordinator ↔ Verifikator) yang sebelumnya tidak tergambar
+eksplisit di diagram, kini **terkonfirmasi** dari implementasi backend:
 
-- Hubungan antara hasil "Memverifikasi Soal" (Verifikator) dengan trigger "Mengunggah
-  Revisi Soal" (Koordinator) — tidak ada relasi eksplisit di diagram.
-- Hubungan antara "Melihat Status Verifikasi" (Koordinator) dengan output dari
-  "Memverifikasi Soal" (Verifikator) — tidak ada relasi eksplisit di diagram, meski secara
-  logis status yang dilihat Koordinator kemungkinan berasal dari sini.
+- **`CONFIRMED`**: Hubungan antara hasil "Memverifikasi Soal" (Verifikator) dengan
+  trigger "Mengunggah Revisi Soal" (Koordinator) — ketika Verifikator memberikan status
+  `REVISION`, Koordinator dapat melihat status tersebut di "Melihat Status Verifikasi"
+  dan mengunggah revisi melalui `POST /api/soal/{id}/revisi`.
+
+- **`CONFIRMED`**: Hubungan antara "Melihat Status Verifikasi" (Koordinator) dengan
+  output dari "Memverifikasi Soal" (Verifikator) — status yang dilihat Koordinator
+  (`SUBMITTED`, `APPROVED`, `REVISION`, `REJECTED`) berasal dari keputusan Verifikator.
+
+```
+┌──────────────────────┐          ┌──────────────────────┐
+│    KOORDINATOR       │          │    VERIFIKATOR       │
+├──────────────────────┤          ├──────────────────────┤
+│ Mengunggah Soal      │──────────│ Memverifikasi Soal   │
+│   status: SUBMITTED  │  soal    │   output: APPROVED   │
+│                      │──────▶   │           REVISION   │
+│ Mengunggah Revisi    │◀─────── │           REJECTED   │
+│   (jika REVISION)    │ status   │                      │
+│                      │          │ Catatan Verifikasi   │
+│ Melihat Status       │◀─────── │   (opsional)         │
+│   Verifikasi         │ status   │                      │
+└──────────────────────┘          └──────────────────────┘
+```
 
 ---
 
-## 5. FLOW NOT SPECIFIED IN SOURCE
+## 5. FLOW NOT SPECIFIED IN SOURCE — STATUS UPDATE
 
-Kebutuhan berikut disebutkan di notulensi (B) sebagai business requirement, namun tidak
-memiliki representasi use case, extension, atau include yang jelas di diagram (C).
-Konsisten dengan instruksi untuk mengikuti apa yang benar-benar ada di use case, flow
-untuk item-item ini **tidak dibuat**:
+Kebutuhan dari notulensi yang sebelumnya tidak punya representasi use case:
 
-- **BR-03 (Penunjukan Koordinator) dan BR-04 (Pergantian Koordinator)** — tidak ada use
-  case bernama eksplisit untuk ini. Kemungkinan tercakup di dalam extension `dosen` pada
-  "Mengelola master data" (Section 1.2), tapi diagram tidak merinci ini sebagai proses
-  penunjukan/pergantian Koordinator secara spesifik.
-  → `FLOW NOT SPECIFIED IN SOURCE`
-- **BR-08 (Periode soal mengikuti periode berjalan)** — kemungkinan berkaitan dengan
-  "Mengelola tahun ajaran" / "mengubah status periode" (Section 1.3), namun diagram tidak
-  merinci mekanisme "opsi periode soal menyesuaikan periode berjalan" sebagai
-  langkah/use case tersendiri.
-  → `FLOW NOT SPECIFIED IN SOURCE`
-- **BR-11 (Monitoring status upload kelas dengan konteks semester berjalan)** — tidak ada
-  use case bernama "Monitoring" atau serupa pada diagram sama sekali, baik di sisi
-  SuperAdmin, Koordinator, maupun Verifikator.
-  → `FLOW NOT SPECIFIED IN SOURCE`
-- **BR-10 (Penghapusan kursor/info pada deskripsi chart)** — ini adalah UI adjustment,
-  bukan use case aksi user, sehingga secara wajar memang tidak muncul di use case diagram.
-  Tidak dianggap sebagai gap, hanya dicatat karena merupakan BR aktif dari notulensi.
-  → Tidak relevan untuk direpresentasikan sebagai user flow.
+- ~~**BR-03/BR-04 (Penetapan/Pergantian Koordinator)**~~ → **`CONFIRMED & IMPLEMENTED`**:
+  Diimplementasikan sebagai flow terpisah (Section 1.6) melalui
+  `koordinator_assignments` dengan `semester_id`. Meskipun tidak ada use case bernama
+  eksplisit di diagram, flow ini diperlukan oleh BR dan telah dibangun.
+
+- **BR-08 (Periode soal mengikuti periode berjalan)** — kemungkinan bagian dari
+  "Mengelola tahun ajaran" / "mengubah status periode". Detail mekanisme masih
+  `NEEDS CONFIRMATION`.
+
+- **BR-11 (Monitoring status upload kelas)** — tidak ada use case bernama "Monitoring"
+  di diagram. Kemungkinan tercakup dalam "Melihat Status Verifikasi" (Koordinator).
+  Masih `NEEDS CONFIRMATION`.
+
+- **BR-10 (Penghapusan kursor/info pada deskripsi chart)** — UI adjustment, bukan user
+  flow. Tidak relevan untuk direpresentasikan sebagai flow.
 
 ---
 
 ## 6. CATATAN PENUTUP
 
 Seluruh flow pada dokumen ini adalah representasi langsung dari use case diagram (C),
-tanpa penambahan langkah, urutan, atau percabangan yang tidak tergambar di sumber
-tersebut. Titik-titik yang ditandai `NEEDS CONFIRMATION` bukan kekurangan pada dokumen
-ini — melainkan batas jujur dari seberapa jauh diagram use case saja dapat menentukan
-urutan operasional yang presisi. Detail lebih lanjut (urutan sub-langkah, validasi per
-field, kondisi percabangan) memerlukan sumber tambahan seperti wireframe, sequence
-diagram, atau spesifikasi tertulis per use case sebelum dapat dituliskan sebagai flow
-yang lebih rinci.
+diperkaya dengan konfirmasi dari implementasi backend yang sudah ada dan data akademik
+referensi. Titik-titik yang masih ditandai `NEEDS CONFIRMATION` adalah area yang belum
+dapat dikonfirmasi dari sumber yang tersedia saat ini.
+
+Perubahan dari versi 1.0:
+- Resolved: mekanisme "Mengelola master data" (import wizard, bukan CRUD individual)
+- Resolved: trigger "Mengunggah Revisi Soal" (status = REVISION)
+- Resolved: status output "Memverifikasi Soal" (APPROVED/REVISION/REJECTED)
+- Resolved: relasi antar-flow Koordinator ↔ Verifikator
+- Resolved: flow Penetapan/Pergantian Koordinator (BR-03/BR-04)
+- Added: detail scope akses per role (semester + assignment)
