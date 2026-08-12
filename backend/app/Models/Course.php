@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Course extends Model
 {
     protected $fillable = [
-        'nama',
-        'kode',
+        'name',
+        'code',
     ];
 
     /**
@@ -32,12 +32,10 @@ class Course extends Model
 
     /**
      * CLOs associated with this course.
-     * BR-01: Many-to-many relationship.
-     *
-     * NEEDS CONFIRMATION: Pivot table name (course_clo or other).
+     * BR-01: One-to-many relationship (course_id in clos table).
      */
-    public function clos(): BelongsToMany
+    public function clos(): HasMany
     {
-        return $this->belongsToMany(Clo::class, 'course_clo');
+        return $this->hasMany(Clo::class);
     }
 }
