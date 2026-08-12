@@ -17,3 +17,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Reference documents (local only, never commit)
+docs/
