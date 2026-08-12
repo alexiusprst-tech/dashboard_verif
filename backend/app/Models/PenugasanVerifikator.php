@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class KoordinatorAssignment extends Model
+class PenugasanVerifikator extends Model
 {
+    protected $table = 'penugasan_verifikator';
+
     protected $fillable = [
         'course_id',
         'user_id',
-        'semester_id',
         'assigned_by',
     ];
 
@@ -22,11 +23,6 @@ class KoordinatorAssignment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function semester(): BelongsTo
-    {
-        return $this->belongsTo(Semester::class);
     }
 
     public function assigner(): BelongsTo
