@@ -15,10 +15,12 @@ import type { CourseUploadProgress } from '../types/uploadProgress.types';
 
 interface UploadProgressWidgetProps {
     selectedPeriodeId?: string;
+    role?: string;
+    title?: string;
 }
 
-export function UploadProgressWidget({ selectedPeriodeId }: UploadProgressWidgetProps) {
-    const { data: progressList = [], isLoading, isError } = useUploadProgress(selectedPeriodeId);
+export function UploadProgressWidget({ selectedPeriodeId, role, title }: UploadProgressWidgetProps) {
+    const { data: progressList = [], isLoading, isError } = useUploadProgress(selectedPeriodeId, role);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -91,7 +93,7 @@ export function UploadProgressWidget({ selectedPeriodeId }: UploadProgressWidget
             <div className="flex flex-col gap-3 pb-4 border-b border-gray-100 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-gray-700">
                     <BookOpen className="h-4 w-4 text-[var(--color-primary)]" />
-                    Progress Upload per Mata Kuliah
+                    {title || 'Progress Upload per Mata Kuliah'}
                 </h3>
 
                 {/* Filter & Search Controls */}

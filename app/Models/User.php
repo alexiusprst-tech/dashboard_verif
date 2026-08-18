@@ -127,8 +127,8 @@ class User extends Authenticatable
             return true;
         }
 
-        if (isset($this->is_koordinator_mk) && is_bool($this->is_koordinator_mk)) {
-            return $this->is_koordinator_mk;
+        if (!empty($this->is_koordinator_mk)) {
+            return true;
         }
 
         $activePeriode = \App\Models\Periode::where('status', \App\Enums\PeriodeStatus::Aktif)->first();

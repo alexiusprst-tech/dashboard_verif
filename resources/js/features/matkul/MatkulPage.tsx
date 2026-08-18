@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookMarked, Search, X, ChevronDown, ChevronRight, Filter, RotateCcw, Eye } from 'lucide-react';
+import { BookMarked, Search, X, ChevronDown, ChevronRight, Filter, RotateCcw, Eye, GraduationCap } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
@@ -15,6 +15,16 @@ interface Course {
     semester: number | null;
     kategori?: 'wajib' | 'pilihan' | string | null;
     clo_count?: number;
+    clo?: Array<{
+        id: number;
+        kode: string;
+        deskripsi: string;
+        plo?: {
+            id: number;
+            kode: string;
+            deskripsi: string;
+        } | null;
+    }>;
     prodi_id: number;
 }
 
@@ -33,6 +43,19 @@ const SKS_BADGE_COLOR: Record<number, string> = {
     3: 'bg-emerald-50 text-emerald-700',
     4: 'bg-violet-50 text-violet-700',
 };
+
+function getCoursePlos(c: Course) {
+    if (!c.clo) return [];
+    const map = new Map<string, string>();
+    c.clo.forEach((cl) => {
+        if (cl.plo?.kode) {
+            map.set(cl.plo.kode, cl.plo.deskripsi);
+        }
+    });
+    return Array.from(map.entries())
+        .map(([kode, deskripsi]) => ({ kode, deskripsi }))
+        .sort((a, b) => a.kode.localeCompare(b.kode, undefined, { numeric: true }));
+}
 
 export function MatkulPage() {
     const navigate = useNavigate();
@@ -64,7 +87,13 @@ export function MatkulPage() {
 
     const filtered = courses.filter((c) => {
         const q = search.toLowerCase();
-        const matchSearch = !q || c.nama_mk.toLowerCase().includes(q) || c.kode_mk.toLowerCase().includes(q);
+        const plos = getCoursePlos(c);
+        const matchSearch =
+            !q ||
+            c.nama_mk.toLowerCase().includes(q) ||
+            c.kode_mk.toLowerCase().includes(q) ||
+            plos.some((p) => p.kode.toLowerCase().includes(q) || p.deskripsi.toLowerCase().includes(q)) ||
+            (c.clo && c.clo.some((cl) => cl.kode.toLowerCase().includes(q) || cl.deskripsi.toLowerCase().includes(q)));
         const matchSemester = !filterSemester || String(c.semester) === filterSemester;
         const matchSks = !filterSks || String(c.sks) === filterSks;
         const matchKategori = !filterKategori || (c.kategori || 'wajib').toLowerCase() === filterKategori.toLowerCase();
@@ -277,8 +306,27 @@ export function MatkulPage() {
                                                 <td className="px-6 py-3.5 font-medium text-gray-800">
                                                     <div className="flex items-center gap-2">
                                                         <BookMarked size={12} className="shrink-0 text-gray-300" />
-                                                        {c.nama_mk}
+                                                        <span>{c.nama_mk}</span>
                                                     </div>
+                                                    {/* PLO Badges */}
+                                                    {(() => {
+                                                        const plos = getCoursePlos(c);
+                                                        if (plos.length === 0) return null;
+                                                        return (
+                                                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                                                                {plos.map((plo) => (
+                                                                    <span
+                                                                        key={plo.kode}
+                                                                        className="inline-flex items-center gap-0.5 rounded bg-blue-50 border border-blue-100 px-1.5 py-0.2 text-[10px] font-mono font-bold text-blue-700"
+                                                                        title={`Didukung oleh ${plo.kode}: ${plo.deskripsi}`}
+                                                                    >
+                                                                        <GraduationCap size={9} />
+                                                                        {plo.kode}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td className="px-6 py-3.5 text-center">
                                                     <span
@@ -303,7 +351,7 @@ export function MatkulPage() {
                                                     <button
                                                         onClick={() => navigate(`/matkul/${c.id}`)}
                                                         title="Lihat Detail"
-                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 text-gray-500 hover:bg-[var(--color-primary-light)] hover:border-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition"
+                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 text-gray-500 hover:bg-[var(--color-primary-light)] hover:border-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition cursor-pointer"
                                                     >
                                                         <Eye size={14} />
                                                     </button>
@@ -345,7 +393,30 @@ export function MatkulPage() {
                                                 {c.kode_mk}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3.5 font-medium text-gray-700">{c.nama_mk}</td>
+                                        <td className="px-6 py-3.5 font-medium text-gray-700">
+                                            <div className="flex items-center gap-2">
+                                                <BookMarked size={12} className="shrink-0 text-gray-300" />
+                                                <span>{c.nama_mk}</span>
+                                            </div>
+                                            {(() => {
+                                                const plos = getCoursePlos(c);
+                                                if (plos.length === 0) return null;
+                                                return (
+                                                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                                                        {plos.map((plo) => (
+                                                            <span
+                                                                key={plo.kode}
+                                                                className="inline-flex items-center gap-0.5 rounded bg-blue-50 border border-blue-100 px-1.5 py-0.2 text-[10px] font-mono font-bold text-blue-700"
+                                                                title={`Didukung oleh ${plo.kode}: ${plo.deskripsi}`}
+                                                            >
+                                                                <GraduationCap size={9} />
+                                                                {plo.kode}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </td>
                                         <td className="px-6 py-3.5 text-center w-28">
                                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold capitalize ${c.kategori === 'pilihan' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
                                                 {c.kategori || 'wajib'}

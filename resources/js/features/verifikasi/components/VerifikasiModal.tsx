@@ -45,8 +45,9 @@ export function VerifikasiModal({
     const [clos, setClos] = useState<Clo[]>([]);
     const [loadingClos, setLoadingClos] = useState(false);
 
-    // State for per-CLO notes & per-CLO status
+    // State for per-CLO notes, rekomendasi & per-CLO status
     const [cloNotes, setCloNotes] = useState<Record<number, string>>({});
+    const [cloRekomendasi, setCloRekomendasi] = useState<Record<number, string>>({});
     const [cloStatus, setCloStatus] = useState<Record<number, 'sesuai' | 'revisi' | 'tolak'>>({});
 
     const {
@@ -75,6 +76,7 @@ export function VerifikasiModal({
                 catatan: '',
             });
             setCloNotes({});
+            setCloRekomendasi({});
             setCloStatus({});
 
             // Check if soal already has CLOs attached via mata_kuliah relation
@@ -118,14 +120,15 @@ export function VerifikasiModal({
     const fileUrl = soal.file_url || `${window.location.origin}/storage/${soal.file_soal}`;
 
     const handleFormSubmit = (data: VerifikasiFormData) => {
-        // Build per-CLO notes array
+        // Build per-CLO notes & rekomendasi array
         const catatanCloList: CatatanCloItem[] = clos.map((c) => ({
             clo_id: c.id,
             kode: c.kode,
             deskripsi: c.deskripsi,
             catatan: (cloNotes[c.id] || '').trim(),
+            rekomendasi: (cloRekomendasi[c.id] || '').trim(),
             status: cloStatus[c.id] || 'sesuai',
-        })).filter((c) => c.catatan.length > 0 || c.status !== 'sesuai');
+        })).filter((c) => c.catatan.length > 0 || (c.rekomendasi && c.rekomendasi.length > 0) || c.status !== 'sesuai');
 
         onSubmit({
             ...data,
@@ -292,12 +295,12 @@ export function VerifikasiModal({
                             )}
                         </div>
 
-                        {/* 3. Catatan Khusus Per CLO Mata Kuliah */}
+                        {/* 3. Catatan & Rekomendasi Per CLO Mata Kuliah */}
                         <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-3 space-y-2.5">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
                                     <BookOpen size={13} className="text-[var(--color-primary)]" />
-                                    3. Catatan Per CLO ({clos.length} CLO)
+                                    3. Catatan & Rekomendasi Per CLO ({clos.length} CLO)
                                 </label>
                                 <span className="text-[10px] text-gray-500 font-medium">
                                     MK: <strong className="text-gray-700">{soal.mata_kuliah?.nama_mk || soal.mata_kuliah_nama || 'MK'}</strong>
@@ -313,15 +316,16 @@ export function VerifikasiModal({
                                     Tidak ada CLO yang terhubung dengan mata kuliah ini.
                                 </div>
                             ) : (
-                                <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                                <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
                                     {clos.map((clo) => {
                                         const cStatus = cloStatus[clo.id] || 'sesuai';
                                         const cNote = cloNotes[clo.id] || '';
+                                        const cRekomendasi = cloRekomendasi[clo.id] || '';
 
                                         return (
                                             <div
                                                 key={clo.id}
-                                                className="rounded-lg border border-gray-200 bg-white p-2.5 space-y-2 shadow-2xs transition hover:border-gray-300"
+                                                className="rounded-lg border border-gray-200 bg-white p-3 space-y-2.5 shadow-2xs transition hover:border-gray-300"
                                             >
                                                 {/* Header CLO + Evaluation Toggle */}
                                                 <div className="flex flex-wrap items-center justify-between gap-1.5">
@@ -330,11 +334,11 @@ export function VerifikasiModal({
                                                             {clo.kode}
                                                         </span>
                                                         {clo.plo && (
-                                                            <span className="inline-flex rounded bg-gray-100 px-1 py-0.5 text-[9px] font-mono text-gray-600 shrink-0">
+                                                             <span className="inline-flex items-center gap-1 rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold font-mono text-indigo-700 border border-indigo-200/60 shrink-0">
                                                                 {clo.plo.kode}
                                                             </span>
                                                         )}
-                                                        <p className="text-[11px] text-gray-700 font-medium truncate">
+                                                        <p className="text-[11px] text-gray-700 font-medium truncate" title={clo.deskripsi}>
                                                             {clo.deskripsi}
                                                         </p>
                                                     </div>
@@ -346,7 +350,7 @@ export function VerifikasiModal({
                                                             onClick={() =>
                                                                 setCloStatus((prev) => ({ ...prev, [clo.id]: 'sesuai' }))
                                                             }
-                                                            className={`px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ${
+                                                            className={`px-2 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ${
                                                                 cStatus === 'sesuai'
                                                                     ? 'bg-green-600 text-white shadow-2xs'
                                                                     : 'text-gray-600 hover:text-gray-900'
@@ -359,7 +363,7 @@ export function VerifikasiModal({
                                                             onClick={() =>
                                                                 setCloStatus((prev) => ({ ...prev, [clo.id]: 'revisi' }))
                                                             }
-                                                            className={`px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ${
+                                                            className={`px-2 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ${
                                                                 cStatus === 'revisi'
                                                                     ? 'bg-orange-500 text-white shadow-2xs'
                                                                     : 'text-gray-600 hover:text-gray-900'
@@ -370,8 +374,11 @@ export function VerifikasiModal({
                                                     </div>
                                                 </div>
 
-                                                {/* Textarea Catatan CLO */}
+                                                {/* Catatan Evaluasi Butir Soal */}
                                                 <div>
+                                                    <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">
+                                                        Catatan Evaluasi Butir Soal:
+                                                    </label>
                                                     <textarea
                                                         rows={2}
                                                         value={cNote}
@@ -379,9 +386,33 @@ export function VerifikasiModal({
                                                             setCloNotes((prev) => ({
                                                                 ...prev,
                                                                 [clo.id]: e.target.value,
+                                                             }))
+                                                        }
+                                                        placeholder={`Catatan evaluasi butir soal terkait ${clo.kode}...`}
+                                                        className="w-full rounded border border-gray-200 bg-gray-50/40 p-2 text-xs text-gray-800 focus:border-blue-500 focus:bg-white focus:outline-none transition"
+                                                    />
+                                                </div>
+
+                                                {/* Rekomendasi Soal Terhadap CLO (Jika ada) */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block">
+                                                            Rekomendasi Soal Terhadap CLO:
+                                                        </label>
+                                                        <span className="text-[9px] text-gray-400 font-normal">
+                                                            (jika ada / opsional)
+                                                        </span>
+                                                    </div>
+                                                    <textarea
+                                                        rows={2}
+                                                        value={cRekomendasi}
+                                                        onChange={(e) =>
+                                                            setCloRekomendasi((prev) => ({
+                                                                ...prev,
+                                                                [clo.id]: e.target.value,
                                                             }))
                                                         }
-                                                        placeholder={`Catatan khusus butir soal ${clo.kode}...`}
+                                                        placeholder={`Rekomendasi perbaikan butir soal terhadap ${clo.kode} (jika ada)...`}
                                                         className="w-full rounded border border-gray-200 bg-gray-50/40 p-2 text-xs text-gray-800 focus:border-blue-500 focus:bg-white focus:outline-none transition"
                                                     />
                                                 </div>

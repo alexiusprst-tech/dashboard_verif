@@ -158,9 +158,20 @@ export function RevisionHistoryAccordion({ soalId }: RevisionHistoryAccordionPro
                                                                     )}
                                                                 </div>
                                                                 {c.catatan && (
-                                                                    <p className="text-gray-800 bg-white/80 p-2 rounded border border-blue-100/80 leading-relaxed mt-1">
-                                                                        {c.catatan}
-                                                                    </p>
+                                                                    <div className="mt-1">
+                                                                        <span className="text-[10px] font-bold text-gray-500 uppercase block mb-0.5">Catatan Evaluasi:</span>
+                                                                        <p className="text-gray-800 bg-white/80 p-2 rounded border border-blue-100/80 leading-relaxed">
+                                                                            {c.catatan}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                                {c.rekomendasi && (
+                                                                    <div className="mt-1">
+                                                                        <span className="text-[10px] font-bold text-indigo-600 uppercase block mb-0.5">Rekomendasi Terhadap CLO:</span>
+                                                                        <p className="text-indigo-900 bg-indigo-50/70 p-2 rounded border border-indigo-100 leading-relaxed">
+                                                                            {c.rekomendasi}
+                                                                        </p>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         ))}

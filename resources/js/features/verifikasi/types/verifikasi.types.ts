@@ -5,6 +5,7 @@ export interface CatatanCloItem {
     kode: string;
     deskripsi?: string;
     catatan: string;
+    rekomendasi?: string;
     status?: 'sesuai' | 'revisi' | 'tolak';
 }
 

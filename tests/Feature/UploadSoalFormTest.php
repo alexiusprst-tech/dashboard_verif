@@ -253,4 +253,51 @@ class UploadSoalFormTest extends TestCase
         $periode2->refresh();
         $this->assertEquals('selesai', $periode2->status->value);
     }
+
+    public function test_dosen_only_sees_own_uploaded_soal(): void
+    {
+        $otherDosen = User::factory()->create([
+            'is_super_admin' => false,
+            'is_coordinator' => false,
+            'status_aktif'   => true,
+        ]);
+
+        // Soal milik $this->dosen
+        $soalOwn = \App\Models\Soal::create([
+            'uuid'           => \Illuminate\Support\Str::uuid()->toString(),
+            'dosen_id'       => $this->dosen->id,
+            'periode_id'     => $this->activePeriode->id,
+            'mata_kuliah_id' => $this->course->id,
+            'template_id'    => $this->template->id,
+            'clo_id'         => $this->clo1->id,
+            'judul_soal'     => 'Soal Ujian Milik Sendiri',
+            'file_soal'      => 'soal/own.docx',
+            'status'         => 'in_review',
+        ]);
+
+        // Soal milik $otherDosen
+        $soalOther = \App\Models\Soal::create([
+            'uuid'           => \Illuminate\Support\Str::uuid()->toString(),
+            'dosen_id'       => $otherDosen->id,
+            'periode_id'     => $this->activePeriode->id,
+            'mata_kuliah_id' => $this->course->id,
+            'template_id'    => $this->template->id,
+            'clo_id'         => $this->clo1->id,
+            'judul_soal'     => 'Soal Ujian Milik Dosen Lain',
+            'file_soal'      => 'soal/other.docx',
+            'status'         => 'in_review',
+        ]);
+
+        // Request as $this->dosen
+        $response = $this->actingAs($this->dosen, 'sanctum')
+            ->getJson("/api/soal?periode_id={$this->activePeriode->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $soalIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($soalOwn->id, $soalIds, 'Dosen harus dapat melihat soal yang diunggahnya sendiri');
+        $this->assertNotContains($soalOther->id, $soalIds, 'Dosen tidak boleh melihat soal yang diunggah oleh dosen lain');
+    }
 }

@@ -81,7 +81,7 @@ class BeritaAcaraService
                     'clo'              => $c['kode'] ?? ('CLO' . ($idx + 1)),
                     'no_soal'          => (string)($idx + 1),
                     'catatan_evaluasi' => (!empty($c['catatan']) ? $c['catatan'] : (($c['status'] ?? 'sesuai') === 'sesuai' ? 'Sesuai' : 'Perlu Revisi')),
-                    'rekomendasi'      => ($c['status'] ?? 'sesuai') === 'revisi' ? 'Perbaiki butir soal terkait CLO ini' : '-',
+                    'rekomendasi'      => !empty($c['rekomendasi']) ? $c['rekomendasi'] : (($c['status'] ?? 'sesuai') === 'revisi' ? 'Perbaiki butir soal terkait CLO ini' : '-'),
                 ];
             }
         } elseif ($course && $course->clo->isNotEmpty()) {
@@ -410,10 +410,24 @@ class BeritaAcaraService
         }
 
         $isAuthorized = $user->isSuperAdmin()
-            || $user->isCoordinator()
             || $ba->verifier_id === $user->id
             || ($ba->soal && $ba->soal->dosen_id === $user->id)
             || $ba->items()->whereHas('soal', fn($q) => $q->where('dosen_id', $user->id))->exists();
+
+        if (!$isAuthorized && $user->isKoordinatorMk()) {
+            $courseIds = [];
+            if ($ba->soal && $ba->soal->mata_kuliah_id) {
+                $courseIds[] = $ba->soal->mata_kuliah_id;
+            }
+            $itemCourseIds = $ba->items()->with('soal')->get()->pluck('soal.mata_kuliah_id')->filter()->toArray();
+            $courseIds = array_unique(array_merge($courseIds, $itemCourseIds));
+
+            if (!empty($courseIds)) {
+                $isAuthorized = \App\Models\PenugasanKoordinator::where('dosen_id', $user->id)
+                    ->whereIn('course_id', $courseIds)
+                    ->exists();
+            }
+        }
 
         if (!$isAuthorized) {
             throw new BusinessException('Anda tidak berwenang untuk mengakses Berita Acara ini.', 403);

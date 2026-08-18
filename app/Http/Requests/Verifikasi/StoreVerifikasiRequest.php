@@ -29,7 +29,9 @@ class StoreVerifikasiRequest extends FormRequest
             'catatan_clo' => 'nullable|array',
             'catatan_clo.*.clo_id' => 'nullable|integer',
             'catatan_clo.*.kode' => 'nullable|string',
+            'catatan_clo.*.deskripsi' => 'nullable|string',
             'catatan_clo.*.catatan' => 'nullable|string',
+            'catatan_clo.*.rekomendasi' => 'nullable|string',
             'catatan_clo.*.status' => 'nullable|string',
         ];
     }

@@ -546,6 +546,11 @@ function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periode
                     />
                 </div>
             </div>
+
+            {/* Progress Upload per Mata Kuliah (Super Admin) */}
+            <div className="mt-2">
+                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} role="super_admin" title="Progress Upload per Mata Kuliah (Seluruh Mata Kuliah)" />
+            </div>
         </div>
     );
 }
@@ -655,7 +660,7 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, act
 
             {/* Progress Upload per Mata Kuliah (UploadProgressWidget) */}
             <div className="mt-2">
-                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} />
+                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} role="dosen" title="Progress Upload Mata Kuliah Saya" />
             </div>
         </div>
     );
@@ -918,7 +923,7 @@ function KoordinatorMkDashboard({ selectedPeriodeId, setSelectedPeriodeId, perio
 
             {/* Progress Upload per Mata Kuliah (UploadProgressWidget) */}
             <div className="mt-2">
-                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} />
+                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} role="koordinator" title="Progress Soal Mata Kuliah yang Dikoordinasikan" />
             </div>
         </div>
     );
@@ -1112,7 +1117,7 @@ function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activ
 
             {/* Progress Upload per Mata Kuliah (UploadProgressWidget) */}
             <div className="mt-2">
-                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} />
+                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} role="verifikator" title="Progress Soal Mata Kuliah yang Ditugaskan" />
             </div>
         </div>
     );
