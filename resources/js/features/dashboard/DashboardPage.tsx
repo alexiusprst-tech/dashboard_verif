@@ -34,12 +34,12 @@ import {
     Sparkles,
     CheckSquare,
     ClipboardList,
+    UserCheck,
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { formatDate } from '@/shared/lib/utils';
 import api from '@/shared/lib/api';
 import { UploadProgressWidget } from './components/UploadProgressWidget';
-import { BroadcastWidget } from './components/BroadcastWidget';
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -66,10 +66,38 @@ interface SuperAdminData {
     progress: { total: number; verified: number; percentage: number } | null;
 }
 
+interface KoordinatorMkCourse {
+    course_id: number;
+    kode_mk?: string;
+    nama_mk?: string;
+    sks?: number;
+    semester?: number;
+    total_soal?: number;
+    approved_soal?: number;
+    pending_soal?: number;
+    revisi_soal?: number;
+    verifikators: Array<{
+        id: number;
+        nama_lengkap: string;
+        kode_dosen: string;
+        assigned_by?: string;
+        assigned_at?: string;
+    }>;
+}
+
+interface KoordinatorMkDashboardData {
+    total_mata_kuliah: number;
+    total_verifikator: number;
+    total_soal_mk?: number;
+    approved_soal_mk?: number;
+    courses: KoordinatorMkCourse[];
+}
+
 interface DosenData {
     periode: DashboardPeriode | null;
     soal_status_counts: SoalStatusCounts;
     deadline: { nama_periode: string; tanggal_deadline: string } | null;
+    koordinator_mk?: KoordinatorMkDashboardData | null;
 }
 
 interface PicData {
@@ -482,7 +510,7 @@ function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periode
                                     <Clock size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
                                     <div>
                                         <p className="font-bold text-blue-900">
-                                            {counts.submitted + counts.in_review} Soal Menunggu PIC
+                                            {counts.submitted + counts.in_review} Soal Menunggu Verifikator
                                         </p>
                                         <p className="text-blue-700 mt-0.5">
                                             Perlu pemantauan antrian verifikator agar tidak terlambat.
@@ -499,7 +527,7 @@ function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periode
                                             {counts.revisi} Soal Dalam Perbaikan
                                         </p>
                                         <p className="text-amber-700 mt-0.5">
-                                            Dosen pengampu sedang melakukan perbaikan sesuai catatan PIC.
+                                            Dosen pengampu sedang melakukan perbaikan sesuai catatan verifikator.
                                         </p>
                                     </div>
                                 </div>
@@ -511,25 +539,20 @@ function CoordinatorDashboard({ selectedPeriodeId, setSelectedPeriodeId, periode
                     <QuickActions
                         actions={[
                             { label: 'Kelola Periode', desc: 'Buat & aktifkan periode baru', icon: <CalendarClock size={16} />, to: '/periode', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
-                            { label: 'Penugasan PIC', desc: 'Assign verifikator ke dosen', icon: <Users size={16} />, to: '/penugasan-pic', color: 'text-blue-600', bg: 'bg-blue-50' },
+                            { label: 'Penugasan Verifikator', desc: 'Assign verifikator ke dosen', icon: <Users size={16} />, to: '/penugasan-verifikator', color: 'text-blue-600', bg: 'bg-blue-50' },
                             { label: 'Kategori & Template', desc: 'Kelola template soal DOCX', icon: <BookOpen size={16} />, to: '/kategori', color: 'text-purple-600', bg: 'bg-purple-50' },
-                            { label: 'Broadcast', desc: 'Kirim pengumuman ke dosen', icon: <Megaphone size={16} />, to: '/broadcast', color: 'text-green-600', bg: 'bg-green-50' },
                             { label: 'Monitoring', desc: 'Pantau progres verifikasi', icon: <TrendingUp size={16} />, to: '/monitoring', color: 'text-indigo-600', bg: 'bg-indigo-50' },
                         ]}
                     />
                 </div>
             </div>
-
-            {/* Pengumuman & Broadcast Widget */}
-            <BroadcastWidget />
         </div>
     );
 }
 
-/* ── Dosen Dashboard ────────────────────────────────────────── */
+/* ── Dosen Dashboard (Dosen Biasa / Pengampu) ────────────────── */
 
 function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activePeriode }: RoleDashboardProps) {
-    const { user } = useAuth();
     const { data, isLoading } = useQuery({
         queryKey: ['dashboard', 'dosen', selectedPeriodeId],
         queryFn: async (): Promise<DosenData> => {
@@ -552,6 +575,12 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, act
     };
     const totalSoal = Object.values(counts).reduce((a, b) => a + b, 0);
 
+    const quickActions = [
+        { label: 'Unggah Soal', desc: 'Kirim naskah soal baru ke sistem', icon: <FileText size={16} />, to: '/soal', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
+        { label: 'Lihat PLO & CLO', desc: 'Referensi capaian pembelajaran', icon: <BookOpen size={16} />, to: '/plo-clo', color: 'text-purple-600', bg: 'bg-purple-50' },
+        { label: 'Berita Acara', desc: 'Unduh berita acara evaluasi soal', icon: <ClipboardList size={16} />, to: '/berita-acara', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    ];
+
     return (
         <div className="flex flex-col gap-5">
             <PeriodeBanner periode={activePeriode} isLoading={isLoading} />
@@ -563,13 +592,9 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, act
                 <StatCard label="Perlu Revisi" value={isLoading ? '…' : counts.revisi} icon={<AlertTriangle size={18} />} color="text-amber-600" bg="bg-amber-50" />
             </div>
 
-            {/* Pengumuman & Broadcast Widget */}
-            <BroadcastWidget />
-
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                {/* Left Area: Visual Diagram & Alur */}
+                {/* Left: Chart */}
                 <div className="lg:col-span-2 flex flex-col gap-5">
-                    {/* Status Chart Card */}
                     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-gray-100 pb-3">
                             <div className="flex items-center gap-2">
@@ -578,7 +603,6 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, act
                             </div>
 
                             <div className="flex items-center gap-2">
-                                {/* Filter Periode Dropdown */}
                                 <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-2.5 py-1 transition hover:bg-white">
                                     <CalendarClock size={13} className="text-[var(--color-primary)] flex-shrink-0" />
                                     <select
@@ -606,9 +630,8 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, act
                     </div>
                 </div>
 
-                {/* Right Area: Deadline Reminder & Quick Actions */}
+                {/* Right: Deadline & Quick Actions */}
                 <div className="flex flex-col gap-5">
-                    {/* Deadline Reminder */}
                     {data?.deadline && (
                         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-2">
@@ -626,15 +649,7 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, act
                         </div>
                     )}
 
-                    {/* Quick Actions */}
-                    <QuickActions
-                        actions={[
-                            { label: 'Unggah Soal', desc: 'Kirim soal baru ke sistem', icon: <FileText size={16} />, to: '/soal', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
-                            { label: 'Lihat PLO & CLO', desc: 'Referensi capaian pembelajaran', icon: <BookOpen size={16} />, to: '/plo-clo', color: 'text-purple-600', bg: 'bg-purple-50' },
-                            { label: 'Pengumuman', desc: 'Lihat broadcast terbaru', icon: <Megaphone size={16} />, to: '/broadcast', color: 'text-green-600', bg: 'bg-green-50' },
-                            { label: 'Berita Acara', desc: 'Unduh berita acara verifikasi', icon: <ShieldCheck size={16} />, to: '/berita-acara', color: 'text-blue-600', bg: 'bg-blue-50' },
-                        ]}
-                    />
+                    <QuickActions actions={quickActions} />
                 </div>
             </div>
 
@@ -646,7 +661,270 @@ function DosenDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, act
     );
 }
 
-/* ── PIC Dashboard ──────────────────────────────────────────── */
+/* ── Koordinator MK Dashboard (Dedicated) ───────────────────── */
+
+function KoordinatorMkDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activePeriode }: RoleDashboardProps) {
+    const { data, isLoading } = useQuery({
+        queryKey: ['dashboard', 'dosen', selectedPeriodeId],
+        queryFn: async (): Promise<DosenData> => {
+            const res = await api.get('/dashboard/dosen', {
+                params: { periode_id: selectedPeriodeId || undefined },
+            });
+            return res.data.data;
+        },
+        staleTime: 0,
+    });
+
+    const raw = data?.soal_status_counts;
+    const counts = {
+        draft:      raw?.draft      ?? 0,
+        submitted:  raw?.submitted  ?? 0,
+        in_review:  raw?.in_review  ?? 0,
+        approved:   raw?.approved   ?? 0,
+        revisi:     raw?.revisi     ?? 0,
+        rejected:   raw?.rejected   ?? 0,
+    };
+    const totalSoalSaya = Object.values(counts).reduce((a, b) => a + b, 0);
+    const koordinatorData = data?.koordinator_mk;
+
+    const quickActions = [
+        { label: 'Monitoring Verifikator', desc: 'Pantau verifikator mata kuliah koordinasi', icon: <Users size={16} />, to: '/penugasan-verifikator', color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: 'Kelola PLO & CLO', desc: 'Atur capaian pembelajaran mata kuliah', icon: <BookOpen size={16} />, to: '/plo-clo', color: 'text-purple-600', bg: 'bg-purple-50' },
+        { label: 'Unggah Soal Saya', desc: 'Kirim naskah soal ujian mandiri', icon: <FileText size={16} />, to: '/soal', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
+        { label: 'Berita Acara', desc: 'Lihat status berita acara evaluasi', icon: <ClipboardList size={16} />, to: '/berita-acara', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    ];
+
+    return (
+        <div className="flex flex-col gap-5">
+            <PeriodeBanner periode={activePeriode} isLoading={isLoading} />
+
+            {/* Stat Cards Koordinator MK */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <StatCard
+                    label="Mata Kuliah Koordinasi"
+                    value={isLoading ? '…' : (koordinatorData?.total_mata_kuliah ?? 0)}
+                    icon={<BookOpen size={18} />}
+                    color="text-indigo-600"
+                    bg="bg-indigo-50"
+                    border="border-indigo-100"
+                    trend="Diampu periode ini"
+                />
+                <StatCard
+                    label="Verifikator Ditunjuk"
+                    value={isLoading ? '…' : (koordinatorData?.total_verifikator ?? 0)}
+                    icon={<Users size={18} />}
+                    color="text-blue-600"
+                    bg="bg-blue-50"
+                    border="border-blue-100"
+                    to="/penugasan-verifikator"
+                    trend="Oleh Super Admin"
+                />
+                <StatCard
+                    label="Total Soal MK Koordinasi"
+                    value={isLoading ? '…' : (koordinatorData?.total_soal_mk ?? 0)}
+                    icon={<Layers size={18} />}
+                    color="text-amber-600"
+                    bg="bg-amber-50"
+                    border="border-amber-100"
+                    trend={`${koordinatorData?.approved_soal_mk ?? 0} Selesai`}
+                />
+                <StatCard
+                    label="Soal Saya Terunggah"
+                    value={isLoading ? '…' : totalSoalSaya}
+                    icon={<FileText size={18} />}
+                    color="text-[var(--color-primary)]"
+                    bg="bg-[var(--color-primary-light)]"
+                    to="/soal"
+                />
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+                {/* Left: Monitoring Verifikator & Progress MK Koordinasi */}
+                <div className="lg:col-span-2 flex flex-col gap-5">
+                    {/* Monitoring Verifikator Widget */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-center justify-between gap-3 mb-4 border-b border-gray-100 pb-3">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                    <ShieldCheck size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-900">Verifikator & Progres Mata Kuliah Koordinasi</h3>
+                                    <p className="text-xs text-gray-500">Dosen verifikator yang ditunjuk oleh Super Admin untuk mata kuliah Anda</p>
+                                </div>
+                            </div>
+                            <Link
+                                to="/penugasan-verifikator"
+                                className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                            >
+                                Buka Monitoring <ArrowRight size={13} />
+                            </Link>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="space-y-3 py-4">
+                                <div className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+                                <div className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+                            </div>
+                        ) : !koordinatorData || koordinatorData.courses.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center">
+                                <p className="text-xs font-semibold text-gray-600">Belum ada mata kuliah yang ditugaskan kepada Anda sebagai Koordinator MK</p>
+                                <p className="text-[11px] text-gray-400 mt-1">Penugasan Koordinator MK dilakukan oleh Super Administrator pada menu Penugasan Koordinator MK.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3.5">
+                                {koordinatorData.courses.map((c) => {
+                                    const totalSoal = c.total_soal ?? 0;
+                                    const approvedSoal = c.approved_soal ?? 0;
+                                    const pendingSoal = c.pending_soal ?? 0;
+                                    const pct = totalSoal > 0 ? Math.round((approvedSoal / totalSoal) * 100) : 0;
+
+                                    return (
+                                        <div key={c.course_id} className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 transition hover:border-gray-200 hover:bg-white shadow-xs">
+                                            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-800">
+                                                            {c.kode_mk || `MK #${c.course_id}`}
+                                                        </span>
+                                                        <span className="text-xs font-bold text-gray-900">{c.nama_mk}</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-400 mt-0.5">
+                                                        {c.sks ? `${c.sks} SKS` : ''} {c.semester ? `· Semester ${c.semester}` : ''}
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                                                        {approvedSoal}/{totalSoal} Soal Selesai
+                                                    </span>
+                                                    {pendingSoal > 0 && (
+                                                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                                                            {pendingSoal} Menunggu Verifikasi
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Progress Bar Verifikasi Course */}
+                                            <div className="mb-3">
+                                                <div className="flex items-center justify-between text-[11px] text-gray-500 mb-1">
+                                                    <span>Progres Verifikasi Soal MK</span>
+                                                    <span className="font-semibold text-gray-700">{pct}%</span>
+                                                </div>
+                                                <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                                                    <div
+                                                        className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                                                        style={{ width: `${pct}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Verifikator Assigned */}
+                                            <div className="border-t border-gray-200/60 pt-2.5 flex flex-wrap items-center justify-between gap-2">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[11px] font-semibold text-gray-500">Verifikator Soal:</span>
+                                                    {c.verifikators.length === 0 ? (
+                                                        <span className="text-[11px] font-medium text-amber-600 italic">
+                                                            Belum ditunjuk Super Admin
+                                                        </span>
+                                                    ) : (
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {c.verifikators.map((v) => (
+                                                                <span
+                                                                    key={v.id}
+                                                                    className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-800 border border-blue-100"
+                                                                >
+                                                                    <UserCheck size={11} className="text-blue-600" />
+                                                                    {v.nama_lengkap} ({v.kode_dosen})
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <Link
+                                                    to="/plo-clo"
+                                                    className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline"
+                                                >
+                                                    Kelola CLO &rarr;
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Status Diagram Soal Saya (Koordinator MK) */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-gray-100 pb-3">
+                            <div className="flex items-center gap-2">
+                                <PieIcon size={16} className="text-[var(--color-primary)]" />
+                                <h3 className="text-sm font-bold text-gray-800">Diagram Status Soal Mandiri Saya</h3>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-2.5 py-1 transition hover:bg-white">
+                                    <CalendarClock size={13} className="text-[var(--color-primary)] flex-shrink-0" />
+                                    <select
+                                        value={selectedPeriodeId}
+                                        onChange={(e) => setSelectedPeriodeId(e.target.value)}
+                                        className="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
+                                    >
+                                        <option value="">Periode Aktif</option>
+                                        {periodes.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.nama_periode} {p.status === 'aktif' ? '(Aktif)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <span className="text-xs font-semibold text-gray-400">{totalSoalSaya} Soal</span>
+                            </div>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="h-48 animate-pulse rounded-xl bg-gray-100" />
+                        ) : (
+                            <StatusPieChart counts={counts} />
+                        )}
+                    </div>
+                </div>
+
+                {/* Right: Deadline & Quick Actions */}
+                <div className="flex flex-col gap-5">
+                    {data?.deadline && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                                <CalendarClock size={16} className="text-amber-600" />
+                                <h3 className="text-sm font-bold text-amber-900">Pengingat Batas Waktu</h3>
+                            </div>
+                            <p className="text-xs text-amber-800 leading-relaxed">
+                                Batas akhir pengunggahan & verifikasi soal untuk <span className="font-bold">{data.deadline.nama_periode}</span>:
+                            </p>
+                            <div className="mt-3 p-3 rounded-xl bg-white border border-amber-200 text-center">
+                                <p className="text-sm font-extrabold text-amber-900">
+                                    {formatDate(data.deadline.tanggal_deadline)}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <QuickActions actions={quickActions} />
+                </div>
+            </div>
+
+            {/* Progress Upload per Mata Kuliah (UploadProgressWidget) */}
+            <div className="mt-2">
+                <UploadProgressWidget selectedPeriodeId={selectedPeriodeId} />
+            </div>
+        </div>
+    );
+}
+
+/* ── Verifikator Dashboard (Dosen Verifikator Soal) ─────────── */
 
 function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activePeriode }: RoleDashboardProps) {
     const { data: dosenData, isLoading: dosenLoading } = useQuery({
@@ -695,73 +973,21 @@ function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activ
         <div className="flex flex-col gap-5">
             <PeriodeBanner periode={activePeriode} isLoading={isLoading} />
 
-            {/* Dosen Stats Cards */}
-            <div>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Statistik Soal Saya (Dosen)</h3>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <StatCard label="Total Soal Saya" value={isLoading ? '…' : totalSoalSaya} icon={<FileText size={18} />} color="text-[var(--color-primary)]" bg="bg-[var(--color-primary-light)]" to="/soal" />
-                    <StatCard label="Disetujui" value={isLoading ? '…' : counts.approved} icon={<CheckCircle2 size={18} />} color="text-green-600" bg="bg-green-50" border="border-green-100" />
-                    <StatCard label="Dalam Review" value={isLoading ? '…' : counts.in_review} icon={<Activity size={18} />} color="text-indigo-600" bg="bg-indigo-50" />
-                    <StatCard label="Perlu Revisi" value={isLoading ? '…' : counts.revisi} icon={<AlertTriangle size={18} />} color="text-amber-600" bg="bg-amber-50" />
-                </div>
+            {/* Verifikator Stats Cards */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <StatCard label="Antrian Verifikasi" value={isLoading ? '…' : summary.total} icon={<Layers size={18} />} color="text-indigo-600" bg="bg-indigo-50" to="/verifikasi" trend={`${summary.pending} Perlu Tindakan`} />
+                <StatCard label="Belum Diverifikasi" value={isLoading ? '…' : summary.pending} icon={<Clock size={18} />} color="text-amber-600" bg="bg-amber-50" to="/verifikasi" border="border-amber-100" />
+                <StatCard label="Selesai Diverifikasi" value={isLoading ? '…' : summary.done} icon={<CheckCircle2 size={18} />} color="text-green-600" bg="bg-green-50" border="border-green-100" />
+                <StatCard label="Soal Saya Mandiri" value={isLoading ? '…' : totalSoalSaya} icon={<FileText size={18} />} color="text-[var(--color-primary)]" bg="bg-[var(--color-primary-light)]" to="/soal" />
             </div>
-
-            {/* PIC Verifier Stats Cards */}
-            <div>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Statistik Penugasan Verifikasi (PIC)</h3>
-                <div className="grid grid-cols-3 gap-4">
-                    <StatCard label="Total Soal Ditugaskan" value={isLoading ? '…' : summary.total} icon={<Layers size={18} />} color="text-[var(--color-primary)]" bg="bg-[var(--color-primary-light)]" />
-                    <StatCard label="Belum Diverifikasi" value={isLoading ? '…' : summary.pending} icon={<Clock size={18} />} color="text-amber-600" bg="bg-amber-50" to="/verifikasi" />
-                    <StatCard label="Sudah Diverifikasi" value={isLoading ? '…' : summary.done} icon={<CheckCircle2 size={18} />} color="text-green-600" bg="bg-green-50" border="border-green-100" />
-                </div>
-            </div>
-
-            {/* Pengumuman & Broadcast Widget */}
-            <BroadcastWidget />
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
                 <div className="lg:col-span-2 flex flex-col gap-5">
-                    {/* Dosen Chart */}
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-gray-100 pb-3">
-                            <div className="flex items-center gap-2">
-                                <PieIcon size={16} className="text-[var(--color-primary)]" />
-                                <h3 className="text-sm font-bold text-gray-800">Diagram Status Soal Saya</h3>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                {/* Filter Periode Dropdown */}
-                                <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-2.5 py-1 transition hover:bg-white">
-                                    <CalendarClock size={13} className="text-[var(--color-primary)] flex-shrink-0" />
-                                    <select
-                                        value={selectedPeriodeId}
-                                        onChange={(e) => setSelectedPeriodeId(e.target.value)}
-                                        className="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
-                                    >
-                                        <option value="">Periode Aktif</option>
-                                        {periodes.map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.nama_periode} {p.status === 'aktif' ? '(Aktif)' : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <span className="text-xs font-semibold text-gray-400">{totalSoalSaya} Soal</span>
-                            </div>
-                        </div>
-
-                        {isLoading ? (
-                            <div className="h-48 animate-pulse rounded-xl bg-gray-100" />
-                        ) : (
-                            <StatusPieChart counts={counts} />
-                        )}
-                    </div>
-
-                    {/* PIC Progress Chart */}
+                    {/* Verifikator Progress Chart */}
                     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
                             <CheckSquare size={16} className="text-[var(--color-primary)]" />
-                            <h3 className="text-sm font-bold text-gray-800">Progress Verifikasi PIC</h3>
+                            <h3 className="text-sm font-bold text-gray-800">Progress Verifikasi Soal</h3>
                         </div>
 
                         {isLoading ? (
@@ -817,6 +1043,41 @@ function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activ
                             </div>
                         )}
                     </div>
+
+                    {/* Dosen Chart */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-gray-100 pb-3">
+                            <div className="flex items-center gap-2">
+                                <PieIcon size={16} className="text-[var(--color-primary)]" />
+                                <h3 className="text-sm font-bold text-gray-800">Diagram Status Soal Mandiri Saya</h3>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-2.5 py-1 transition hover:bg-white">
+                                    <CalendarClock size={13} className="text-[var(--color-primary)] flex-shrink-0" />
+                                    <select
+                                        value={selectedPeriodeId}
+                                        onChange={(e) => setSelectedPeriodeId(e.target.value)}
+                                        className="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
+                                    >
+                                        <option value="">Periode Aktif</option>
+                                        {periodes.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.nama_periode} {p.status === 'aktif' ? '(Aktif)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <span className="text-xs font-semibold text-gray-400">{totalSoalSaya} Soal</span>
+                            </div>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="h-48 animate-pulse rounded-xl bg-gray-100" />
+                        ) : (
+                            <StatusPieChart counts={counts} />
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-5">
@@ -840,11 +1101,10 @@ function PicDashboard({ selectedPeriodeId, setSelectedPeriodeId, periodes, activ
 
                     <QuickActions
                         actions={[
-                            { label: 'Unggah Soal Saya', desc: 'Kirim soal baru ke sistem', icon: <FileText size={16} />, to: '/soal', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
-                            { label: 'Antrian Verifikasi', desc: 'Soal yang perlu diperiksa', icon: <ShieldCheck size={16} />, to: '/verifikasi', color: 'text-blue-600', bg: 'bg-blue-50' },
+                            { label: 'Antrian Verifikasi', desc: 'Periksa soal yang ditugaskan', icon: <ShieldCheck size={16} />, to: '/verifikasi', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                            { label: 'Unggah Soal Saya', desc: 'Kirim soal mandiri ke sistem', icon: <FileText size={16} />, to: '/soal', color: 'text-[var(--color-primary)]', bg: 'bg-[var(--color-primary-light)]' },
+                            { label: 'Berita Acara', desc: 'Generate & cetak berita acara', icon: <ClipboardList size={16} />, to: '/berita-acara', color: 'text-emerald-600', bg: 'bg-emerald-50' },
                             { label: 'Lihat PLO & CLO', desc: 'Referensi capaian pembelajaran', icon: <BookOpen size={16} />, to: '/plo-clo', color: 'text-purple-600', bg: 'bg-purple-50' },
-                            { label: 'Berita Acara', desc: 'Generate & print berita acara', icon: <ClipboardList size={16} />, to: '/berita-acara', color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                            { label: 'Pengumuman', desc: 'Lihat broadcast terbaru', icon: <Megaphone size={16} />, to: '/broadcast', color: 'text-green-600', bg: 'bg-green-50' },
                         ]}
                     />
                 </div>
@@ -872,7 +1132,6 @@ export function DashboardPage() {
             const res = await api.get('/periode', { params: { per_page: 50 } });
             return res.data?.data ?? [];
         },
-        // Update otomatis saat pengguna kembali ke tab browser
         staleTime: 0,
         refetchOnWindowFocus: true,
         refetchOnMount: true,
@@ -893,18 +1152,29 @@ export function DashboardPage() {
     const isKoordinatorMk = user?.is_koordinator_mk ?? user?.is_coordinator ?? false;
     const isVerifikator = user?.is_verifikator_aktif ?? user?.is_pic_active ?? false;
 
+    // State untuk role view jika user memiliki multiple role (misal: Koordinator MK & Verifikator)
+    const [viewMode, setViewMode] = useState<'koordinator' | 'verifikator' | 'dosen'>(() => {
+        if (isKoordinatorMk) return 'koordinator';
+        if (isVerifikator) return 'verifikator';
+        return 'dosen';
+    });
+
     const roleLabel = isSuperAdmin
         ? 'Super Admin'
+        : isKoordinatorMk && isVerifikator
+        ? 'Koordinator MK & Verifikator Soal'
         : isKoordinatorMk
         ? 'Dosen Koordinator Mata Kuliah'
         : isVerifikator
-        ? 'Dosen Verifikator'
-        : 'Dosen';
+        ? 'Dosen Verifikator Soal'
+        : 'Dosen Pengampu';
+
+    const hasMultipleRoles = !isSuperAdmin && isKoordinatorMk && isVerifikator;
 
     return (
         <div className="flex flex-col gap-5">
             {/* ── Header Greeting ─────────────────────────────── */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-extrabold text-[var(--color-secondary)]">
                         {greeting()}, {user?.name?.split(' ')[0] ?? 'Pengguna'} 👋
@@ -914,17 +1184,38 @@ export function DashboardPage() {
                         {user?.program_studi_name ? ` · ${user.program_studi_name}` : ''}
                     </p>
                 </div>
-                <Link
-                    to={isSuperAdmin ? '/periode' : isKoordinatorMk ? '/soal' : isVerifikator ? '/verifikasi' : '/soal'}
-                    className="hidden sm:flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-[var(--color-primary-dark)]"
-                >
-                    {isSuperAdmin ? 'Manajemen System' : isKoordinatorMk ? 'Unggah Soal' : isVerifikator ? 'Antrian Verifikasi' : 'Soal Saya'}
-                    <ArrowRight size={15} />
-                </Link>
+
+                <div className="flex items-center gap-3">
+                    {/* Multiple role switcher tabs */}
+                    {hasMultipleRoles && (
+                        <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl border border-gray-200">
+                            <button
+                                onClick={() => setViewMode('koordinator')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${viewMode === 'koordinator' ? 'bg-white text-indigo-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
+                            >
+                                Dashboard Koordinator MK
+                            </button>
+                            <button
+                                onClick={() => setViewMode('verifikator')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${viewMode === 'verifikator' ? 'bg-white text-blue-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
+                            >
+                                Dashboard Verifikator
+                            </button>
+                        </div>
+                    )}
+
+                    <Link
+                        to={isSuperAdmin ? '/periode' : isKoordinatorMk ? '/penugasan-verifikator' : isVerifikator ? '/verifikasi' : '/soal'}
+                        className="hidden sm:flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-[var(--color-primary-dark)]"
+                    >
+                        {isSuperAdmin ? 'Manajemen System' : isKoordinatorMk ? 'Monitoring Verifikator' : isVerifikator ? 'Antrian Verifikasi' : 'Soal Saya'}
+                        <ArrowRight size={15} />
+                    </Link>
+                </div>
             </div>
 
             {/* ── Role-based Dashboard ─────────────────────────── */}
-            {(isSuperAdmin || role === 'super_admin' || role === 'coordinator') && (
+            {isSuperAdmin && (
                 <CoordinatorDashboard
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}
@@ -932,7 +1223,17 @@ export function DashboardPage() {
                     activePeriode={periodesLoading ? null : activePeriode}
                 />
             )}
-            {!isSuperAdmin && (isVerifikator || role === 'verifikator' || role === 'pic') && (
+
+            {!isSuperAdmin && (viewMode === 'koordinator' || (isKoordinatorMk && !hasMultipleRoles)) && (
+                <KoordinatorMkDashboard
+                    selectedPeriodeId={selectedPeriodeId}
+                    setSelectedPeriodeId={setSelectedPeriodeId}
+                    periodes={periodes}
+                    activePeriode={periodesLoading ? null : activePeriode}
+                />
+            )}
+
+            {!isSuperAdmin && (viewMode === 'verifikator' || (!isKoordinatorMk && isVerifikator)) && (
                 <PicDashboard
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}
@@ -940,7 +1241,8 @@ export function DashboardPage() {
                     activePeriode={periodesLoading ? null : activePeriode}
                 />
             )}
-            {!isSuperAdmin && !isVerifikator && (
+
+            {!isSuperAdmin && !isKoordinatorMk && !isVerifikator && (
                 <DosenDashboard
                     selectedPeriodeId={selectedPeriodeId}
                     setSelectedPeriodeId={setSelectedPeriodeId}

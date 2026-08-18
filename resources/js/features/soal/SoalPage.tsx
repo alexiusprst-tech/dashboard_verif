@@ -16,15 +16,15 @@ import { Modal } from '@/shared/components/ui/Modal';
 import type { Soal } from './types/soal.types';
 import type { Periode } from '@/features/periode/types/periode.types';
 import { useSoalList, useUploadSoal, useDeleteSoal } from './hooks/useSoal';
-import { SoalWizard } from './components/SoalWizard';
+import { UploadSoalModal } from './components/UploadSoalModal';
 import { TimelineCard } from './components/TimelineCard';
 import { RevisionHistoryAccordion } from './components/RevisionHistoryAccordion';
 
 export function SoalPage() {
     const { toast } = useToast();
 
-    // Mode: 'list' | 'wizard'
-    const [mode, setMode] = useState<'list' | 'wizard'>('list');
+    // Upload Modal state
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
     // Filters
     const [search, setSearch] = useState('');
@@ -79,20 +79,12 @@ export function SoalPage() {
         setPage(1);
     };
 
-    const handleOpenWizard = () => {
-        setMode('wizard');
-    };
-
-    const handleCloseWizard = () => {
-        setMode('list');
-        refetch();
-    };
-
-    const handleWizardSubmit = async (formData: FormData) => {
+    const handleUploadSubmit = async (formData: FormData) => {
         try {
             await uploadMutation.mutateAsync(formData);
             toast.success('Soal ujian berhasil diunggah!');
-            handleCloseWizard();
+            setUploadModalOpen(false);
+            refetch();
         } catch (e: any) {
             toast.error(e.response?.data?.message || 'Gagal mengunggah soal ujian.');
             throw e;
@@ -129,23 +121,6 @@ export function SoalPage() {
         }
     };
 
-    if (mode === 'wizard') {
-        return (
-            <div className="flex flex-col gap-6">
-                <PageHeader
-                    title="Unggah Soal Baru"
-                    description="Gunakan fitur wizard untuk mempermudah pengunggahan soal ujian secara bertahap."
-                    breadcrumb={[{ label: 'Soal', href: '/soal' }, { label: 'Unggah Soal' }]}
-                />
-                <SoalWizard
-                    onClose={handleCloseWizard}
-                    onSubmit={handleWizardSubmit}
-                    loading={uploadMutation.isPending}
-                />
-            </div>
-        );
-    }
-
     return (
         <div className="flex flex-col gap-6">
             <PageHeader
@@ -154,8 +129,8 @@ export function SoalPage() {
                 breadcrumb={[{ label: 'Soal Saya' }]}
                 action={
                     <button
-                        onClick={handleOpenWizard}
-                        className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)]"
+                        onClick={() => setUploadModalOpen(true)}
+                        className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-dark)] cursor-pointer"
                     >
                         <Plus size={16} />
                         Unggah Soal
@@ -370,6 +345,13 @@ export function SoalPage() {
                     </div>
                 )}
             </Modal>
+
+            <UploadSoalModal
+                open={uploadModalOpen}
+                onClose={() => setUploadModalOpen(false)}
+                onSubmit={handleUploadSubmit}
+                loading={uploadMutation.isPending}
+            />
 
             <ConfirmDialog
                 open={deleteConfirmOpen}

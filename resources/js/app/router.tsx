@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { MainLayout } from '@/shared/layouts/MainLayout';
+import { RouteErrorBoundary } from '@/shared/components/ui/ErrorBoundary';
 
 import { LoginPage } from '@/features/auth/LoginPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
@@ -11,9 +12,9 @@ import { SoalPage } from '@/features/soal/SoalPage';
 import { VerifikasiPage } from '@/features/verifikasi/VerifikasiPage';
 import { BeritaAcaraPage } from '@/features/berita-acara/BeritaAcaraPage';
 import { PenugasanPicPage } from '@/features/penugasan-pic/PenugasanPicPage';
+import { PenugasanKoordinatorPage } from '@/features/penugasan-koordinator/PenugasanKoordinatorPage';
 import { PeriodePage } from '@/features/periode/PeriodePage';
 import { KategoriPage } from '@/features/kategori/KategoriPage';
-import { BroadcastPage } from '@/features/broadcast/BroadcastPage';
 import { TemplateBaPage } from '@/features/berita-acara/TemplateBaPage';
 import { MonitoringPage } from '@/features/monitoring/MonitoringPage';
 import { DosenPage } from '@/features/dosen/DosenPage';
@@ -41,12 +42,14 @@ export const router = createBrowserRouter([
     {
         path: '/login',
         element: <LoginPage />,
+        errorElement: <RouteErrorBoundary />,
     },
 
     /* ── Protected Routes (MainLayout sebagai guard) ─────────── */
     {
         path: '/',
         element: <MainLayout />,
+        errorElement: <RouteErrorBoundary />,
         children: [
             {
                 index: true,
@@ -89,6 +92,11 @@ export const router = createBrowserRouter([
             },
 
             {
+                path: 'penugasan-koordinator',
+                element: <PenugasanKoordinatorPage />,
+            },
+
+            {
                 path: 'penugasan-verifikator',
                 element: <PenugasanPicPage />,
             },
@@ -111,11 +119,6 @@ export const router = createBrowserRouter([
             {
                 path: 'template-ba',
                 element: <TemplateBaPage />,
-            },
-
-            {
-                path: 'broadcast',
-                element: <BroadcastPage />,
             },
 
             {

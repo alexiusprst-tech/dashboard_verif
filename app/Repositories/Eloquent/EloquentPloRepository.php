@@ -13,18 +13,11 @@ class EloquentPloRepository implements PloRepositoryContract
         return Plo::with(['programStudi', 'creator', 'clo'])->withCount('clo')->find($id);
     }
 
-    public function findByProdi(int $prodiId, int $perPage = 15, ?int $mataKuliahId = null, ?int $periodeId = null, ?string $search = null): LengthAwarePaginator
+    public function findByProdi(int $prodiId, int $perPage = 15, ?int $mataKuliahId = null, ?string $search = null): LengthAwarePaginator
     {
         $query = Plo::with(['programStudi'])
             ->withCount('clo')
             ->where('prodi_id', $prodiId);
-
-        if ($periodeId) {
-            $query->where(function ($q) use ($periodeId) {
-                $q->where('periode_id', $periodeId)
-                  ->orWhereNull('periode_id');
-            });
-        }
 
         if ($search) {
             $query->where(function ($q) use ($search) {

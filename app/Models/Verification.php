@@ -21,6 +21,7 @@ class Verification extends Model
         'tipe_verifikator',
         'status',
         'catatan',
+        'catatan_clo',
         'verified_at',
     ];
 
@@ -29,6 +30,7 @@ class Verification extends Model
         return [
             'tipe_verifikator' => TipeVerifikator::class,
             'status'           => VerifikasiStatus::class,
+            'catatan_clo'      => 'array',
             'verified_at'      => 'datetime',
         ];
     }

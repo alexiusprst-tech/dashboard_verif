@@ -100,6 +100,11 @@ class RepositoryServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\PenugasanVerifikatorRepositoryContract::class,
             \App\Repositories\Eloquent\EloquentPenugasanVerifikatorRepository::class
         );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\PenugasanKoordinatorRepositoryContract::class,
+            \App\Repositories\Eloquent\EloquentPenugasanKoordinatorRepository::class
+        );
     }
 
     /**

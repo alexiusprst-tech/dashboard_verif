@@ -26,6 +26,11 @@ class StoreVerifikasiRequest extends FormRequest
             'status' => 'required|in:' . implode(',', array_column(VerifikasiStatus::cases(), 'value')),
             'tipe_verifikator' => 'required|in:pic,coordinator',
             'catatan' => 'required_if:status,' . VerifikasiStatus::Revisi->value . ',' . VerifikasiStatus::Rejected->value . '|nullable|string',
+            'catatan_clo' => 'nullable|array',
+            'catatan_clo.*.clo_id' => 'nullable|integer',
+            'catatan_clo.*.kode' => 'nullable|string',
+            'catatan_clo.*.catatan' => 'nullable|string',
+            'catatan_clo.*.status' => 'nullable|string',
         ];
     }
 

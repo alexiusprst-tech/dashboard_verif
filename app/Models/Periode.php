@@ -44,6 +44,16 @@ class Periode extends Model
         return $this->hasMany(Penugasan::class, 'periode_id');
     }
 
+    public function penugasanVerifikator(): HasMany
+    {
+        return $this->hasMany(PenugasanVerifikator::class, 'periode_id');
+    }
+
+    public function penugasanKoordinator(): HasMany
+    {
+        return $this->hasMany(PenugasanKoordinator::class, 'periode_id');
+    }
+
     public function beritaAcara(): HasMany
     {
         return $this->hasMany(BeritaAcara::class, 'periode_id');

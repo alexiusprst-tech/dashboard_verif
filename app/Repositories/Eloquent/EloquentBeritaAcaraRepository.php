@@ -11,20 +11,34 @@ class EloquentBeritaAcaraRepository implements BeritaAcaraRepositoryContract
 {
     public function findById(int $id): ?BeritaAcara
     {
-        return BeritaAcara::with(['periode', 'verifier', 'items.soal.dosen', 'items.soal.mataKuliah'])->find($id);
+        return BeritaAcara::with([
+            'periode',
+            'verifier',
+            'soal.dosen',
+            'soal.mataKuliah.programStudi',
+            'items.soal.dosen',
+            'items.soal.mataKuliah'
+        ])->find($id);
     }
 
     public function findByVerifierAndPeriode(int $verifierId, int $periodeId): ?BeritaAcara
     {
         return BeritaAcara::where('verifier_id', $verifierId)
             ->where('periode_id', $periodeId)
-            ->with('items')
+            ->with(['items', 'soal'])
             ->first();
     }
 
     public function paginate(array $filters, int $perPage = 15): LengthAwarePaginator
     {
-        $query = BeritaAcara::with(['periode', 'verifier']);
+        $query = BeritaAcara::with([
+            'periode',
+            'verifier',
+            'soal.dosen',
+            'soal.mataKuliah',
+            'items.soal.dosen',
+            'items.soal.mataKuliah'
+        ]);
 
         if (!empty($filters['periode_id'])) {
             $query->where('periode_id', $filters['periode_id']);
@@ -36,6 +50,9 @@ class EloquentBeritaAcaraRepository implements BeritaAcaraRepositoryContract
             $dosenId = $filters['dosen_id'];
             $query->where(function ($q) use ($dosenId) {
                 $q->where('verifier_id', $dosenId)
+                  ->orWhereHas('soal', function ($qSoal) use ($dosenId) {
+                      $qSoal->where('dosen_id', $dosenId);
+                  })
                   ->orWhereHas('items.soal', function ($q2) use ($dosenId) {
                       $q2->where('dosen_id', $dosenId);
                   });

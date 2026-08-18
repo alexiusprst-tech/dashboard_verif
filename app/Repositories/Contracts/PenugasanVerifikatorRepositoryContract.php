@@ -26,7 +26,7 @@ interface PenugasanVerifikatorRepositoryContract
     /**
      * List penugasan verifikator per periode (paginated/filtered).
      */
-    public function paginate(int $periodeId, ?int $courseId = null, int $perPage = 15): LengthAwarePaginator;
+    public function paginate(int $periodeId, int|array|null $courseId = null, ?string $search = null, int $perPage = 15): LengthAwarePaginator;
 
     /**
      * Ambil daftar verifikator untuk mata kuliah tertentu pada periode tertentu.

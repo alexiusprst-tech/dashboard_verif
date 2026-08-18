@@ -121,6 +121,20 @@ class PeriodeService
         return $periode;
     }
 
+    public function deactivate(int $id, User $user): Periode
+    {
+        $periode = $this->periodeRepository->findById($id);
+        if (!$periode) {
+            throw new BusinessException('Periode tidak ditemukan.', 404);
+        }
+
+        $periode = $this->periodeRepository->update($periode, ['status' => PeriodeStatus::Selesai->value]);
+
+        $this->activityLogService->log("Menonaktifkan periode: {$periode->nama_periode}", 'Periode', $user->id);
+
+        return $periode;
+    }
+
     public function delete(int $id, User $user): void
     {
         $periode = $this->periodeRepository->findById($id);

@@ -36,3 +36,8 @@ export async function activatePeriode(id: number): Promise<Periode> {
     const { data } = await api.patch(`${BASE}/${id}/activate`);
     return data.data;
 }
+
+export async function deactivatePeriode(id: number): Promise<Periode> {
+    const { data } = await api.patch(`${BASE}/${id}/deactivate`);
+    return data.data;
+}

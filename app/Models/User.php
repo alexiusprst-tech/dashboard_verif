@@ -82,6 +82,12 @@ class User extends Authenticatable
         return $this->hasMany(PenugasanVerifikator::class, 'dosen_id');
     }
 
+    /** Penugasan sebagai koordinator mata kuliah (per mata kuliah per periode) */
+    public function penugasanKoordinator(): HasMany
+    {
+        return $this->hasMany(PenugasanKoordinator::class, 'dosen_id');
+    }
+
     /** Verifikasi yang pernah dilakukan oleh user ini */
     public function verifications(): HasMany
     {
@@ -105,33 +111,59 @@ class User extends Authenticatable
 
     /* ── Helpers ────────────────────────────────────────────── */
 
-    public function isDevModeActive(): bool
-    {
-        return (bool) ($this->dev_mode_enabled ?? false);
-    }
-
     public function isSuperAdmin(): bool
     {
-        return $this->isDevModeActive() || (bool) $this->is_super_admin;
+        return (bool) $this->is_super_admin;
     }
 
     public function isCoordinator(): bool
     {
-        return $this->isDevModeActive() || (bool) $this->is_coordinator;
+        return (bool) $this->is_super_admin || (bool) $this->is_coordinator;
     }
 
     public function isKoordinatorMk(): bool
     {
-        // Fallback ke is_coordinator untuk backward compatibility
-        return $this->isDevModeActive() || (bool) ($this->is_koordinator_mk ?? $this->is_coordinator);
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if (isset($this->is_koordinator_mk) && is_bool($this->is_koordinator_mk)) {
+            return $this->is_koordinator_mk;
+        }
+
+        $activePeriode = \App\Models\Periode::where('status', \App\Enums\PeriodeStatus::Aktif)->first();
+        if ($activePeriode) {
+            return $this->isKoordinatorPadaPeriode($activePeriode->id);
+        }
+
+        return $this->penugasanKoordinator()->exists();
+    }
+
+    /**
+     * Cek apakah dosen adalah koordinator MK aktif di suatu periode.
+     * Super Admin otomatis memiliki akses koordinator di semua periode.
+     */
+    public function isKoordinatorPadaPeriode(int $periodeId): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->penugasanKoordinator()
+            ->where('periode_id', $periodeId)
+            ->exists();
     }
 
     /**
      * Cek apakah dosen adalah verifikator aktif di suatu periode.
-     * Query ke tabel penugasan_verifikator.
+     * Super Admin otomatis memiliki akses verifikasi di semua periode.
      */
     public function isVerifikatorPadaPeriode(int $periodeId): bool
     {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
         return $this->penugasanVerifikator()
             ->where('periode_id', $periodeId)
             ->exists();
@@ -139,9 +171,14 @@ class User extends Authenticatable
 
     /**
      * Cek apakah dosen adalah verifikator untuk mata kuliah tertentu di periode ini.
+     * Super Admin otomatis memiliki akses verifikasi di semua course.
      */
     public function isVerifikatorPadaCourse(int $courseId, int $periodeId): bool
     {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
         return $this->penugasanVerifikator()
             ->where('course_id', $courseId)
             ->where('periode_id', $periodeId)

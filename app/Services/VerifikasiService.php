@@ -20,17 +20,20 @@ class VerifikasiService
     protected SoalRepositoryContract $soalRepository;
     protected NotifikasiService $notifikasiService;
     protected ActivityLogService $activityLogService;
+    protected BeritaAcaraService $beritaAcaraService;
 
     public function __construct(
         VerificationRepositoryContract $verificationRepository,
         SoalRepositoryContract $soalRepository,
         NotifikasiService $notifikasiService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        BeritaAcaraService $beritaAcaraService
     ) {
         $this->verificationRepository = $verificationRepository;
         $this->soalRepository = $soalRepository;
         $this->notifikasiService = $notifikasiService;
         $this->activityLogService = $activityLogService;
+        $this->beritaAcaraService = $beritaAcaraService;
     }
 
     public function submit(int $soalId, array $data, User $verifier): Verification
@@ -38,6 +41,11 @@ class VerifikasiService
         $soal = $this->soalRepository->findById($soalId);
         if (!$soal) {
             throw new BusinessException('Soal tidak ditemukan.', 404);
+        }
+
+        // Verifikator tidak boleh memverifikasi soal yang diupload sendiri
+        if ($soal->dosen_id === $verifier->id && !$verifier->isSuperAdmin()) {
+            throw new BusinessException('Anda tidak dapat memverifikasi berkas soal yang Anda upload sendiri.', 403);
         }
 
         if ($soal->status === SoalStatus::Approved) {
@@ -55,6 +63,7 @@ class VerifikasiService
                 'tipe_verifikator' => $tipeVerifikator,
                 'status' => $status->value,
                 'catatan' => $data['catatan'] ?? null,
+                'catatan_clo' => $data['catatan_clo'] ?? null,
                 'verified_at' => now(),
             ]);
 
@@ -65,6 +74,9 @@ class VerifikasiService
 
             return $verif;
         });
+
+        // Buat Berita Acara otomatis untuk soal yang baru diverifikasi
+        $this->beritaAcaraService->generateForVerification($verification);
 
         // Kirim notifikasi ke dosen pembuat soal
         $tipeVerifLabel = 'PIC';

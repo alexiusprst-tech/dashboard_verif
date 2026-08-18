@@ -14,7 +14,6 @@ use App\Http\Controllers\Api\PenugasanController;
 use App\Http\Controllers\Api\PenugasanDosenController;
 use App\Http\Controllers\Api\VerifikasiController;
 use App\Http\Controllers\Api\BeritaAcaraController;
-use App\Http\Controllers\Api\BroadcastController;
 use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\DashboardController;
 
@@ -138,6 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/periode/{id}', [PeriodeController::class, 'update'])->middleware('super_admin');
     Route::delete('/periode/{id}', [PeriodeController::class, 'destroy'])->middleware('super_admin');
     Route::patch('/periode/{id}/activate', [PeriodeController::class, 'activate'])->middleware('super_admin');
+    Route::patch('/periode/{id}/deactivate', [PeriodeController::class, 'deactivate'])->middleware('super_admin');
 
     // Kategori & Template (Super Admin)
     Route::get('/kategori', [KategoriController::class, 'index']);
@@ -173,6 +173,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/dosen/{dosen}', [DosenController::class, 'update'])->middleware('super_admin');
     Route::delete('/dosen/{dosen}', [DosenController::class, 'destroy'])->middleware('super_admin');
 
+    // Penugasan Koordinator MK (Super Admin)
+    Route::get('/penugasan-koordinator', [\App\Http\Controllers\Api\PenugasanKoordinatorController::class, 'index']);
+    Route::post('/penugasan-koordinator', [\App\Http\Controllers\Api\PenugasanKoordinatorController::class, 'store'])->middleware('super_admin');
+    Route::delete('/penugasan-koordinator/{id}', [\App\Http\Controllers\Api\PenugasanKoordinatorController::class, 'destroy'])->middleware('super_admin');
+
     // Penugasan Verifikator (Super Admin)
     Route::get('/penugasan-verifikator', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'index']);
     Route::post('/penugasan-verifikator', [\App\Http\Controllers\Api\PenugasanVerifikatorController::class, 'store'])->middleware('super_admin');
@@ -198,12 +203,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/berita-acara/{id}/print', [BeritaAcaraController::class, 'print']);
     Route::get('/berita-acara/{id}/download', [BeritaAcaraController::class, 'download']);
 
-    // Broadcast
-    Route::get('/broadcast', [BroadcastController::class, 'index']);
-    Route::post('/broadcast', [BroadcastController::class, 'store'])->middleware('super_admin');
-    Route::patch('/broadcast/{id}/publish', [BroadcastController::class, 'publish'])->middleware('super_admin');
-    Route::get('/broadcast/feed', [BroadcastController::class, 'feed']);
-
     // Notifikasi
     Route::get('/notifikasi', [NotifikasiController::class, 'index']);
     Route::get('/notifikasi/unread-count', [NotifikasiController::class, 'unreadCount']);
@@ -217,4 +216,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/upload-progress', [DashboardController::class, 'uploadProgress']);
     Route::get('/dashboard/verifikator', [DashboardController::class, 'pic'])->middleware('verifikator');
     Route::get('/dashboard/pic', [DashboardController::class, 'pic'])->middleware('verifikator');
+
+    // Generator Template Lembar Soal (Dynamic DOCX & PDF)
+    Route::get('/lembar-soal/course-structure/{id}', [\App\Http\Controllers\Api\LembarSoalGeneratorController::class, 'getCourseStructure']);
+    Route::post('/lembar-soal/download-docx', [\App\Http\Controllers\Api\LembarSoalGeneratorController::class, 'downloadDocx']);
+    Route::post('/lembar-soal/download-pdf', [\App\Http\Controllers\Api\LembarSoalGeneratorController::class, 'downloadPdf']);
+
+    // Generator Berita Acara Evaluasi Soal (Dynamic DOCX & PDF)
+    Route::get('/berita-acara-evaluasi/initial-data', [\App\Http\Controllers\Api\BeritaAcaraEvaluasiGeneratorController::class, 'getInitialData']);
+    Route::post('/berita-acara-evaluasi/download-docx', [\App\Http\Controllers\Api\BeritaAcaraEvaluasiGeneratorController::class, 'downloadDocx']);
+    Route::post('/berita-acara-evaluasi/download-pdf', [\App\Http\Controllers\Api\BeritaAcaraEvaluasiGeneratorController::class, 'downloadPdf']);
 });

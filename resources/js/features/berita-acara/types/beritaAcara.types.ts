@@ -15,6 +15,21 @@ export interface BeritaAcaraItem {
 export interface BeritaAcara {
     id: number;
     nomor_ba: string;
+    soal_id?: number;
+    soal?: {
+        id: number;
+        judul_soal: string;
+        status: string;
+        mata_kuliah?: {
+            id: number;
+            kode_mk: string;
+            nama_mk: string;
+        };
+        dosen?: {
+            id: number;
+            nama_lengkap: string;
+        };
+    };
     periode_id: number;
     periode?: Periode;
     verifier_id: number;

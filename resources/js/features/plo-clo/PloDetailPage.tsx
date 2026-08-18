@@ -12,7 +12,7 @@ import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import { CloModal } from './components/CloModal';
 import { PloModal } from './components/PloModal';
-import type { Plo, Clo, ProgramStudi, PloFormData, CloFormData } from './types/plo.types';
+import type { Plo, Clo, ProgramStudi, MataKuliah, PloFormData, CloFormData } from './types/plo.types';
 
 export function PloDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -28,6 +28,15 @@ export function PloDetailPage() {
     // Confirm delete state
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<{ type: 'plo' | 'clo'; id: number; title: string } | null>(null);
+
+    // Fetch Course list for CLO modal
+    const { data: courseList = [] } = useQuery<MataKuliah[]>({
+        queryKey: ['courses'],
+        queryFn: async () => {
+            const res = await api.get('/courses');
+            return res.data.data;
+        },
+    });
 
     // Fetch Program Studi list for PLO edit modal
     const { data: prodiList = [] } = useQuery<ProgramStudi[]>({
@@ -360,6 +369,7 @@ export function PloDetailPage() {
                 onSubmit={handleSaveClo}
                 clo={editingClo}
                 ploList={allPloList.length > 0 ? allPloList : [plo]}
+                mataKuliahList={courseList}
                 defaultPloId={plo.id}
             />
 

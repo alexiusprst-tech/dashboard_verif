@@ -16,7 +16,6 @@ class Clo extends Model
         'nama_clo',
         'deskripsi',
         'plo_id',
-        'periode_id',
         'created_by',
     ];
 
@@ -30,11 +29,6 @@ class Clo extends Model
     public function plo(): BelongsTo
     {
         return $this->belongsTo(Plo::class, 'plo_id');
-    }
-
-    public function periode(): BelongsTo
-    {
-        return $this->belongsTo(Periode::class, 'periode_id');
     }
 
     public function creator(): BelongsTo

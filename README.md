@@ -1,478 +1,356 @@
-# Sistem Verifikasi Soal
+# Sistem Verifikasi Soal Ujian
 
-Website untuk mengelola proses upload, verifikasi, dan dokumentasi (Berita Acara) soal ujian oleh dosen, dengan alur penugasan PIC (Person in Charge) yang bersifat dinamis per periode. Fokus penggunaan saat ini untuk **Program Studi Sistem Informasi**.
+Aplikasi web modern untuk mengelola siklus pengunggahan, verifikasi/telaah soal ujian, monitoring, capaian pembelajaran (PLO & CLO), serta dokumentasi Berita Acara berbasis kurikulum OBE (Outcome-Based Education). Dibangun dengan fokus utama untuk **Program Studi Sistem Informasi**, Fakultas Rekayasa Industri, Telkom University.
 
 ---
 
 ## Daftar Isi
 
-- [1. Ringkasan Sistem](#1-ringkasan-sistem)
-- [2. Role & Hak Akses](#2-role--hak-akses)
-- [3. Proses Bisnis](#3-proses-bisnis)
-- [4. Fitur per Role](#4-fitur-per-role)
-- [5. State Machine Soal](#5-state-machine-soal)
-- [6. Tech Stack](#6-tech-stack)
-- [7. Struktur Proyek](#7-struktur-proyek)
-- [8. Entitas Data Utama](#8-entitas-data-utama)
-- [9. Alur Berita Acara](#9-alur-berita-acara)
-- [10. Catatan Pengembangan](#10-catatan-pengembangan)
+1. [Ringkasan Sistem](#1-ringkasan-sistem)
+2. [Role & Hak Akses](#2-role--hak-akses)
+3. [Alur Proses Bisnis](#3-alur-proses-bisnis)
+4. [Fitur Utama per Peran](#4-fitur-utama-per-peran)
+5. [State Machine Soal Ujian](#5-state-machine-soal-ujian)
+6. [Tech Stack](#6-tech-stack)
+7. [Struktur Proyek](#7-struktur-proyek)
+8. [Skema Entitas Data Utama](#8-skema-entitas-data-utama)
+9. [Generator Lembar Soal & Berita Acara](#9-generator-lembar-soal--berita-acara)
+10. [Panduan Instalasi & Pengujian](#10-panduan-instalasi--pengujian)
 
 ---
 
 ## 1. Ringkasan Sistem
 
-Sistem ini dibangun untuk mendigitalkan proses verifikasi soal ujian di lingkungan akademik, khususnya Program Studi Sistem Informasi. Setiap periode (semester ganjil/genap), dosen mengunggah soal (format PDF) sesuai kategori dan template yang ditentukan serta mata kuliah yang diampunya pada periode tersebut. Dosen Verifikator yang ditugaskan per mata kuliah memverifikasi soal dan memantau progres verifikasi. Hasil verifikasi didokumentasikan secara otomatis dalam bentuk **Berita Acara (BA)** yang dapat dicetak.
+Sistem Verifikasi Soal mendigitalkan dan mengotomatiskan seluruh alur verifikasi naskah soal ujian di lingkungan perguruan tinggi:
 
-Terdapat 3 peran utama dalam sistem:
-- **Super Admin**: Mengelola seluruh konfigurasi sistem, akun pengguna (dosen), periode akademik, kategori & template soal/berita acara, penugasan verifikator per mata kuliah, broadcast pemberitahuan, serta memantau seluruh data sistem.
-- **Dosen Koordinator Mata Kuliah**: Mengampu mata kuliah, mengelola data dosen, mengunggah soal (PDF) mata kuliah koordinasinya, serta memantau progres verifikasi.
-- **Dosen Verifikator**: Memverifikasi soal ujian (approve, revisi, reject) untuk mata kuliah yang ditugaskan kepadanya pada periode berjalan, memantau progres verifikasi tugasnya, serta meng-generate Berita Acara.
-
-Poin penting sistem:
-- **Tiga Peran Utama (Role)**: Super Admin, Dosen Koordinator Mata Kuliah, dan Dosen Verifikator.
-- **Penugasan Verifikator per Mata Kuliah**: Penugasan disimpan pada tabel `penugasan_verifikator` (`course_id`, `dosen_id`, `periode_id`). Seorang dosen ditugaskan sebagai verifikator spesifik untuk mata kuliah tertentu pada periode aktif.
-- **Dua tipe dosen**: Dosen Biasa (aktif di semua periode) dan Dosen LB / Luar Biasa (aktif pada periode ganjil atau genap sesuai penugasan).
-- **Scope PLO dan CLO per periode**: Terikat pada periode akademik aktif.
-- **Berita Acara Otomatis & Immutable**: Generated dari snapshot data verifikasi.
-- **Format berkas wajib PDF**: Berlaku untuk berkas soal dan template.
+- **Pengelolaan Master PLO & CLO**: Master capaian pembelajaran (PLO) dan capaian pembelajaran mata kuliah (CLO) Kurikulum 2024 berdiri secara independen dari periode akademik dan dipetakan langsung ke mata kuliah (`course_clo`).
+- **Pemisahan Peran Koordinator MK & Verifikator Soal**:
+  - **Super Admin**: Mengatur periode, menugaskan Koordinator MK dan Dosen Verifikator Soal untuk masing-masing mata kuliah.
+  - **Dosen Koordinator MK**: Mengkoordinasikan mata kuliah, mengelola CLO mata kuliah, memantau verifikator yang ditunjuk Super Admin, serta memantau progres verifikasi soal mata kuliah yang dipegang.
+  - **Dosen Verifikator Soal**: Menelaah naskah soal ujian masuk antrean, memeriksa kesesuaian soal terhadap CLO, memberikan catatan per-CLO, dan menyetujui/meminta revisi naskah soal.
+  - **Dosen Biasa / Pengampu**: Menyusun dan mengunggah soal ujian mandiri, memantau riwayat revisi, serta mengunduh Berita Acara.
+- **Integritas & Otomasi Verifikasi**: Dosen yang mengunggah soal tidak dapat memverifikasi soalnya sendiri.
+- **On-the-Fly Document Generation**: Sistem dapat men-generate dokumen resmi (Lembar Soal Standar & Berita Acara Evaluasi Soal Ujian) secara langsung dalam format **Word (DOCX)** maupun **PDF**.
 
 ---
 
 ## 2. Role & Hak Akses
 
-| Role | Sifat | Deskripsi Singkat |
-|---|---|---|
-| **Super Admin** | Permanen | Mengelola keseluruhan sistem: user/dosen, periode & deadline, kategori & template soal/BA, penugasan verifikator, broadcast, monitoring prodi, dan berita acara. |
-| **Dosen Koordinator Mata Kuliah** | Permanen | Mengelola data dosen prodi, mengunggah soal ujian (PDF) untuk mata kuliah yang dikoordinasikannya, dan memantau progres verifikasi. |
-| **Dosen Verifikator** | Dinamis (penugasan per mata kuliah per periode) | Dosen yang ditugaskan memverifikasi soal (approve/revisi/reject) untuk mata kuliah tertentu, memantau progres verifikasi tugasnya, dan meng-generate Berita Acara. |
+| Role | Sifat Penugasan | Deskripsi Singkat |
+| :--- | :--- | :--- |
+| **Super Admin** | Akun Administrator | Mengelola konfigurasi sistem secara penuh: akun dosen, periode & deadline, master mata kuliah, penugasan Koordinator MK, penugasan Verifikator Soal, monitoring prodi, dan template dokumen. |
+| **Koordinator MK** | Dinamis per Periode Aktif | Dosen yang ditunjuk Super Admin untuk mengkoordinasikan mata kuliah tertentu pada periode berjalan. Bertanggung jawab atas pengelolaan PLO & CLO mata kuliah serta memantau verifikator yang ditunjuk Super Admin. |
+| **Verifikator Soal** | Dinamis per Periode Aktif | Dosen yang ditunjuk Super Admin untuk menelaah naskah soal ujian pada mata kuliah tertentu. Memiliki wewenang telaah per CLO, menyetujui/meminta revisi soal, dan menandatangani Berita Acara. |
+| **Dosen Pengampu (Biasa/LB)** | Akun Dosen Pengampu | Dosen pengampu mata kuliah yang menyusun & mengunggah naskah soal ujian sebelum tenggat waktu, menindaklanjuti revisi dari verifikator, dan mengunduh Berita Acara. |
 
-### Matriks Hak Akses
+### Matriks Hak Akses & Fitur
 
-| Fitur | Super Admin | Dosen Koordinator MK | Dosen Verifikator |
-|---|:---:|:---:|:---:|
-| CRUD User & Manajemen Dosen | ✅ | ✅ (Read Only / View) | ❌ |
-| Kelola Periode & Deadline | ✅ | ❌ | ❌ |
-| Kelola Kategori & Template Soal / BA | ✅ | ❌ | ❌ |
-| Penugasan Verifikator per Mata Kuliah | ✅ | ❌ | ❌ |
-| Kirim Broadcast | ✅ | ❌ | ❌ |
-| CRUD PLO & CLO (per periode) | ✅ | ✅ | ✅ |
-| Upload Soal (PDF, sesuai matkul) | ✅ | ✅ | ✅ |
-| Verifikasi Soal (Approve/Revisi/Reject) | ✅ | ❌ | ✅ (Matkul Ditugaskan) |
-| Monitoring Dashboard Progres | ✅ | ✅ | ✅ (Tugas Sendiri) |
-| Generate & Print Berita Acara | ✅ | ✅ | ✅ |
-
----
-
-## 3. Proses Bisnis
-
-### Tahap 1 — Persiapan Periode & Penugasan (Super Admin)
-1. **Super Admin** membuat Periode baru (semester ganjil/genap) beserta tenggat waktu (deadline) upload soal.
-2. **Super Admin** menyiapkan Kategori & Template soal serta Template Berita Acara (format PDF/DOCX).
-3. **Super Admin** menetapkan penugasan Dosen Verifikator per Mata Kuliah untuk periode berjalan dan mengirimkan Broadcast ke seluruh dosen.
-
-### Tahap 2 — Pengisian PLO/CLO & Upload Soal (Dosen Koordinator MK)
-4. **Dosen** login ke sistem. Jika Dosen LB, sistem memvalidasi keaktifan berdasarkan semester penugasannya.
-5. **Dosen** melengkapi PLO dan CLO untuk periode aktif.
-6. **Dosen Koordinator MK** mengunggah berkas soal (format PDF) sesuai mata kuliah yang diampu sebelum deadline. Status soal menjadi `submitted`.
-
-### Tahap 3 — Verifikasi Soal (Dosen Verifikator)
-7. **Dosen Verifikator** menerima antrean soal yang perlu diverifikasi sesuai mata kuliah yang ditugaskan kepadanya.
-8. **Dosen Verifikator** memeriksa soal dan menentukan hasil verifikasi: **Approve**, **Revisi**, atau **Reject** beserta catatan verifikator.
-9. Jika diminta **Revisi**, Dosen Koordinator MK mengunggah ulang berkas soal dan status kembali menjadi `submitted` untuk diverifikasi ulang oleh Verifikator.
-
-### Tahap 4 — Monitoring & Berita Acara (Super Admin & Koordinator MK)
-10. **Super Admin** dan **Dosen Koordinator MK** memantau progres verifikasi soal melalui Dashboard.
-11. Setelah verifikasi selesai, **Dosen Verifikator** meng-generate Berita Acara (BA).
-12. **Super Admin** dan **Dosen Koordinator MK** dapat meninjau, mengunduh, dan mencetak Berita Acara.
+| Fitur / Modul | Super Admin | Koordinator MK | Verifikator Soal | Dosen Biasa / LB |
+| :--- | :---: | :---: | :---: | :---: |
+| **Dashboard Khusus Peran** | ✅ (Super Admin) | ✅ (Koordinator MK) | ✅ (Verifikator) | ✅ (Dosen Pengampu) |
+| **Manajemen Dosen (CRUD)** | ✅ | ❌ | ❌ | ❌ |
+| **Kelola Periode & Deadline** | ✅ | ❌ | ❌ | ❌ |
+| **Penugasan Koordinator MK** | ✅ | ❌ | ❌ | ❌ |
+| **Penugasan Verifikator Soal** | ✅ (CRUD) | ❌ | ❌ | ❌ |
+| **Monitoring Verifikator Soal** | ✅ | ✅ (MK Koordinasi) | ❌ | ❌ |
+| **Kelola Master PLO & CLO** | ✅ | ✅ (MK Koordinasi) | ❌ (View Only) | ❌ (View Only) |
+| **Upload Naskah Soal Mandiri** | ✅ | ✅ | ✅ | ✅ |
+| **Antrean Verifikasi Soal** | ✅ | ❌ | ✅ (MK Ditugaskan) | ❌ |
+| **Catatan Telaah per-CLO** | ✅ | ❌ | ✅ | ❌ |
+| **Monitoring Progres Prodi** | ✅ | ❌ | ❌ | ❌ |
+| **Berita Acara Evaluasi (Download/Print)** | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
-## 4. Fitur per Role
+## 3. Alur Proses Bisnis
 
-### Super Admin
-- Manajemen Akun Dosen (Super Admin, Dosen Koordinator MK, Dosen Verifikator, Dosen Biasa/LB)
-- Manajemen Periode Akademik & Deadline
-- Kelola Kategori & Template Soal (PDF) serta Template Berita Acara
-- Dashboard Monitoring Progres Verifikasi Prodi
-- Manajemen Data Dosen Prodi
-- Melihat, mengunduh, dan mencetak Berita Acara seluruh PIC
-- CRUD PLO & CLO serta Upload Soal (sebagai Dosen Pengampu)
+```mermaid
+flowchart TD
+    subgraph S1 [Tahap 1: Setup & Penugasan - Super Admin]
+        A1[Aktifkan Periode Akademik & Deadline] --> A2[Atur Master Data PLO / CLO / Mata Kuliah]
+        A2 --> A3[Tugaskan Dosen Koordinator MK]
+        A3 --> A4[Tugaskan Dosen Verifikator Soal]
+    end
 
-### PIC (Person in Charge)
-- Dihubungkan secara dinamis per periode akademik
-- Mengakses antrean verifikasi soal ujian pada periode tugasnya
-- Memberikan keputusan verifikasi (Approve / Perlu Revisi / Reject) dan catatan verifikator
-- Dashboard Monitoring Progres Verifikasi PIC
-- Generate, preview, dan cetak Berita Acara (opsi: BA saja, Soal saja, atau BA + Soal)
+    subgraph S2 [Tahap 2: Penyusunan & Upload - Dosen]
+        B1[Koordinator MK Sesuaikan CLO Mata Kuliah] --> B2[Dosen Pengampu Unduh Template / Susun Soal DOCX/PDF]
+        B2 --> B3[Dosen Upload Soal & Pilih CLO yang Diuji]
+        B3 --> B4[Status Soal: Submitted]
+    end
 
-### Dosen (Biasa & LB)
-- Role dasar untuk seluruh dosen pengampu
-- CRUD PLO & CLO khusus periode aktif
-- Upload berkas soal (PDF) sesuai mata kuliah yang diampu sebelum deadline
-- Memantau status soal (Submitted, In Review, Revisi, Approved, Rejected) dan riwayat revisi
-- Menerima notifikasi & broadcast dari sistem/admin
+    subgraph S3 [Tahap 3: Verifikasi & Telaah - Verifikator]
+        C1[Verifikator Buka Antrean Verifikasi Soal] --> C2[Telaah Soal & Isi Catatan Kesesuaian per-CLO]
+        C2 --> C3{Keputusan Verifikasi}
+        C3 -->|Revisi| C4[Status: Revisi -> Dosen Upload Perbaikan]
+        C4 --> B4
+        C3 -->|Ditolak| C5[Status: Rejected]
+        C3 -->|Disetujui| C6[Status: Approved]
+    end
+
+    subgraph S4 [Tahap 4: Dokumentasi & Monitoring]
+        C6 --> D1[Sistem Otomatis Generate Berita Acara Evaluasi]
+        D1 --> D2[Koordinator MK Pantau Progres Verifikasi MK]
+        D1 --> D3[Dosen & Verifikator Unduh Berita Acara DOCX / PDF]
+    end
+
+    S1 --> S2 --> S3 --> S4
+```
 
 ---
 
-## 5. State Machine Soal
+## 4. Fitur Utama per Peran
+
+### 1. Super Admin
+- **Dashboard Super Admin**: Ringkasan sistem, total soal, progres verifikasi fakultas/prodi, status periode, dan status pengunggahan dosen.
+- **Manajemen Akun Dosen**: CRUD data dosen lengkap dengan kode dosen, email Telkom University, tipe dosen (Biasa / LB), dan semester LB.
+- **Manajemen Periode & Deadline**: Membuat periode baru (Ganjil/Genap), menetapkan tanggal mulai dan tenggat waktu (deadline), serta aktivasi periode.
+- **Penugasan Koordinator MK**: Menugaskan dosen sebagai penanggung jawab mata kuliah pada periode aktif (`penugasan_koordinator`).
+- **Penugasan Verifikator Soal**: Menugaskan satu atau lebih dosen verifikator untuk mata kuliah pada periode aktif (`penugasan_verifikator`).
+- **Kategori & Template Berita Acara**: Pengelolaan master kategori dan template dokumen.
+- **Monitoring Seluruh Soal**: Melihat repositori seluruh berkas naskah soal ujian prodi.
+
+### 2. Dosen Koordinator MK
+- **Dashboard Koordinator MK**:
+  - 4 Kartu Statistik: *Mata Kuliah Koordinasi*, *Verifikator Ditunjuk*, *Total Soal MK Koordinasi*, dan *Soal Saya Terunggah*.
+  - Widget *Verifikator & Progres Mata Kuliah Koordinasi*: Daftar mata kuliah yang dipegang, dosen verifikator yang ditunjuk Super Admin, serta visualisasi progress bar verifikasi soal mata kuliah.
+- **Fitur Monitoring Verifikator**: Halaman khusus (`/penugasan-verifikator`) mode pemantauan (*read-only*) yang difilter secara ketat hanya untuk mata kuliah koordinasi dosen yang sedang login.
+- **Manajemen PLO & CLO**: Kelola capaian pembelajaran mata kuliah yang dikoordinasikan.
+- **Upload & Soal Mandiri**: Menyusun dan mengunggah naskah soal ujian yang diampu sendiri.
+
+### 3. Dosen Verifikator Soal
+- **Dashboard Verifikator**:
+  - Statistik Antrean Verifikasi, Soal Belum Diverifikasi, Selesai Diverifikasi, dan Soal Mandiri.
+  - Diagram donat progress verifikasi dan akses cepat antrean.
+- **Antrean Verifikasi Soal (`/verifikasi`)**:
+  - Menampilkan daftar naskah soal ujian masuk sesuai mata kuliah tugasnya.
+  - Pengecualian otomatis: Tidak dapat memverifikasi soal yang diunggah oleh diri sendiri (*self-review guard*).
+  - Form verifikasi interaktif: status (*Approved*, *Revisi*, *Rejected*), catatan umum, dan **catatan telaah per butir CLO** (*Sesuai*, *Perlu Revisi*, *Tolak*).
+- **Generate Berita Acara**: Otomatisasi pembuatan Berita Acara Evaluasi Soal Ujian (BA).
+
+### 4. Dosen Pengampu (Biasa & LB)
+- **Dashboard Dosen Pengampu**: Statistik status naskah soal mandiri (*Disetujui*, *Dalam Review*, *Perlu Revisi*), pengingat tenggat waktu deadline, dan widget progress upload mata kuliah yang diampu.
+- **Upload Soal Ujian (`/soal`)**: Mengunggah naskah soal (format Word DOCX atau PDF), memilih jenis asesmen (UTS/UAS/Quiz), dan memilih CLO yang diujikan.
+- **Riwayat & Timeline Soal**: Menelusuri status soal secara real-time dan melihat riwayat catatan perbaikan dari verifikator.
+- **Berita Acara (`/berita-acara`)**: Mengunduh Berita Acara hasil telaah verifikator.
+
+---
+
+## 5. State Machine Soal Ujian
 
 ```
-Draft → Submitted → In Review (oleh dosen dengan role PIC)
-                        │
-          ┌─────────────┼─────────────┐
-          ▼             ▼             ▼
-       Approved       Revisi       Rejected
-                        │
-                        ▼
-                   Submitted (ulang, masuk antrian verifikasi lagi)
+ [ Draft ]
+    │
+    ▼
+ [ Submitted ] ──(Masuk Antrean Verifikator)──► [ In Review ]
+                                                     │
+                                       ┌─────────────┼─────────────┐
+                                       ▼             ▼             ▼
+                                  [ Approved ]  [ Revisi ]   [ Rejected ]
+                                       │             │
+                             (Generate BA Otomatis)  ▼
+                                                [ Submitted ] (Unggah Revisi)
 ```
 
 ---
 
 ## 6. Tech Stack
 
-### Frontend
-- React + Vite + TypeScript
-- React Router — routing & route guard per role (termasuk guard dinamis untuk role PIC)
-- Tailwind CSS — styling
-- Shadcn UI — komponen UI
-- Axios Instance — HTTP client dengan interceptor token
-- TanStack Query — data fetching, caching, mutation
-- Feature-based Folder Structure
+### Frontend (SPA)
+- **Framework**: React 19 + TypeScript + Vite 8
+- **Routing & Guard**: React Router 7 dengan Route Guard berbasis Role Dinamis
+- **State & Data Fetching**: TanStack Query (React Query) + Axios HTTP Client
+- **Styling & UI**: Vanilla Tailwind CSS + Lucide Icons + Recharts
+- **Form & Validation**: React Hook Form + Zod Validator
+- **Feedback**: Sonner Toast Notifications
 
-### Backend
-- Laravel 12
-- Sanctum — autentikasi SPA/token
-- Pola Controller → Service → Repository → Model
-- Form Request Validation (termasuk validasi wajib PDF untuk file soal/template)
-- API Resource untuk format response
-- PostgreSQL sebagai database
+### Backend (REST API)
+- **Framework**: Laravel 12
+- **Autentikasi**: Laravel Sanctum (Token-based API Authentication)
+- **Arsitektur**: Controller → Service → Repository → Model Pattern
+- **Document Processing**:
+  - `phpoffice/phpword` — Pemrosesan & generator otomatis naskah soal dan Berita Acara format Microsoft Word (.docx)
+  - `barryvdh/laravel-dompdf` — Generator dokumen PDF on-the-fly
+- **Database**: MySQL / PostgreSQL
 
 ---
 
 ## 7. Struktur Proyek
 
 ```
-verifikasi-soal/
+dashboard_verif/
+├── app/
+│   ├── Enums/                     # SoalStatus, PeriodeStatus, TipeDosen, NotificationType
+│   ├── Http/
+│   │   ├── Controllers/Api/       # PenugasanKoordinator, PenugasanVerifikator, Soal, Verifikasi, BA, dll.
+│   │   ├── Middleware/            # SuperAdminMiddleware, EnsureIsVerifikator, EnsureIsKoordinatorMk
+│   │   ├── Requests/              # Form Request Validation (Soal, Dosen, Verifikasi, dll.)
+│   │   └── Resources/             # UserResource, SoalResource, VerifikasiResource, dll.
+│   ├── Models/                    # User, Course, Periode, Soal, Plo, Clo, PenugasanKoordinator, dll.
+│   ├── Repositories/
+│   │   ├── Contracts/             # Interface kontrak repository
+│   │   └── Eloquent/              # Implementasi Eloquent ORM
+│   └── Services/                  # Business Logic (Auth, Soal, Verifikasi, BA, Dashboard, Generator)
 │
-├── backend/                                  # Laravel 12 API
-│   ├── app/
-│   │   ├── Http/
-│   │   │   ├── Controllers/Api/
-│   │   │   │   ├── Auth/AuthController.php
-│   │   │   │   ├── PloController.php
-│   │   │   │   ├── CloController.php
-│   │   │   │   ├── PeriodeController.php
-│   │   │   │   ├── KategoriTemplateController.php
-│   │   │   │   ├── SoalController.php
-│   │   │   │   ├── DosenMataKuliahController.php
-│   │   │   │   ├── UserRoleController.php        # pemberian role PIC
-│   │   │   │   ├── VerifikasiController.php
-│   │   │   │   ├── BeritaAcaraController.php
-│   │   │   │   ├── BroadcastController.php
-│   │   │   │   └── DashboardController.php
-│   │   │   │
-│   │   │   ├── Requests/
-│   │   │   │   ├── Plo/{Store,Update}PloRequest.php
-│   │   │   │   ├── Clo/{Store,Update}CloRequest.php
-│   │   │   │   ├── Soal/{Store,Update}SoalRequest.php     # validasi mimes:pdf
-│   │   │   │   ├── DosenMataKuliah/StoreMappingRequest.php
-│   │   │   │   ├── UserRole/AssignPicRequest.php
-│   │   │   │   ├── Verifikasi/StoreVerifikasiRequest.php
-│   │   │   │   └── Broadcast/StoreBroadcastRequest.php
-│   │   │   │
-│   │   │   ├── Resources/
-│   │   │   │   ├── UserResource.php
-│   │   │   │   ├── PloResource.php
-│   │   │   │   ├── CloResource.php
-│   │   │   │   ├── SoalResource.php
-│   │   │   │   ├── UserRoleResource.php
-│   │   │   │   ├── VerifikasiResource.php
-│   │   │   │   └── BeritaAcaraResource.php
-│   │   │   │
-│   │   │   └── Middleware/
-│   │   │       ├── EnsureIsCoordinator.php
-│   │   │       └── EnsureIsPicForPeriode.php   # cek dinamis ke tabel user_roles
-│   │   │
-│   │   ├── Services/
-│   │   │   ├── PloService.php
-│   │   │   ├── CloService.php
-│   │   │   ├── PeriodeService.php
-│   │   │   ├── SoalService.php                  # termasuk validateUploadEligibility()
-│   │   │   ├── DosenMataKuliahService.php
-│   │   │   ├── UserRoleService.php               # pemberian role PIC
-│   │   │   ├── VerifikasiService.php
-│   │   │   ├── BeritaAcaraService.php            # logic generate PDF + snapshot
-│   │   │   └── BroadcastService.php
-│   │   │
-│   │   ├── Repositories/
-│   │   │   ├── Contracts/
-│   │   │   │   ├── PloRepositoryInterface.php
-│   │   │   │   ├── SoalRepositoryInterface.php
-│   │   │   │   ├── UserRoleRepositoryInterface.php
-│   │   │   │   └── VerifikasiRepositoryInterface.php
-│   │   │   └── Eloquent/
-│   │   │       ├── PloRepository.php
-│   │   │       ├── SoalRepository.php
-│   │   │       ├── UserRoleRepository.php
-│   │   │       └── VerifikasiRepository.php
-│   │   │
-│   │   ├── Models/
-│   │   │   ├── User.php
-│   │   │   ├── Plo.php
-│   │   │   ├── Clo.php
-│   │   │   ├── Periode.php
-│   │   │   ├── KategoriTemplate.php
-│   │   │   ├── DosenMataKuliah.php
-│   │   │   ├── Role.php
-│   │   │   ├── UserRole.php
-│   │   │   ├── Soal.php
-│   │   │   ├── Verifikasi.php
-│   │   │   ├── BeritaAcara.php
-│   │   │   └── Broadcast.php
-│   │   │
-│   │   ├── Enums/
-│   │   │   ├── SoalStatus.php          # Draft, Submitted, InReview, Revisi, Approved, Rejected
-│   │   │   ├── VerifikasiStatus.php
-│   │   │   ├── TipeDosen.php           # Biasa, LB
-│   │   │   ├── SemesterType.php        # Ganjil, Genap
-│   │   │   └── PrintType.php           # BA_ONLY, SOAL_ONLY, BOTH
-│   │   │
-│   │   └── Providers/
-│   │       └── RepositoryServiceProvider.php
-│   │
-│   ├── database/
-│   │   ├── migrations/
-│   │   └── seeders/
-│   │       └── RoleSeeder.php          # seed role "pic"
-│   │
-│   └── routes/
-│       └── api.php
+├── database/
+│   ├── migrations/                # Skema basis data
+│   └── seeders/                   # Seeder data awal prodi, dosen, dan periode
 │
-├── frontend/                                  # React + Vite + TS SPA
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── App.tsx
-│   │   │   ├── router/
-│   │   │   │   ├── index.tsx
-│   │   │   │   ├── ProtectedRoute.tsx          # guard role + PIC assignment dinamis
-│   │   │   │   └── routePaths.ts
-│   │   │   └── providers/
-│   │   │       ├── QueryProvider.tsx
-│   │   │       └── AuthProvider.tsx
-│   │   │
-│   │   ├── shared/
-│   │   │   ├── api/axiosInstance.ts
-│   │   │   ├── components/ui/                  # komponen shadcn
-│   │   │   ├── hooks/
-│   │   │   │   ├── useAuth.ts
-│   │   │   │   └── useDebounce.ts
-│   │   │   ├── layouts/
-│   │   │   │   ├── CoordinatorLayout.tsx
-│   │   │   │   ├── DosenLayout.tsx
-│   │   │   │   └── PicLayout.tsx               # dipakai juga untuk fitur monitoring
-│   │   │   ├── types/common.types.ts
-│   │   │   └── utils/
-│   │   │       ├── cn.ts
-│   │   │       └── formatDate.ts
-│   │   │
-│   │   └── features/
-│   │       ├── auth/
-│   │       │   ├── api/authApi.ts
-│   │       │   ├── hooks/useLogin.ts
-│   │       │   ├── components/LoginForm.tsx
-│   │       │   ├── pages/LoginPage.tsx
-│   │       │   └── types/auth.types.ts
-│   │       │
-│   │       ├── plo-clo/
-│   │       │   ├── api/{ploApi,cloApi}.ts
-│   │       │   ├── hooks/{usePloList,useCreatePlo,useCloByPlo}.ts
-│   │       │   ├── components/{PloTable,PloFormDialog,CloFormDialog}.tsx
-│   │       │   ├── pages/PloCloPage.tsx         # ter-filter otomatis by periode aktif
-│   │       │   └── types/plo-clo.types.ts
-│   │       │
-│   │       ├── periode/
-│   │       │   ├── api/periodeApi.ts
-│   │       │   ├── hooks/usePeriodeList.ts
-│   │       │   ├── components/PeriodeFormDialog.tsx
-│   │       │   ├── pages/PeriodeManagementPage.tsx
-│   │       │   └── types/periode.types.ts
-│   │       │
-│   │       ├── dosen-mata-kuliah/
-│   │       │   ├── api/dosenMataKuliahApi.ts
-│   │       │   ├── hooks/{useMappingList,useCreateMapping}.ts
-│   │       │   ├── components/MappingFormDialog.tsx
-│   │       │   ├── pages/DosenMataKuliahPage.tsx
-│   │       │   └── types/mapping.types.ts
-│   │       │
-│   │       ├── soal/
-│   │       │   ├── api/soalApi.ts
-│   │       │   ├── hooks/{useSoalList,useUploadSoal,useSoalStatus}.ts
-│   │       │   ├── components/{UploadSoalForm,SoalTemplateDownload,SoalStatusBadge}.tsx
-│   │       │   ├── pages/{UploadSoalPage,SoalListPage}.tsx
-│   │       │   └── types/soal.types.ts
-│   │       │
-│   │       ├── user-role/
-│   │       │   ├── api/userRoleApi.ts
-│   │       │   ├── hooks/{useDosenSearch,useAssignPicRole}.ts   # search by kode dosen + nama
-│   │       │   ├── components/{DosenSearchCombobox,PicRoleTable}.tsx
-│   │       │   ├── pages/AssignPicRolePage.tsx
-│   │       │   └── types/user-role.types.ts
-│   │       │
-│   │       ├── verifikasi/
-│   │       │   ├── api/verifikasiApi.ts
-│   │       │   ├── hooks/{useSoalToVerify,useSubmitVerifikasi}.ts
-│   │       │   ├── components/{VerifikasiForm,VerifikasiHistoryList}.tsx
-│   │       │   ├── pages/PicVerifikasiPage.tsx
-│   │       │   └── types/verifikasi.types.ts
-│   │       │
-│   │       ├── berita-acara/
-│   │       │   ├── api/beritaAcaraApi.ts
-│   │       │   ├── hooks/usePrintBeritaAcara.ts
-│   │       │   ├── components/PrintOptionDialog.tsx       # BA / Soal / Keduanya
-│   │       │   ├── pages/BeritaAcaraPage.tsx
-│   │       │   └── types/berita-acara.types.ts
-│   │       │
-│   │       ├── broadcast/
-│   │       │   ├── api/broadcastApi.ts
-│   │       │   ├── hooks/useBroadcastList.ts
-│   │       │   ├── components/{BroadcastFormDialog,BroadcastFeed}.tsx
-│   │       │   ├── pages/BroadcastPage.tsx
-│   │       │   └── types/broadcast.types.ts
-│   │       │
-│   │       └── dashboard/
-│   │           ├── api/dashboardApi.ts
-│   │           ├── components/
-│   │           │   ├── CoordinatorDashboard.tsx
-│   │           │   ├── DosenDashboard.tsx
-│   │           │   └── PicDashboard.tsx        # gabungan verifikasi + monitoring progres
-│   │           └── pages/DashboardPage.tsx
-│   │
-│   ├── index.html
-│   └── vite.config.ts
+├── resources/
+│   ├── js/                        # React SPA Source
+│   │   ├── app/                   # App root, Router, Providers
+│   │   ├── features/              # Feature modules:
+│   │   │   ├── auth/              # Login & sesi
+│   │   │   ├── dashboard/         # Role-specific dashboards (Super Admin, Koordinator, Verifikator, Dosen)
+│   │   │   ├── plo-clo/           # Master PLO, CLO & mapping kurikulum
+│   │   │   ├── soal/              # Unggah soal, timeline, & riwayat revisi
+│   │   │   ├── verifikasi/        # Antrean verifikasi soal & form telaah per-CLO
+│   │   │   ├── penugasan-koordinator/ # Penugasan Koordinator MK oleh Super Admin
+│   │   │   ├── penugasan-pic/     # Penugasan & Monitoring Verifikator Soal
+│   │   │   ├── berita-acara/      # Generator & preview Berita Acara
+│   │   │   ├── periode/           # Manajemen periode & deadline
+│   │   │   ├── kategori/          # Kategori & template soal
+│   │   │   ├── dosen/             # Manajemen akun dosen
+│   │   │   └── monitoring/        # Monitoring prodi
+│   │   └── shared/                # Layouts (Sidebar, Topbar), UI components, hooks, lib
+│   └── views/
+│       └── templates/             # Blade views untuk template rendering PDF
 │
-└── README.md
-```
-
-> Catatan: folder/komponen terkait "Coordinator" (`CoordinatorLayout`, `CoordinatorDashboard`, dsb.) yang sempat muncul di draf sebelumnya **dihapus** — seluruh fungsinya sudah tergabung ke dalam `PicLayout`/`PicDashboard`.
-
----
-
-## 7.1 Endpoint API Enhancement Dosen
-
-- `GET /api/soal/{id}/timeline` — Mengambil timeline riwayat perjalanan dokumen soal dari unggah hingga disetujui/berita acara
-- `GET /api/soal/{id}/revision-history` & `GET /api/questions/{id}/revision-history` — Mengambil seluruh riwayat catatan revisi dari verifikator
-- `GET /api/dashboard/upload-progress` — Mengambil progress pengumpulan soal per mata kuliah yang diampu dosen pada periode aktif (lengkap dengan indikator deadline kritis < 3 hari)
-
----
-
-## 8. Entitas Data Utama
-
-```
-User
-- id, uuid, kode_dosen, nama_lengkap, email, password
-- prodi_id (FK)
-- tipe_dosen: enum('biasa','lb')
-- semester_lb: enum('ganjil','genap') nullable   // hanya untuk Dosen LB
-- is_coordinator (bool)
-- status_aktif (bool)
-- deleted_at (soft delete)
-
-ProgramStudi
-- id, kode_prodi, nama_prodi
-
-Course (Mata Kuliah)
-- id, kode_mk, nama_mk, prodi_id
-
-DosenMataKuliah (pemetaan fleksibel)
-- id, dosen_id, mata_kuliah_id, periode_id, created_by
-
-Role
-- id, nama_role   // saat ini hanya "pic"
-
-UserRole (penugasan role dinamis)
-- id, user_id, role_id, periode_id, assigned_by, assigned_at
-  → dosen dengan entry role "pic" di sini dapat akses verifikasi + monitoring
-
-Periode
-- id, nama_periode, semester (ganjil/genap), tahun_akademik
-- tanggal_mulai, tanggal_deadline, status
-
-PLO (per periode)
-- id, kode, deskripsi, prodi_id, periode_id, created_by
-
-CLO (per periode)
-- id, kode, deskripsi, mata_kuliah_id, plo_id, periode_id, created_by
-
-KategoriTemplate
-- id, nama_kategori, deskripsi
-
-Template (wajib PDF)
-- id, kategori_id, nama_file, file_path, versi, is_active
-
-Soal (wajib PDF)
-- id, uuid, dosen_id, mata_kuliah_id, clo_id, periode_id, template_id
-- judul_soal, file_soal, versi, status, uploaded_at, deleted_at (soft delete)
-
-RevisiHistory
-- id, soal_id, versi, file_soal, catatan_verifikator, uploaded_by
-
-Verifikasi (satu jenis verifikator: dosen dengan role PIC)
-- id, soal_id, verifier_id, status, catatan, verified_at, deleted_at
-
-BeritaAcara (auto-generated)
-- id, nomor_ba, periode_id, verifier_id, generated_at, file_pdf
-
-BeritaAcaraItem (snapshot immutable)
-- id, berita_acara_id, soal_id, verification_id, status_snapshot, catatan_snapshot
-
-Broadcast
-- id, judul, isi, target, prodi_id, periode_id, created_by, published_at
-
-Notifikasi
-- id, user_id, judul, pesan, tipe, is_read, reference_type, reference_id
+├── routes/
+│   ├── api.php                    # REST API endpoints
+│   └── web.php                    # SPA entrypoint
+│
+└── tests/
+    └── Feature/                   # Automated feature tests (Sanctum, RBAC, Upload, Verifikasi, BA, Monitoring)
 ```
 
 ---
 
-## 9. Alur Berita Acara
+## 8. Skema Entitas Data Utama
 
-Berita Acara dirancang sebagai dokumen yang di-generate otomatis (bukan diketik manual), dengan pendekatan snapshot immutable:
+```
+users
+├── id, uuid, kode_dosen, nama_lengkap, email, password
+├── prodi_id (FK -> program_studi)
+├── tipe_dosen ('biasa', 'lb'), semester_lb ('ganjil', 'genap')
+├── is_super_admin (bool)
+└── status_aktif (bool)
 
-1. Setelah proses verifikasi soal selesai untuk suatu periode, dosen dengan role PIC memicu generate BA.
-2. Sistem mengambil data dari tabel `verifications` **pada saat itu juga** dan menyalinnya ke `berita_acara_items` (snapshot) — nomor BA, daftar soal & hasilnya, catatan, tanggal.
-3. Dokumen dirender ke PDF di sisi backend (bukan di frontend) agar konsisten dan dapat diaudit, hasilnya di-cache (`file_pdf`).
-4. Dosen dengan role PIC dapat memilih opsi cetak:
-   - **BA saja**
-   - **Soal saja**
-   - **BA + Soal (gabungan)**
-5. Karena datanya snapshot, **BA yang sudah dicetak tidak akan berubah** meskipun ada soal yang direvisi lagi setelahnya.
+courses (Mata Kuliah)
+├── id, kode_mk, nama_mk, sks, semester, prodi_id
+
+penugasan_koordinator (Koordinator MK per Periode)
+├── id, course_id, dosen_id, periode_id, assigned_by, assigned_at
+└── UNIQUE(course_id, periode_id)
+
+penugasan_verifikator (Verifikator Soal per Periode)
+├── id, course_id, dosen_id, periode_id, assigned_by, assigned_at
+└── UNIQUE(course_id, dosen_id, periode_id)
+
+periodes
+├── id, nama_periode, semester ('ganjil', 'genap'), tahun_akademik
+├── tanggal_mulai, tanggal_deadline
+└── status ('aktif', 'selesai', 'draft')
+
+plo (Program Learning Outcomes)
+├── id, kode_plo, deskripsi, prodi_id
+
+clo (Course Learning Outcomes)
+├── id, kode_clo, deskripsi, plo_id
+
+course_clo (Mapping CLO ke Mata Kuliah)
+└── course_id, clo_id
+
+soal (Naskah Soal Ujian)
+├── id, uuid, dosen_id, mata_kuliah_id, periode_id, kategori_id
+├── judul_soal, file_soal, jenis_asesmen, status, uploaded_at
+└── softDeletes
+
+verifications
+├── id, soal_id, verifier_id, status, catatan, verified_at
+└── HasMany: verifikasi_clo_notes (clo_id, status_clo, catatan_clo)
+
+berita_acara
+├── id, nomor_ba, periode_id, verifier_id, generated_at, file_path
+└── HasMany: berita_acara_items (snapshot immutable hasil telaah)
+```
 
 ---
 
-## 10. Catatan Pengembangan & Pembaruan Terkini
+## 9. Generator Lembar Soal & Berita Acara
 
-Hal-hal yang sudah difinalisasi dan diimplementasikan:
+Sistem dilengkapi generator dokumen *on-the-fly* berbasis template resmi Telkom University:
 
-- ✅ **Empat Peran Pengguna (Role & Akses)**: Super Admin, Coordinator, PIC (dinamis per periode via `user_roles`), dan Dosen (Biasa/LB).
-- ✅ **Berita Acara per Role**:
-  - Dosen dengan role **PIC** dapat meng-generate Berita Acara untuk tugas verifikasinya sendiri secara mandiri.
-  - **Super Admin** dapat memfilter daftar Berita Acara dengan opsi **"— Semua PIC —"** (menampilkan Berita Acara seluruh PIC secara bersamaan) atau memilih PIC spesifik.
-- ✅ **Riwayat Verifikasi Lengkap (Full Verification Audit Trail)**:
-  - Mengembalikan seluruh rekam jejak keputusan verifikasi (`Disetujui`, `Perlu Revisi`, dan `Ditolak`) beserta nama verifikator, timestamp, dan catatan lengkap.
-  - Komponen Accordion & Timeline menampilkan badge indikator warna dinamis (🟢 Disetujui, 🟡 Perlu Revisi, 🔴 Ditolak).
-  - Halaman Verifikasi Soal dilengkapi **Filter Status** (*Semua Status*, *Submitted*, *Dalam Review*, *Perlu Revisi*, *Disetujui*, *Ditolak*) serta tombol **Riwayat** untuk peninjauan mendalam.
-- ✅ **Aturan Upload & Eligibilitas Soal**:
-  - Super Admin dibebaskan dari pembatasan pemetaan mata kuliah.
-  - Mode Setup Awal: Jika pemetaan `dosen_mata_kuliah` belum diisi pada periode aktif, validasi dilewati sementara agar pengujian/upload awal tetap berjalan lancar.
-- ✅ **Kualitas Antarmuka (UX/UI)**:
-  - Overlay backdrop modal disesuaikan tanpa efek blur berlebihan (`backdrop-blur`) agar latar belakang tetap jernih dan nyaman dibaca.
-  - Navigasi sidebar menggunakan pencocokan rute presisi (`end={item.href === '/soal'}`) untuk mencegah sorotan menu ganda.
-- ✅ **Format Berkas**: Soal dan template wajib berformat PDF.
-- ✅ **Scope PLO & CLO**: Di-scope khusus per periode akademik.
+1. **Lembar Soal Ujian (DOCX & PDF)**:
+   - Endpoint: `/api/lembar-soal/generate` & `/api/lembar-soal/course-structure/{id}`
+   - Otomatis mengisi kop fakultas/prodi, data mata kuliah, dosen pengampu, daftar CLO yang diujikan, serta instruksi ujian.
+2. **Berita Acara Evaluasi Soal (DOCX & PDF)**:
+   - Endpoint: `/api/berita-acara-evaluasi/generate` & `/api/berita-acara-evaluasi/initial-data`
+   - Otomatis merangkum snapshot hasil verifikasi soal, persetujuan CLO, tanda tangan dosen verifikator dan koordinator MK.
 
-Hal yang dapat dikembangkan lebih lanjut di masa depan (opsional):
+---
 
-1. Fitur **duplikasi PLO/CLO dari periode sebelumnya** untuk efisiensi input dosen.
-2. Validasi kuota jumlah PIC per periode (misal: 4–5 dosen) jika disyaratkan oleh kebijakan akademik.
-3. Konfigurasi `SANCTUM_STATEFUL_DOMAINS` dan CORS untuk deployment produksi lintas domain.
+## 10. Panduan Instalasi & Pengujian
+
+### Prasyarat
+- PHP >= 8.2 dengan ekstensi `pdo`, `mbstring`, `zip`, `gd`, `xml`
+- Composer >= 2.x
+- Node.js >= 18.x & NPM
+- Database MySQL atau PostgreSQL
+
+### Langkah Instalasi
+
+1. **Clone repository dan install dependensi**:
+   ```bash
+   composer install
+   npm install
+   ```
+
+2. **Konfigurasi Environment**:
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+   Sesuaikan konfigurasi database pada berkas `.env`.
+
+3. **Migrasi Basis Data & Seeding**:
+   ```bash
+   php artisan migrate --seed
+   ```
+
+4. **Kompilasi Frontend & Jalankan Server**:
+   ```bash
+   # Terminal 1: Vite dev server / Build asset
+   npm run build
+   # atau untuk mode development: npm run dev
+
+   # Terminal 2: Laravel server
+   php artisan serve
+   ```
+
+5. **Akses Aplikasi**:
+   Buka browser pada `http://127.0.0.1:8000`
+
+### Menjalankan Automated Tests
+
+Aplikasi dilengkapi dengan suite pengujian otomatis menyeluruh:
+```bash
+# Menjalankan seluruh test suite (45+ tests)
+php artisan test
+
+# Menjalankan test khusus monitoring Koordinator MK
+php artisan test --filter=PenugasanVerifikatorKoordinatorMonitoringTest
+```
+
+---
+
+### Kredensial Akun Default (Seeder)
+
+| Peran | Email | Kata Sandi | Keterangan |
+| :--- | :--- | :--- | :--- |
+| **Super Admin** | `admin@telkomuniversity.ac.id` | `password` | Akses penuh sistem |
+| **Koordinator MK** | `dwn@telkomuniversity.ac.id` | `password` | Koordinator Pengembangan Aplikasi Web (Periode Aktif) |
+| **Verifikator Soal** | `ilr@telkomuniversity.ac.id` | `password` | Verifikator Soal Pengembangan Aplikasi Web (Periode Aktif) |
+| **Dosen Pengampu** | `shc@telkomuniversity.ac.id` | `password` | Dosen Pengampu |
+
+---
+*Dikembangkan untuk Program Studi Sistem Informasi — Fakultas Rekayasa Industri, Telkom University.*

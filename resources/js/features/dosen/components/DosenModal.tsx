@@ -18,7 +18,7 @@ export function DosenModal({
     onClose,
     onSubmit,
     editingDosen,
-    prodiList,
+    prodiList = [],
     loading = false,
 }: DosenModalProps) {
     const isEdit = !!editingDosen;
@@ -41,7 +41,6 @@ export function DosenModal({
             prodi_id: '',
             is_koordinator_mk: false,
             is_coordinator: false,
-            dev_mode_enabled: false,
             status_aktif: true,
         },
     });
@@ -50,7 +49,6 @@ export function DosenModal({
 
     useEffect(() => {
         const isKoordinator = editingDosen?.is_koordinator_mk ?? editingDosen?.is_coordinator ?? false;
-        const devModeEnabled = editingDosen?.dev_mode_enabled ?? false;
         if (editingDosen) {
             reset({
                 name: editingDosen.nama_lengkap || editingDosen.name || '',
@@ -62,7 +60,6 @@ export function DosenModal({
                 prodi_id: editingDosen.prodi_id || '',
                 is_koordinator_mk: isKoordinator,
                 is_coordinator: isKoordinator,
-                dev_mode_enabled: devModeEnabled,
                 status_aktif: editingDosen.status_aktif ?? true,
             });
         } else {
@@ -90,7 +87,6 @@ export function DosenModal({
             ...data,
             is_koordinator_mk: isKoordinator,
             is_coordinator: isKoordinator,
-            dev_mode_enabled: data.dev_mode_enabled ?? false,
         };
         if (isEdit && !payload.password) {
             delete payload.password;
@@ -258,18 +254,6 @@ export function DosenModal({
                             />
                             <label htmlFor="status_aktif" className="text-xs font-semibold text-gray-700 cursor-pointer">
                                 Akun Aktif (Dosen dapat memilih & mengunggah berkas soal)
-                            </label>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="dev_mode_enabled"
-                                className="rounded border-gray-300 text-[var(--color-primary)] focus:ring-0"
-                                {...register('dev_mode_enabled')}
-                            />
-                            <label htmlFor="dev_mode_enabled" className="text-xs font-semibold text-gray-700 cursor-pointer">
-                                Aktifkan Dev Mode (jika aktif, user berstatus aktif akan mendapat akses koordinator/dev)
                             </label>
                         </div>
                     </div>

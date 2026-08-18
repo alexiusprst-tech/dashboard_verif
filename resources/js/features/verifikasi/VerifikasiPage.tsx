@@ -144,7 +144,9 @@ export function VerifikasiPage() {
                     className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
                 >
                     <option value="">— Semua Status —</option>
-                    <option value="in_review">In Review</option>
+                    <option value="pending">Perlu Diverifikasi (Baru & Revisi)</option>
+                    <option value="in_review">In Review / Baru</option>
+                    <option value="submitted">Submitted</option>
                     <option value="revisi">Revisi</option>
                     <option value="approved">Disetujui</option>
                     <option value="rejected">Ditolak</option>
@@ -222,17 +224,26 @@ export function VerifikasiPage() {
                                                 <button
                                                     onClick={() => handleOpenDetail(r)}
                                                     title="Lihat Riwayat & Detail"
-                                                    className="flex items-center gap-1 rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-2 py-1.5 text-xs font-medium shadow-xs transition"
+                                                    className="flex items-center gap-1 rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-2 py-1.5 text-xs font-medium shadow-xs transition cursor-pointer"
                                                 >
                                                     <Eye size={13} /> Riwayat
                                                 </button>
-                                                <button
-                                                    onClick={() => handleOpenVerify(r)}
-                                                    title="Proses Verifikasi"
-                                                    className="flex items-center gap-1 rounded bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white px-2.5 py-1.5 text-xs font-semibold shadow-sm transition"
-                                                >
-                                                    <CheckSquare size={13} /> Verify
-                                                </button>
+                                                {r.dosen_id === user?.id && !user?.is_super_admin ? (
+                                                    <span
+                                                        title="Anda tidak dapat memverifikasi soal yang Anda upload sendiri"
+                                                        className="inline-flex items-center gap-1 rounded bg-gray-100 border border-gray-200 text-gray-400 px-2.5 py-1.5 text-xs font-medium cursor-not-allowed"
+                                                    >
+                                                        Soal Anda
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleOpenVerify(r)}
+                                                        title="Proses Verifikasi"
+                                                        className="flex items-center gap-1 rounded bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white px-2.5 py-1.5 text-xs font-semibold shadow-sm transition cursor-pointer"
+                                                    >
+                                                        <CheckSquare size={13} /> Verify
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

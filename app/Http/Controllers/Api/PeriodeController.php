@@ -79,6 +79,16 @@ class PeriodeController extends Controller
         ])->response();
     }
 
+    public function deactivate(Request $request, int $id): JsonResponse
+    {
+        $periode = $this->periodeService->deactivate($id, $request->user());
+
+        return (new PeriodeResource($periode))->additional([
+            'success' => true,
+            'message' => 'Periode berhasil dinonaktifkan.'
+        ])->response();
+    }
+
     public function destroy(Request $request, int $id): JsonResponse
     {
         $this->periodeService->delete($id, $request->user());

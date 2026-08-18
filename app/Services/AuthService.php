@@ -46,13 +46,17 @@ class AuthService
         // Generate token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Set virtual attribute is_verifikator_aktif berdasarkan periode aktif
+        // Set virtual attributes is_verifikator_aktif & is_koordinator_mk berdasarkan periode aktif
         $activePeriode = $this->periodeRepository->findActive();
         $user->is_verifikator_aktif = $activePeriode
             ? $user->isVerifikatorPadaPeriode($activePeriode->id)
             : false;
-        // Keep is_pic_active for backward compatibility
         $user->is_pic_active = $user->is_verifikator_aktif;
+
+        $user->is_koordinator_mk = $activePeriode
+            ? $user->isKoordinatorPadaPeriode($activePeriode->id)
+            : false;
+        $user->is_coordinator = $user->is_koordinator_mk;
 
         $this->activityLogService->log('User melakukan login', 'Auth', $user->id);
 
@@ -70,13 +74,17 @@ class AuthService
 
     public function me(User $user): array
     {
-        // Set virtual attribute is_verifikator_aktif berdasarkan periode aktif
+        // Set virtual attributes is_verifikator_aktif & is_koordinator_mk berdasarkan periode aktif
         $activePeriode = $this->periodeRepository->findActive();
         $user->is_verifikator_aktif = $activePeriode
             ? $user->isVerifikatorPadaPeriode($activePeriode->id)
             : false;
-        // Keep is_pic_active for backward compatibility
         $user->is_pic_active = $user->is_verifikator_aktif;
+
+        $user->is_koordinator_mk = $activePeriode
+            ? $user->isKoordinatorPadaPeriode($activePeriode->id)
+            : false;
+        $user->is_coordinator = $user->is_koordinator_mk;
 
         return [
             'user' => $user,

@@ -90,13 +90,14 @@ class PenugasanVerifikatorService
             throw new BusinessException('Penugasan verifikator tidak ditemukan.', 404);
         }
 
-        // Hapus seluruh penugasan verifikator untuk dosen ini di periode terkait
-        PenugasanVerifikator::where('dosen_id', $penugasan->dosen_id)
-            ->where('periode_id', $penugasan->periode_id)
-            ->delete();
+        $dosenId   = $penugasan->dosen_id;
+        $periodeId = $penugasan->periode_id;
+        $courseId  = $penugasan->course_id;
+
+        $this->penugasanRepository->revokeVerifikator($penugasan);
 
         $this->activityLogService->log(
-            "Mencabut penugasan verifikator Dosen ID {$penugasan->dosen_id} pada periode ID {$penugasan->periode_id}.",
+            "Mencabut penugasan verifikator Dosen ID {$dosenId} pada Mata Kuliah ID {$courseId} (periode ID {$periodeId}).",
             'Penugasan Verifikator',
             $user->id
         );

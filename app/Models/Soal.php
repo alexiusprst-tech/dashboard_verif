@@ -87,6 +87,11 @@ class Soal extends Model
 
     /* ── Helpers ────────────────────────────────────────────── */
 
+    public function beritaAcara(): HasOne
+    {
+        return $this->hasOne(BeritaAcara::class, 'soal_id');
+    }
+
     public function isOwnedBy(int $userId): bool
     {
         return $this->dosen_id === $userId;

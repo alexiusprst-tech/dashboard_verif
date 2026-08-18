@@ -66,10 +66,13 @@ class SoalEnhancementsTest extends TestCase
         $plo = \App\Models\Plo::firstOrCreate(['kode' => 'PLO-1'], [
             'deskripsi' => 'PLO 1',
         ]);
-        $clo = \App\Models\Clo::firstOrCreate(['kode' => 'CLO-1', 'mata_kuliah_id' => $this->course->id], [
-            'deskripsi' => 'CLO 1',
-            'plo_id'    => $plo->id,
-        ]);
+        $clo = \App\Models\Clo::firstOrCreate(
+            ['kode' => 'CLO-1', 'plo_id' => $plo->id],
+            [
+                'mata_kuliah_id' => $this->course->id,
+                'deskripsi'      => 'CLO 1',
+            ]
+        );
 
         return Soal::create(array_merge([
             'uuid'           => \Illuminate\Support\Str::uuid()->toString(),
@@ -170,5 +173,110 @@ class SoalEnhancementsTest extends TestCase
             ],
             'success',
         ]);
+    }
+
+    public function test_can_submit_verification_with_per_clo_notes(): void
+    {
+        $soal = $this->createTestSoal(['status' => 'submitted']);
+
+        $verifier = User::factory()->create([
+            'is_super_admin' => true,
+        ]);
+
+        $payload = [
+            'status' => 'revisi',
+            'tipe_verifikator' => 'pic',
+            'catatan' => 'Perlu revisi pada beberapa butir soal.',
+            'catatan_clo' => [
+                [
+                    'clo_id' => $soal->clo_id,
+                    'kode' => 'CLO-1',
+                    'deskripsi' => 'CLO 1 deskripsi',
+                    'catatan' => 'Pertanyaan nomor 3 rubriknya belum jelas.',
+                    'status' => 'revisi',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($verifier, 'sanctum')
+            ->postJson("/api/soal/{$soal->id}/verifikasi", $payload);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', 'revisi')
+            ->assertJsonPath('data.catatan', 'Perlu revisi pada beberapa butir soal.')
+            ->assertJsonPath('data.catatan_clo.0.kode', 'CLO-1')
+            ->assertJsonPath('data.catatan_clo.0.catatan', 'Pertanyaan nomor 3 rubriknya belum jelas.');
+
+        $historyResponse = $this->actingAs($this->dosen, 'sanctum')
+            ->getJson("/api/soal/{$soal->id}/revision-history");
+
+        $historyResponse->assertOk()
+            ->assertJsonPath('data.0.catatan_clo.0.kode', 'CLO-1')
+            ->assertJsonPath('data.0.catatan_clo.0.catatan', 'Pertanyaan nomor 3 rubriknya belum jelas.');
+    }
+
+    public function test_automatic_berita_acara_generated_per_verified_soal(): void
+    {
+        $soal1 = $this->createTestSoal(['status' => 'submitted', 'judul_soal' => 'Soal UTS APB']);
+        $soal2 = $this->createTestSoal(['status' => 'submitted', 'judul_soal' => 'Soal UAS APB']);
+
+        $verifier = User::factory()->create([
+            'is_super_admin' => true,
+            'nama_lengkap'   => 'Dr. Verifikator Test, M.Kom.',
+        ]);
+
+        // Verifikasi Soal 1
+        $this->actingAs($verifier, 'sanctum')
+            ->postJson("/api/soal/{$soal1->id}/verifikasi", [
+                'status'           => 'approved',
+                'tipe_verifikator' => 'pic',
+                'catatan'          => 'Soal 1 sangat baik dan sesuai CLO.',
+                'catatan_clo'      => [
+                    [
+                        'kode'      => 'CLO1',
+                        'deskripsi' => 'Analisis proses',
+                        'catatan'   => 'Sesuai dengan rubrik',
+                        'status'    => 'sesuai',
+                    ]
+                ],
+            ])->assertCreated();
+
+        // Verifikasi Soal 2
+        $this->actingAs($verifier, 'sanctum')
+            ->postJson("/api/soal/{$soal2->id}/verifikasi", [
+                'status'           => 'revisi',
+                'tipe_verifikator' => 'pic',
+                'catatan'          => 'Soal 2 perlu perbaikan pada butir soal 2.',
+                'catatan_clo'      => [
+                    [
+                        'kode'      => 'CLO2',
+                        'deskripsi' => 'Desain proses',
+                        'catatan'   => 'Perbaiki rubrik penilaian',
+                        'status'    => 'revisi',
+                    ]
+                ],
+            ])->assertCreated();
+
+        // Verifikasi Berita Acara dibuat otomatis untuk masing-masing soal
+        $ba1 = \App\Models\BeritaAcara::where('soal_id', $soal1->id)->first();
+        $ba2 = \App\Models\BeritaAcara::where('soal_id', $soal2->id)->first();
+
+        $this->assertNotNull($ba1, 'Berita Acara untuk Soal 1 harus terbuat otomatis.');
+        $this->assertNotNull($ba2, 'Berita Acara untuk Soal 2 harus terbuat otomatis.');
+
+        $this->assertNotEquals($ba1->id, $ba2->id, 'Masing-masing soal harus memiliki Berita Acara yang berbeda.');
+        $this->assertNotNull($ba1->file_pdf);
+        $this->assertNotNull($ba2->file_pdf);
+
+        // Periksa endpoint /api/berita-acara mengembalikan data per-soal
+        $baListResponse = $this->actingAs($verifier, 'sanctum')
+            ->getJson("/api/berita-acara?periode_id={$soal1->periode_id}");
+
+        $baListResponse->assertOk()
+            ->assertJsonPath('success', true);
+
+        $data = $baListResponse->json('data');
+        $this->assertGreaterThanOrEqual(2, count($data));
     }
 }

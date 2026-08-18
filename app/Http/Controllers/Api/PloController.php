@@ -54,10 +54,9 @@ class PloController extends Controller
         }
 
         $mataKuliahId = $request->query('mata_kuliah_id') ? (int)$request->query('mata_kuliah_id') : null;
-        $periodeId = $request->query('periode_id') ? (int)$request->query('periode_id') : null;
         $search = $request->query('search');
 
-        $paginator = $this->ploRepository->findByProdi((int)$prodiId, $perPage, $mataKuliahId, $periodeId, $search);
+        $paginator = $this->ploRepository->findByProdi((int)$prodiId, $perPage, $mataKuliahId, $search);
 
         return PloResource::collection($paginator)->additional([
             'success' => true,
