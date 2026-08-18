@@ -67,7 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::get('/courses', function (Illuminate\Http\Request $request) {
         $prodiId = $request->query('prodi_id');
-        $query = \App\Models\Course::withCount('clo');
+        $query = \App\Models\Course::withCount('clo')->with(['clo.plo']);
         if ($prodiId) {
             $query->where('prodi_id', $prodiId);
         }
@@ -78,7 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/courses/{id}', function (int $id) {
-        $course = \App\Models\Course::withCount('clo')->find($id);
+        $course = \App\Models\Course::withCount('clo')->with(['clo.plo'])->find($id);
         if (!$course) {
             return response()->json(['success' => false, 'message' => 'Mata kuliah tidak ditemukan.'], 404);
         }

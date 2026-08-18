@@ -157,34 +157,86 @@ class DashboardService
         return $this->superAdmin($periodeId);
     }
 
-    public function uploadProgress(User $user, ?int $periodeId = null): array
+    public function uploadProgress(User $user, ?int $periodeId = null, ?string $role = null): array
     {
         $activePeriode = $this->getPeriodeTarget($periodeId);
         if (!$activePeriode) {
             return [];
         }
 
-        // Fetch courses assigned to user in active period
-        $assignedCourses = \Illuminate\Support\Facades\DB::table('dosen_mata_kuliah')
-            ->join('courses', 'dosen_mata_kuliah.mata_kuliah_id', '=', 'courses.id')
-            ->where('dosen_mata_kuliah.dosen_id', $user->id)
-            ->where('dosen_mata_kuliah.periode_id', $activePeriode->id)
-            ->select('courses.id as course_id', 'courses.kode_mk', 'courses.nama_mk')
-            ->get();
+        // Tentukan mode role
+        $isVerifikatorMode = ($role === 'verifikator' || $role === 'pic') ||
+            (empty($role) && $user->isVerifikatorPadaPeriode($activePeriode->id) && !$user->isSuperAdmin());
 
-        // Fallback: If no explicit mapping found for active period, get courses in user's prodi or limit 5
-        if ($assignedCourses->isEmpty()) {
+        $isKoordinatorMode = ($role === 'koordinator' || $role === 'koordinator_mk' || $role === 'coordinator') ||
+            (empty($role) && $user->isKoordinatorPadaPeriode($activePeriode->id) && !$user->isSuperAdmin() && !$isVerifikatorMode);
+
+        $isSuperAdminMode = ($role === 'super_admin' || $role === 'admin') ||
+            (empty($role) && $user->isSuperAdmin());
+
+        if ($isSuperAdminMode) {
+            // Super Admin: Melihat seluruh mata kuliah pada periode ini (atau difilter prodi jika ada)
             $query = \App\Models\Course::query();
             if ($user->prodi_id) {
                 $query->where('prodi_id', $user->prodi_id);
             }
-            $assignedCourses = $query->take(10)->get()->map(function ($c) {
-                return (object) [
-                    'course_id' => $c->id,
-                    'kode_mk'   => $c->kode_mk,
-                    'nama_mk'   => $c->nama_mk,
-                ];
-            });
+            $assignedCourses = $query->orderBy('nama_mk')->get()->map(fn($c) => (object)[
+                'course_id' => $c->id,
+                'kode_mk'   => $c->kode_mk,
+                'nama_mk'   => $c->nama_mk,
+            ]);
+        } elseif ($isVerifikatorMode) {
+            // Verifikator Soal: HANYA mata kuliah yang ditugaskan oleh Super Admin pada periode ini
+            $assignedCourses = \App\Models\PenugasanVerifikator::with('course')
+                ->where('dosen_id', $user->id)
+                ->where('periode_id', $activePeriode->id)
+                ->get()
+                ->map(fn($pv) => $pv->course ? (object)[
+                    'course_id' => $pv->course->id,
+                    'kode_mk'   => $pv->course->kode_mk,
+                    'nama_mk'   => $pv->course->nama_mk,
+                ] : null)
+                ->filter()
+                ->unique('course_id')
+                ->values();
+        } elseif ($isKoordinatorMode) {
+            // Koordinator MK: HANYA mata kuliah yang dikoordinasikannya pada periode ini
+            $assignedCourses = \App\Models\PenugasanKoordinator::with('course')
+                ->where('dosen_id', $user->id)
+                ->where('periode_id', $activePeriode->id)
+                ->get()
+                ->map(fn($pk) => $pk->course ? (object)[
+                    'course_id' => $pk->course->id,
+                    'kode_mk'   => $pk->course->kode_mk,
+                    'nama_mk'   => $pk->course->nama_mk,
+                ] : null)
+                ->filter()
+                ->unique('course_id')
+                ->values();
+        } else {
+            // Dosen Pengampu Biasa: Mata kuliah yang diampu di dosen_mata_kuliah pada periode ini
+            $assignedCourses = \Illuminate\Support\Facades\DB::table('dosen_mata_kuliah')
+                ->join('courses', 'dosen_mata_kuliah.mata_kuliah_id', '=', 'courses.id')
+                ->where('dosen_mata_kuliah.dosen_id', $user->id)
+                ->where('dosen_mata_kuliah.periode_id', $activePeriode->id)
+                ->select('courses.id as course_id', 'courses.kode_mk', 'courses.nama_mk')
+                ->get();
+
+            // Jika belum ada di dosen_mata_kuliah, cari dari soal yang sudah diupload dosen ini pada periode ini
+            if ($assignedCourses->isEmpty()) {
+                $assignedCourses = \App\Models\Soal::with('mataKuliah')
+                    ->where('dosen_id', $user->id)
+                    ->where('periode_id', $activePeriode->id)
+                    ->get()
+                    ->pluck('mataKuliah')
+                    ->filter()
+                    ->unique('id')
+                    ->map(fn($c) => (object)[
+                        'course_id' => $c->id,
+                        'kode_mk'   => $c->kode_mk,
+                        'nama_mk'   => $c->nama_mk,
+                    ]);
+            }
         }
 
         $now = \Illuminate\Support\Carbon::now();
@@ -197,11 +249,20 @@ class DashboardService
         $result = [];
 
         foreach ($assignedCourses as $course) {
-            $soal = \App\Models\Soal::where('dosen_id', $user->id)
-                ->where('periode_id', $activePeriode->id)
-                ->where('mata_kuliah_id', $course->course_id)
-                ->latest()
-                ->first();
+            // Untuk Verifikator, Koordinator, & SuperAdmin: Cek soal terkini pada MK tersebut di periode ini
+            // Untuk Dosen Biasa: Cek soal milik dosen sendiri pada MK tersebut di periode ini
+            if ($isVerifikatorMode || $isKoordinatorMode || $isSuperAdminMode) {
+                $soal = \App\Models\Soal::where('periode_id', $activePeriode->id)
+                    ->where('mata_kuliah_id', $course->course_id)
+                    ->latest()
+                    ->first();
+            } else {
+                $soal = \App\Models\Soal::where('dosen_id', $user->id)
+                    ->where('periode_id', $activePeriode->id)
+                    ->where('mata_kuliah_id', $course->course_id)
+                    ->latest()
+                    ->first();
+            }
 
             $status = 'belum_upload';
             $statusLabel = 'Belum Upload';

@@ -25,13 +25,16 @@ export function BeritaAcaraPage() {
     const { toast } = useToast();
     const { user } = useAuth();
 
+    const isSuperAdmin = Boolean(user?.is_super_admin);
+    const isKoordinatorMk = Boolean(user?.is_koordinator_mk || user?.is_coordinator);
+
     // Filters
     const [periodes, setPeriodes] = useState<Periode[]>([]);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
 
-    // PIC dropdown (hanya untuk super admin)
+    // PIC dropdown (untuk super admin & koordinator mk)
     const [picList, setPicList] = useState<PicOption[]>([]);
     const [selectedVerifierId, setSelectedVerifierId] = useState('');
 
@@ -52,10 +55,14 @@ export function BeritaAcaraPage() {
             .catch(() => setPeriodes([]));
     }, []);
 
-    // Load daftar PIC untuk dropdown pilih verifikator (hanya super admin)
+    // Load daftar Verifikator (Super Admin & Koordinator MK)
     useEffect(() => {
-        if (!user?.is_super_admin || !selectedPeriodeId) return;
-        api.get('/penugasan', { params: { periode_id: selectedPeriodeId, per_page: 100 } })
+        if ((!isSuperAdmin && !isKoordinatorMk) || !selectedPeriodeId) {
+            setPicList([]);
+            return;
+        }
+        const endpoint = isSuperAdmin ? '/penugasan' : '/penugasan-pic';
+        api.get(endpoint, { params: { periode_id: selectedPeriodeId, per_page: 100 } })
             .then((res) => {
                 const pics: PicOption[] = (res.data?.data ?? []).map((p: any) => ({
                     id: p.dosen?.id ?? p.user_id,
@@ -65,17 +72,9 @@ export function BeritaAcaraPage() {
                 // Deduplicate
                 const unique = pics.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
                 setPicList(unique);
-                setSelectedVerifierId('');
             })
             .catch(() => setPicList([]));
-    }, [user?.is_super_admin, selectedPeriodeId]);
-
-    // Untuk PIC: verifier_id otomatis = diri sendiri
-    useEffect(() => {
-        if (!user?.is_super_admin && user?.id) {
-            setSelectedVerifierId(String(user.id));
-        }
-    }, [user?.is_super_admin, user?.id]);
+    }, [isSuperAdmin, isKoordinatorMk, selectedPeriodeId]);
 
     const { data: response, isLoading, refetch } = useBaList({
         periode_id: selectedPeriodeId || undefined,
@@ -100,6 +99,7 @@ export function BeritaAcaraPage() {
     const handleReset = () => {
         const active = periodes.find((p) => p.status === 'aktif');
         if (active) setSelectedPeriodeId(String(active.id));
+        setSelectedVerifierId('');
         setPage(1);
     };
 
@@ -107,7 +107,11 @@ export function BeritaAcaraPage() {
         <div className="flex flex-col gap-6">
             <PageHeader
                 title="Berita Acara Verifikasi"
-                description="Daftar dan unduh Berita Acara resmi hasil verifikasi soal ujian per periode pelaksanaan."
+                description={
+                    isKoordinatorMk && !isSuperAdmin
+                        ? "Daftar Berita Acara milik Anda dan seluruh Berita Acara para verifikator untuk mata kuliah yang Anda koordinasikan."
+                        : "Daftar dan unduh Berita Acara resmi hasil verifikasi soal ujian per periode pelaksanaan."
+                }
                 breadcrumb={[{ label: 'Berita Acara' }]}
             />
 
@@ -129,8 +133,8 @@ export function BeritaAcaraPage() {
                     ))}
                 </select>
 
-                {/* Dropdown Verifikator — hanya tampil untuk Super Admin */}
-                {user?.is_super_admin && (
+                {/* Dropdown Verifikator — tampil untuk Super Admin & Koordinator MK */}
+                {(isSuperAdmin || isKoordinatorMk) && (
                     <>
                         <div className="flex items-center gap-2 ml-2">
                             <Users size={16} className="text-gray-400" />

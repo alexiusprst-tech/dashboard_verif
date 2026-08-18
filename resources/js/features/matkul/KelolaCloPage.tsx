@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     ArrowLeft, ChevronRight, ChevronsRight, ChevronLeft, ChevronsLeft,
-    Search, Layers, Check, Loader2, Save, X
+    Search, Layers, Check, Loader2, Save, X, GraduationCap
 } from 'lucide-react';
 import api from '@/shared/lib/api';
 import { useToast } from '@/shared/hooks/useToast';
@@ -22,6 +22,12 @@ interface CloItem {
     kode: string;
     deskripsi: string;
     mata_kuliah_id?: number | null;
+    plo_id?: number | null;
+    plo?: {
+        id: number;
+        kode: string;
+        deskripsi: string;
+    } | null;
 }
 
 export function KelolaCloPage() {
@@ -151,12 +157,22 @@ export function KelolaCloPage() {
     // Filtered lists for rendering
     const filteredAvailable = available.filter((c) => {
         const q = leftSearch.toLowerCase();
-        return c.kode.toLowerCase().includes(q) || c.deskripsi.toLowerCase().includes(q);
+        return (
+            c.kode.toLowerCase().includes(q) ||
+            c.deskripsi.toLowerCase().includes(q) ||
+            (c.plo?.kode && c.plo.kode.toLowerCase().includes(q)) ||
+            (c.plo?.deskripsi && c.plo.deskripsi.toLowerCase().includes(q))
+        );
     });
 
     const filteredSelected = selected.filter((c) => {
         const q = rightSearch.toLowerCase();
-        return c.kode.toLowerCase().includes(q) || c.deskripsi.toLowerCase().includes(q);
+        return (
+            c.kode.toLowerCase().includes(q) ||
+            c.deskripsi.toLowerCase().includes(q) ||
+            (c.plo?.kode && c.plo.kode.toLowerCase().includes(q)) ||
+            (c.plo?.deskripsi && c.plo.deskripsi.toLowerCase().includes(q))
+        );
     });
 
     if (loadingCourse || loadingClos) {
@@ -235,7 +251,7 @@ export function KelolaCloPage() {
                             type="text"
                             value={leftSearch}
                             onChange={(e) => setLeftSearch(e.target.value)}
-                            placeholder="Cari CLO..."
+                            placeholder="Cari kode CLO, PLO, deskripsi..."
                             className="w-full text-xs text-gray-700 placeholder-gray-400 bg-transparent outline-none"
                         />
                         {leftSearch && (
@@ -269,8 +285,14 @@ export function KelolaCloPage() {
                                         className="mt-0.5 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-0.5">
+                                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                             <span className="font-bold text-xs text-gray-800 font-mono">{clo.kode}</span>
+                                            {clo.plo && (
+                                                <span className="inline-flex items-center gap-1 rounded bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-mono font-bold text-blue-700">
+                                                    <GraduationCap size={10} />
+                                                    {clo.plo.kode}
+                                                </span>
+                                            )}
                                             {clo.mata_kuliah_id && (
                                                 <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
                                                     Digunakan di MK lain
@@ -342,7 +364,7 @@ export function KelolaCloPage() {
                             type="text"
                             value={rightSearch}
                             onChange={(e) => setRightSearch(e.target.value)}
-                            placeholder="Cari CLO terpilih..."
+                            placeholder="Cari CLO terpilih, PLO, deskripsi..."
                             className="w-full text-xs text-gray-700 placeholder-gray-400 bg-transparent outline-none"
                         />
                         {rightSearch && (
@@ -376,7 +398,15 @@ export function KelolaCloPage() {
                                         className="mt-0.5 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <span className="font-bold text-xs text-[var(--color-primary)] font-mono block mb-0.5">{clo.kode}</span>
+                                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                            <span className="font-bold text-xs text-[var(--color-primary)] font-mono">{clo.kode}</span>
+                                            {clo.plo && (
+                                                <span className="inline-flex items-center gap-1 rounded bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-mono font-bold text-blue-700">
+                                                    <GraduationCap size={10} />
+                                                    {clo.plo.kode}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-gray-600 line-clamp-2">{clo.deskripsi}</p>
                                     </div>
                                 </div>

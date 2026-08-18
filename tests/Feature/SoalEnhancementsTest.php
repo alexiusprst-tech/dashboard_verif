@@ -175,6 +175,53 @@ class SoalEnhancementsTest extends TestCase
         ]);
     }
 
+    public function test_verifikator_only_sees_assigned_courses_in_dashboard_upload_progress(): void
+    {
+        $verifier = User::factory()->create([
+            'is_super_admin' => false,
+            'is_coordinator' => false,
+            'status_aktif'   => true,
+        ]);
+
+        $courseAssigned = Course::create([
+            'kode_mk'  => 'ASSIGN1',
+            'nama_mk'  => 'Mata Kuliah Ditugaskan',
+            'prodi_id' => $this->course->prodi_id,
+            'sks'      => 3,
+            'semester' => 3,
+            'kategori' => 'wajib',
+        ]);
+
+        $courseOther = Course::create([
+            'kode_mk'  => 'OTHER1',
+            'nama_mk'  => 'Mata Kuliah Lainnya',
+            'prodi_id' => $this->course->prodi_id,
+            'sks'      => 3,
+            'semester' => 3,
+            'kategori' => 'wajib',
+        ]);
+
+        // Assign $courseAssigned to $verifier
+        \App\Models\PenugasanVerifikator::create([
+            'course_id'   => $courseAssigned->id,
+            'dosen_id'    => $verifier->id,
+            'periode_id'  => $this->activePeriode->id,
+            'assigned_by' => $verifier->id,
+            'assigned_at' => now(),
+        ]);
+
+        $response = $this->actingAs($verifier, 'sanctum')
+            ->getJson("/api/dashboard/upload-progress?periode_id={$this->activePeriode->id}&role=verifikator");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $courseIds = collect($response->json('data'))->pluck('course_id')->all();
+
+        $this->assertContains($courseAssigned->id, $courseIds, 'Verifikator harus melihat mata kuliah yang ditugaskan');
+        $this->assertNotContains($courseOther->id, $courseIds, 'Verifikator tidak boleh melihat mata kuliah yang tidak ditugaskan');
+    }
+
     public function test_can_submit_verification_with_per_clo_notes(): void
     {
         $soal = $this->createTestSoal(['status' => 'submitted']);
@@ -250,13 +297,18 @@ class SoalEnhancementsTest extends TestCase
                 'catatan'          => 'Soal 2 perlu perbaikan pada butir soal 2.',
                 'catatan_clo'      => [
                     [
-                        'kode'      => 'CLO2',
-                        'deskripsi' => 'Desain proses',
-                        'catatan'   => 'Perbaiki rubrik penilaian',
-                        'status'    => 'revisi',
+                        'kode'        => 'CLO2',
+                        'deskripsi'   => 'Desain proses',
+                        'catatan'     => 'Perbaiki rubrik penilaian',
+                        'rekomendasi' => 'Tambahkan studi kasus riil',
+                        'status'      => 'revisi',
                     ]
                 ],
             ])->assertCreated();
+
+        $verif2 = \App\Models\Verification::where('soal_id', $soal2->id)->first();
+        $this->assertNotNull($verif2);
+        $this->assertEquals('Tambahkan studi kasus riil', $verif2->catatan_clo[0]['rekomendasi']);
 
         // Verifikasi Berita Acara dibuat otomatis untuk masing-masing soal
         $ba1 = \App\Models\BeritaAcara::where('soal_id', $soal1->id)->first();

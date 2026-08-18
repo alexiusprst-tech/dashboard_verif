@@ -30,10 +30,14 @@ class BeritaAcaraController extends Controller
         $filters = $request->only(['periode_id', 'verifier_id']);
         $perPage = $request->query('per_page', 15);
 
-        if ($user->isSuperAdmin() || $user->isCoordinator()) {
-            // Super Admin & Coordinator bisa melihat seluruh BA
+        if ($user->isSuperAdmin()) {
+            // Super Admin bisa melihat seluruh Berita Acara
+        } elseif ($user->isKoordinatorMk()) {
+            // Koordinator MK bisa melihat Berita Acara miliknya sendiri
+            // DAN Berita Acara para verifikator soal untuk mata kuliah yang dikoordinasikannya
+            $filters['koordinator_user'] = $user;
         } else {
-            // Dosen & PIC melihat BA di mana mereka adalah verifikator atau soal milik mereka ada di BA tersebut
+            // Dosen & Verifikator biasa melihat BA di mana mereka adalah verifikator atau pembuat soal
             $filters['dosen_id'] = $user->id;
         }
 
@@ -92,11 +96,27 @@ class BeritaAcaraController extends Controller
 
         $user = $request->user();
         $isOwnerOrVerifier = $user->isSuperAdmin()
-            || $user->isCoordinator()
             || $ba->verifier_id === $user->id
+            || ($ba->soal && $ba->soal->dosen_id === $user->id)
             || $ba->items()->whereHas('soal', function ($q) use ($user) {
                 $q->where('dosen_id', $user->id);
             })->exists();
+
+        // Cek jika user adalah Koordinator MK untuk mata kuliah di Berita Acara ini
+        if (!$isOwnerOrVerifier && $user->isKoordinatorMk()) {
+            $courseIds = [];
+            if ($ba->soal && $ba->soal->mata_kuliah_id) {
+                $courseIds[] = $ba->soal->mata_kuliah_id;
+            }
+            $itemCourseIds = $ba->items()->with('soal')->get()->pluck('soal.mata_kuliah_id')->filter()->toArray();
+            $courseIds = array_unique(array_merge($courseIds, $itemCourseIds));
+
+            if (!empty($courseIds)) {
+                $isOwnerOrVerifier = \App\Models\PenugasanKoordinator::where('dosen_id', $user->id)
+                    ->whereIn('course_id', $courseIds)
+                    ->exists();
+            }
+        }
 
         if (!$isOwnerOrVerifier) {
             abort(403, 'Anda tidak memiliki wewenang untuk mengunduh Berita Acara ini.');

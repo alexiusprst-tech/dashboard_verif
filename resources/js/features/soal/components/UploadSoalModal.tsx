@@ -18,6 +18,8 @@ import {
     FileDown,
     Eye,
     CheckCircle2,
+    Search,
+    ChevronDown,
 } from 'lucide-react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { cn } from '@/shared/lib/utils';
@@ -86,6 +88,14 @@ export function UploadSoalModal({ open, onClose, onSubmit, loading = false }: Up
     const [jenisError, setJenisError] = useState<string>('');
     const [isDragging, setIsDragging] = useState(false);
 
+    // Searchable Periode State
+    const [periodeSearch, setPeriodeSearch] = useState('');
+    const [showPeriodeDropdown, setShowPeriodeDropdown] = useState(false);
+
+    // Searchable Course State
+    const [courseSearch, setCourseSearch] = useState('');
+    const [showCourseDropdown, setShowCourseDropdown] = useState(false);
+
     const {
         register,
         handleSubmit,
@@ -105,6 +115,41 @@ export function UploadSoalModal({ open, onClose, onSubmit, loading = false }: Up
     const watchedPeriodeId = watch('periode_id');
     const watchedMataKuliahId = watch('mata_kuliah_id');
 
+    // Filtered Periodes
+    const filteredPeriodes = useMemo(() => {
+        const q = periodeSearch.trim().toLowerCase();
+        if (!q) return periodes;
+        return periodes.filter(
+            (p) =>
+                p.nama_periode?.toLowerCase().includes(q) ||
+                p.tahun_akademik?.toLowerCase().includes(q) ||
+                p.semester?.toLowerCase().includes(q) ||
+                (p.status === 'aktif' && 'aktif'.includes(q))
+        );
+    }, [periodes, periodeSearch]);
+
+    // Filtered Courses
+    const filteredCourses = useMemo(() => {
+        const q = courseSearch.trim().toLowerCase();
+        if (!q) return courses;
+        return courses.filter(
+            (c) =>
+                c.nama_mk?.toLowerCase().includes(q) ||
+                c.kode_mk?.toLowerCase().includes(q) ||
+                (c.semester && `semester ${c.semester}`.includes(q)) ||
+                (c.sks && `${c.sks} sks`.includes(q))
+        );
+    }, [courses, courseSearch]);
+
+    // Selected objects
+    const selectedPeriodeObj = useMemo(() => {
+        return periodes.find((p) => String(p.id) === String(watchedPeriodeId));
+    }, [periodes, watchedPeriodeId]);
+
+    const selectedCourseObj = useMemo(() => {
+        return courses.find((c) => String(c.id) === String(watchedMataKuliahId));
+    }, [courses, watchedMataKuliahId]);
+
     // Load initial data on modal open
     useEffect(() => {
         if (open) {
@@ -113,6 +158,10 @@ export function UploadSoalModal({ open, onClose, onSubmit, loading = false }: Up
                 mata_kuliah_id: '' as any,
                 judul_soal: '',
             });
+            setPeriodeSearch('');
+            setShowPeriodeDropdown(false);
+            setCourseSearch('');
+            setShowCourseDropdown(false);
             setSelectedJenisAsesmen(['UTS']);
             setCustomJenis('');
             setShowCustomInput(false);
@@ -426,7 +475,7 @@ export function UploadSoalModal({ open, onClose, onSubmit, loading = false }: Up
                 open={open}
                 onClose={onClose}
                 title="Unggah Naskah Soal Ujian"
-                size="xl"
+                size="2xl"
                 footer={
                     <>
                         <button
@@ -469,43 +518,232 @@ export function UploadSoalModal({ open, onClose, onSubmit, loading = false }: Up
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Periode Akademik */}
-                            <div>
+                            {/* Searchable Periode Akademik */}
+                            <div className="relative">
                                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                                     Periode Akademik <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    {...register('periode_id')}
-                                    className="block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none"
-                                >
-                                    <option value="">Pilih Periode...</option>
-                                    {periodes.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.nama_periode} {p.status === 'aktif' ? '• (Aktif)' : ''}
-                                        </option>
-                                    ))}
-                                </select>
+
+                                <input type="hidden" {...register('periode_id')} />
+
+                                <div className="relative">
+                                    <Calendar
+                                        size={15}
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={
+                                            showPeriodeDropdown
+                                                ? periodeSearch
+                                                : selectedPeriodeObj
+                                                ? `${selectedPeriodeObj.nama_periode}${selectedPeriodeObj.status === 'aktif' ? ' (Aktif)' : ''}`
+                                                : ''
+                                        }
+                                        onChange={(e) => {
+                                            setPeriodeSearch(e.target.value);
+                                            setShowPeriodeDropdown(true);
+                                        }}
+                                        onFocus={() => {
+                                            setPeriodeSearch('');
+                                            setShowPeriodeDropdown(true);
+                                        }}
+                                        onBlur={() => setTimeout(() => setShowPeriodeDropdown(false), 200)}
+                                        placeholder="Cari periode (nama, tahun, semester)..."
+                                        className={cn(
+                                            "block h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-14 text-sm focus:border-[var(--color-primary)] focus:outline-none transition-shadow",
+                                            errors.periode_id && "border-red-400"
+                                        )}
+                                    />
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        {watchedPeriodeId ? (
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    setValue('periode_id', '' as any, { shouldValidate: true });
+                                                    setPeriodeSearch('');
+                                                    setShowPeriodeDropdown(false);
+                                                }}
+                                                className="p-1 text-gray-400 hover:text-gray-600 transition rounded cursor-pointer"
+                                                title="Hapus pilihan"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        ) : null}
+                                        <button
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setShowPeriodeDropdown((prev) => !prev);
+                                            }}
+                                            className="p-1 text-gray-400 hover:text-gray-600 transition rounded focus:outline-none cursor-pointer"
+                                            title="Buka daftar periode"
+                                        >
+                                            <ChevronDown
+                                                size={15}
+                                                className={cn("transition-transform duration-200", showPeriodeDropdown && "rotate-180")}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Periode Dropdown Menu */}
+                                {showPeriodeDropdown && (
+                                    <ul className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-xl divide-y divide-gray-50">
+                                        {filteredPeriodes.length > 0 ? (
+                                            filteredPeriodes.map((p) => {
+                                                const isSelected = String(p.id) === String(watchedPeriodeId);
+                                                return (
+                                                    <li
+                                                        key={p.id}
+                                                        onMouseDown={() => {
+                                                            setValue('periode_id', p.id, { shouldValidate: true });
+                                                            setPeriodeSearch('');
+                                                            setShowPeriodeDropdown(false);
+                                                        }}
+                                                        className={cn(
+                                                            "cursor-pointer px-3.5 py-2.5 text-sm transition-colors flex items-center justify-between",
+                                                            isSelected ? "bg-red-50/60 text-[var(--color-primary)] font-semibold" : "hover:bg-gray-50 text-gray-800"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <span>{p.nama_periode}</span>
+                                                            {p.status === 'aktif' && (
+                                                                <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                                                    Aktif
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {isSelected && <Check size={14} className="text-[var(--color-primary)] shrink-0" />}
+                                                    </li>
+                                                );
+                                            })
+                                        ) : (
+                                            <li className="px-4 py-3 text-center text-xs text-gray-400">
+                                                Tidak ada periode yang sesuai dengan "{periodeSearch}"
+                                            </li>
+                                        )}
+                                    </ul>
+                                )}
                                 {errors.periode_id && (
                                     <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.periode_id.message}</p>
                                 )}
                             </div>
 
-                            {/* Mata Kuliah */}
-                            <div>
+                            {/* Searchable Mata Kuliah */}
+                            <div className="relative">
                                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                                     Mata Kuliah <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    {...register('mata_kuliah_id')}
-                                    className="block h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-[var(--color-primary)] focus:outline-none"
-                                >
-                                    <option value="">Pilih Mata Kuliah...</option>
-                                    {courses.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.kode_mk} - {c.nama_mk} ({c.sks ?? 3} SKS)
-                                        </option>
-                                    ))}
-                                </select>
+
+                                <input type="hidden" {...register('mata_kuliah_id')} />
+
+                                <div className="relative">
+                                    <BookOpen
+                                        size={15}
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={
+                                            showCourseDropdown
+                                                ? courseSearch
+                                                : selectedCourseObj
+                                                ? `${selectedCourseObj.kode_mk} - ${selectedCourseObj.nama_mk} (${selectedCourseObj.sks ?? 3} SKS)`
+                                                : ''
+                                        }
+                                        onChange={(e) => {
+                                            setCourseSearch(e.target.value);
+                                            setShowCourseDropdown(true);
+                                        }}
+                                        onFocus={() => {
+                                            setCourseSearch('');
+                                            setShowCourseDropdown(true);
+                                        }}
+                                        onBlur={() => setTimeout(() => setShowCourseDropdown(false), 200)}
+                                        placeholder="Cari kode atau nama mata kuliah..."
+                                        className={cn(
+                                            "block h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-14 text-sm focus:border-[var(--color-primary)] focus:outline-none transition-shadow",
+                                            errors.mata_kuliah_id && "border-red-400"
+                                        )}
+                                    />
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        {watchedMataKuliahId ? (
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    setValue('mata_kuliah_id', '' as any, { shouldValidate: true });
+                                                    setCourseSearch('');
+                                                    setShowCourseDropdown(false);
+                                                }}
+                                                className="p-1 text-gray-400 hover:text-gray-600 transition rounded cursor-pointer"
+                                                title="Hapus pilihan"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        ) : null}
+                                        <button
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setShowCourseDropdown((prev) => !prev);
+                                            }}
+                                            className="p-1 text-gray-400 hover:text-gray-600 transition rounded focus:outline-none cursor-pointer"
+                                            title="Buka daftar mata kuliah"
+                                        >
+                                            <ChevronDown
+                                                size={15}
+                                                className={cn("transition-transform duration-200", showCourseDropdown && "rotate-180")}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Course Dropdown Menu */}
+                                {showCourseDropdown && (
+                                    <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-xl divide-y divide-gray-50">
+                                        {filteredCourses.length > 0 ? (
+                                            filteredCourses.map((c) => {
+                                                const isSelected = String(c.id) === String(watchedMataKuliahId);
+                                                return (
+                                                    <li
+                                                        key={c.id}
+                                                        onMouseDown={() => {
+                                                            setValue('mata_kuliah_id', c.id, { shouldValidate: true });
+                                                            setCourseSearch('');
+                                                            setShowCourseDropdown(false);
+                                                        }}
+                                                        className={cn(
+                                                            "cursor-pointer px-3.5 py-2.5 text-sm transition-colors flex items-center justify-between",
+                                                            isSelected ? "bg-red-50/60" : "hover:bg-gray-50"
+                                                        )}
+                                                    >
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-mono text-xs font-bold text-[var(--color-primary)] bg-red-50 border border-red-100 px-1.5 py-0.5 rounded">
+                                                                    {c.kode_mk}
+                                                                </span>
+                                                                <span className="font-semibold text-gray-900">{c.nama_mk}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
+                                                                <span>Semester {c.semester ?? '-'}</span>
+                                                                <span>•</span>
+                                                                <span>{c.sks ?? 3} SKS</span>
+                                                            </div>
+                                                        </div>
+                                                        {isSelected && <Check size={14} className="text-[var(--color-primary)] shrink-0" />}
+                                                    </li>
+                                                );
+                                            })
+                                        ) : (
+                                            <li className="px-4 py-3 text-center text-xs text-gray-400">
+                                                Tidak ada mata kuliah yang sesuai dengan "{courseSearch}"
+                                            </li>
+                                        )}
+                                    </ul>
+                                )}
                                 {errors.mata_kuliah_id && (
                                     <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.mata_kuliah_id.message}</p>
                                 )}

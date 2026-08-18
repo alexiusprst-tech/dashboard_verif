@@ -67,7 +67,12 @@ class DashboardController extends Controller
     public function uploadProgress(Request $request): JsonResponse
     {
         $periodeId = $request->query('periode_id');
-        $data = $this->dashboardService->uploadProgress($request->user(), $periodeId ? (int)$periodeId : null);
+        $role = $request->query('role');
+        $data = $this->dashboardService->uploadProgress(
+            $request->user(),
+            $periodeId ? (int)$periodeId : null,
+            $role ? (string)$role : null
+        );
 
         return response()->json([
             'success' => true,

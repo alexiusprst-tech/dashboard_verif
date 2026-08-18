@@ -59,6 +59,39 @@ class EloquentBeritaAcaraRepository implements BeritaAcaraRepositoryContract
             });
         }
 
+        if (!empty($filters['koordinator_user'])) {
+            $koordinator = $filters['koordinator_user'];
+            $periodeId = !empty($filters['periode_id']) ? (int)$filters['periode_id'] : null;
+
+            $coordinatedCourseIds = \App\Models\PenugasanKoordinator::where('dosen_id', $koordinator->id)
+                ->when($periodeId, function ($q) use ($periodeId) {
+                    $q->where('periode_id', $periodeId);
+                })
+                ->pluck('course_id')
+                ->toArray();
+
+            $query->where(function ($q) use ($koordinator, $coordinatedCourseIds) {
+                // 1. BA miliknya sendiri (sebagai verifikator atau pembuat soal)
+                $q->where('verifier_id', $koordinator->id)
+                  ->orWhereHas('soal', function ($qSoal) use ($koordinator) {
+                      $qSoal->where('dosen_id', $koordinator->id);
+                  })
+                  ->orWhereHas('items.soal', function ($qItems) use ($koordinator) {
+                      $qItems->where('dosen_id', $koordinator->id);
+                  });
+
+                // 2. BA dari para verifikator soal untuk mata kuliah yang sama (yang dikoordinasikan)
+                if (!empty($coordinatedCourseIds)) {
+                    $q->orWhereHas('soal', function ($qSoal) use ($coordinatedCourseIds) {
+                        $qSoal->whereIn('mata_kuliah_id', $coordinatedCourseIds);
+                    })
+                    ->orWhereHas('items.soal', function ($qItems) use ($coordinatedCourseIds) {
+                        $qItems->whereIn('mata_kuliah_id', $coordinatedCourseIds);
+                    });
+                }
+            });
+        }
+
         return $query->orderByDesc('generated_at')->paginate($perPage);
     }
 
