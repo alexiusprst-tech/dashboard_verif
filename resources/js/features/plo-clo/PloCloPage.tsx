@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, Upload, Eye, Edit2, MinusCircle, Calendar, Layers, GraduationCap } from 'lucide-react';
@@ -9,7 +9,6 @@ import { Pagination } from '@/shared/components/ui/Pagination';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import { SkeletonTable } from '@/shared/components/ui/Skeleton';
-import { Modal } from '@/shared/components/ui/Modal';
 import { useToast } from '@/shared/hooks/useToast';
 import { useAuth } from '@/shared/hooks/useAuth';
 import api from '@/shared/lib/api';
@@ -17,11 +16,13 @@ import api from '@/shared/lib/api';
 import type { Plo, Clo, ProgramStudi, MataKuliah } from './types/plo.types';
 import { usePloList, useCreatePlo, useUpdatePlo, useDeletePlo } from './hooks/usePlo';
 import { useCloList, useCreateClo, useUpdateClo, useDeleteClo } from './hooks/useClo';
-import { previewImportPlo, importPlo, exportPlo } from './api/ploApi';
-import { previewImportClo, importClo, exportClo } from './api/cloApi';
+import { exportPlo } from './api/ploApi';
+import { exportClo } from './api/cloApi';
 import { downloadTemplate } from './api/curriculumApi';
 import { PloModal } from './components/PloModal';
 import { CloModal } from './components/CloModal';
+import { PloUploadWizard } from './components/PloUploadWizard';
+import { CloUploadWizard } from './components/CloUploadWizard';
 
 export function PloCloPage() {
     const navigate = useNavigate();
@@ -34,7 +35,6 @@ export function PloCloPage() {
     const [prodiId, setProdiId]                 = useState<string>('');
     const [selectedPloFilter, setSelectedPloFilter] = useState<string>('');
     const [selectedMataKuliahFilter, setSelectedMataKuliahFilter] = useState<string>('');
-    const [selectedPeriodeId, setSelectedPeriodeId] = useState<string>('');
 
     // Pagination states
     const [ploPage, setPloPage] = useState(1);
@@ -45,7 +45,6 @@ export function PloCloPage() {
     // Helpers list
     const [prodiList, setProdiList]     = useState<ProgramStudi[]>([]);
     const [courseList, setCourseList]   = useState<MataKuliah[]>([]);
-    const [periodeList, setPeriodeList] = useState<any[]>([]);
     const queryClient = useQueryClient();
 
     // Modal states
@@ -53,19 +52,19 @@ export function PloCloPage() {
     const [currentPlo, setCurrentPlo] = useState<Plo | null>(null);
     const [cloModalOpen, setCloModalOpen] = useState(false);
     const [currentClo, setCurrentClo] = useState<Clo | null>(null);
+    const [viewClo, setViewClo] = useState<Clo | null>(null);
 
     // Confirm delete states
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<{ type: 'plo' | 'clo'; id: number } | null>(null);
-    const [importPreviewOpen, setImportPreviewOpen] = useState(false);
-    const [importPreviewLoading, setImportPreviewLoading] = useState(false);
-    const [importProcessing, setImportProcessing] = useState(false);
-    const [importPreviewResult, setImportPreviewResult] = useState<import('./types/plo.types').ImportPreviewResult<import('./types/plo.types').PloImportPreviewRow> | import('./types/plo.types').ImportPreviewResult<import('./types/plo.types').CloImportPreviewRow> | null>(null);
-    const [currentImportFile, setCurrentImportFile] = useState<File | null>(null);
-    const [currentImportType, setCurrentImportType] = useState<'plo' | 'clo'>('plo');
-    const [importSheetName, setImportSheetName] = useState<string>('');
 
-    // Fetch Program Studi, Courses & Periodes
+    // PLO Upload Wizard
+    const [ploUploadWizardOpen, setPloUploadWizardOpen] = useState(false);
+
+    // CLO Upload Wizard
+    const [cloUploadWizardOpen, setCloUploadWizardOpen] = useState(false);
+
+    // Fetch Program Studi & Courses
     useEffect(() => {
         api.get('/program-studi').then((res) => {
             setProdiList(res.data.data);
@@ -79,16 +78,9 @@ export function PloCloPage() {
         api.get('/courses').then((res) => {
             setCourseList(res.data.data);
         });
-
-        api.get('/periode', { params: { per_page: 50 } }).then((res) => {
-            setPeriodeList(res.data.data);
-            const active = res.data.data.find((p: any) => p.status === 'aktif');
-            if (active) setSelectedPeriodeId(String(active.id));
-            else if (res.data.data.length > 0) setSelectedPeriodeId(String(res.data.data[0].id));
-        });
     }, [user]);
 
-    // Load PLO list for CLO dropdown — tanpa filter periode agar semua PLO prodi tampil
+    // Load PLO list for CLO dropdown — semua PLO prodi tampil
     const { data: allPloForSelect = [] } = useQuery<Plo[]>({
         queryKey: ['plo-dropdown-all', prodiId],
         queryFn: async () => {
@@ -106,7 +98,6 @@ export function PloCloPage() {
         refetch: refetchPlo,
     } = usePloList({
         prodi_id:       prodiId,
-        periode_id:     selectedPeriodeId,
         page:           ploPage,
         per_page:       ploPerPage,
         search,
@@ -119,7 +110,6 @@ export function PloCloPage() {
     } = useCloList({
         plo_id:         selectedPloFilter,
         mata_kuliah_id: selectedMataKuliahFilter,
-        periode_id:     selectedPeriodeId,
         page:           cloPage,
         per_page:       cloPerPage,
         search,
@@ -157,7 +147,6 @@ export function PloCloPage() {
             const payload = {
                 ...data,
                 prodi_id: Number(data.prodi_id || prodiId),
-                periode_id: data.periode_id ? Number(data.periode_id) : null,
             };
             if (currentPlo) {
                 await updatePloMutation.mutateAsync({ id: currentPlo.id, payload });
@@ -181,7 +170,7 @@ export function PloCloPage() {
             const payload = {
                 ...data,
                 plo_id: Number(data.plo_id),
-                periode_id: data.periode_id ? Number(data.periode_id) : null,
+                mata_kuliah_ids: data.mata_kuliah_ids || [],
             };
             if (currentClo) {
                 await updateCloMutation.mutateAsync({ id: currentClo.id, payload });
@@ -192,6 +181,7 @@ export function PloCloPage() {
             }
             setCloModalOpen(false);
             refetchClo();
+            queryClient.invalidateQueries({ queryKey: ['clo'] });
         } catch (e: any) {
             toast.error(e.response?.data?.message || 'Gagal menyimpan CLO');
         }
@@ -220,56 +210,6 @@ export function PloCloPage() {
         } finally {
             setDeleteConfirmOpen(false);
             setDeleteTarget(null);
-        }
-    };
-    // Handle import preview and export download
-    const handleImportExcel = async (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setCurrentImportFile(file);
-        setCurrentImportType(activeTab);
-        setImportPreviewLoading(true);
-        setImportPreviewOpen(true);
-
-        try {
-            const preview = activeTab === 'plo'
-                ? await previewImportPlo(file, importSheetName || undefined)
-                : await previewImportClo(file, importSheetName || undefined);
-
-            setImportPreviewResult(preview as any);
-            toast.success(`Preview import ${activeTab.toUpperCase()} berhasil.`);
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Gagal memproses file import.');
-            setImportPreviewOpen(false);
-        } finally {
-            setImportPreviewLoading(false);
-            e.target.value = '';
-        }
-    };
-
-    const handleConfirmImport = async () => {
-        if (!currentImportFile) return;
-
-        setImportProcessing(true);
-
-        try {
-            if (currentImportType === 'plo') {
-                await importPlo(currentImportFile, importSheetName || undefined);
-                refetchPlo();
-            } else {
-                await importClo(currentImportFile, importSheetName || undefined);
-                refetchClo();
-            }
-
-            toast.success(`${currentImportType.toUpperCase()} berhasil diimport.`);
-            setImportPreviewOpen(false);
-            setImportPreviewResult(null);
-            setCurrentImportFile(null);
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Gagal mengimpor file.');
-        } finally {
-            setImportProcessing(false);
         }
     };
 
@@ -303,27 +243,28 @@ export function PloCloPage() {
                 breadcrumb={[{ label: 'PLO & CLO' }]}
                 action={
                     <div className="flex flex-wrap gap-2">
-                        {canManagePloClo && (
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
-                                    placeholder="Sheet name (optional)"
-                                    value={importSheetName}
-                                    onChange={(e) => setImportSheetName(e.target.value)}
-                                    className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
-                                />
-                                <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
-                                    <Upload size={16} />
-                                    Import Excel
-                                    <input
-                                        type="file"
-                                        accept=".xlsx,.xls"
-                                        className="hidden"
-                                        onChange={handleImportExcel}
-                                    />
-                                </label>
-                            </div>
+                        {/* PLO Tab actions */}
+                        {canManagePloClo && activeTab === 'plo' && (
+                            <button
+                                onClick={() => setPloUploadWizardOpen(true)}
+                                className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 cursor-pointer"
+                            >
+                                <Upload size={16} />
+                                Upload PLO
+                            </button>
                         )}
+
+                        {/* CLO Tab actions: wizard */}
+                        {canManagePloClo && activeTab === 'clo' && (
+                            <button
+                                onClick={() => setCloUploadWizardOpen(true)}
+                                className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 cursor-pointer"
+                            >
+                                <Upload size={16} />
+                                Upload CLO & Mapping
+                            </button>
+                        )}
+
                         {canManagePloClo && (
                             <button
                                 onClick={handleExportExcel}
@@ -399,26 +340,6 @@ export function PloCloPage() {
                     placeholder={activeTab === 'plo' ? 'Cari PLO...' : 'Cari CLO...'}
                     className="w-full sm:w-64"
                 />
-
-                <div className="flex items-center gap-2">
-                    <Calendar size={15} className="text-gray-400" />
-                    <select
-                        value={selectedPeriodeId}
-                        onChange={(e) => {
-                            setSelectedPeriodeId(e.target.value);
-                            setPloPage(1);
-                            setCloPage(1);
-                        }}
-                        className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none"
-                    >
-                        <option value="">Semua Periode</option>
-                        {periodeList.map((p) => (
-                            <option key={p.id} value={p.id}>
-                                {p.nama_periode}
-                            </option>
-                        ))}
-                    </select>
-                </div>
 
                 {activeTab === 'clo' && (
                     <>
@@ -606,6 +527,13 @@ export function PloCloPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <button
+                                                    onClick={() => setViewClo(r)}
+                                                    className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition cursor-pointer"
+                                                    title="Lihat Mata Kuliah"
+                                                >
+                                                    <Eye size={15} />
+                                                </button>
+                                                <button
                                                     onClick={() => handleOpenEditClo(r)}
                                                     className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-blue-600 transition cursor-pointer"
                                                     title="Ubah"
@@ -669,7 +597,6 @@ export function PloCloPage() {
                 onSubmit={handleSavePlo}
                 plo={currentPlo}
                 programStudiList={prodiList}
-                defaultPeriodeId={selectedPeriodeId}
                 loading={createPloMutation.isPending || updatePloMutation.isPending}
             />
 
@@ -679,128 +606,111 @@ export function PloCloPage() {
                 onSubmit={handleSaveClo}
                 clo={currentClo}
                 ploList={allPloForSelect}
-                defaultPeriodeId={selectedPeriodeId}
+                mataKuliahList={courseList}
                 loading={createCloMutation.isPending || updateCloMutation.isPending}
             />
 
-            <Modal
-                open={importPreviewOpen}
-                onClose={() => setImportPreviewOpen(false)}
-                title={`Preview Import ${currentImportType.toUpperCase()}`}
-                description={`Tinjau status validasi sebelum menyimpan ${currentImportType.toUpperCase()} dari file Excel.`}
-                size="xl"
-                footer={
-                    <div className="flex items-center justify-end gap-3">
-                        <button
-                            onClick={() => setImportPreviewOpen(false)}
-                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                            Tutup
-                        </button>
-                        <button
-                            onClick={handleConfirmImport}
-                            disabled={importPreviewLoading || importProcessing || ((importPreviewResult?.invalid ?? 0) > 0)}
-                            className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {importProcessing ? 'Mengimpor...' : 'Import Sekarang'}
-                        </button>
-                    </div>
-                }
-            >
-                <div className="space-y-4">
-                    {importPreviewLoading ? (
-                        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
-                            Memproses file import...
-                        </div>
-                    ) : importPreviewResult ? (
-                        <>
-                            <div className="grid gap-3 sm:grid-cols-3">
-                                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                    <p className="text-xs uppercase tracking-wide text-gray-500">Total Baris</p>
-                                    <p className="mt-2 text-2xl font-semibold text-gray-900">{importPreviewResult.total}</p>
+            {/* CLO Detail Modal — Mata Kuliah Terkait */}
+            {(() => {
+                const activeViewClo = viewClo ? (cloResponse?.data.find((c) => c.id === viewClo.id) ?? viewClo) : null;
+                if (!activeViewClo) return null;
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setViewClo(null)} />
+                        <div className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl">
+                            {/* Header */}
+                            <div className="flex items-start justify-between border-b border-gray-100 px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                                        <Layers size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-gray-900">{activeViewClo.kode}</p>
+                                        <p className="mt-0.5 text-xs text-gray-400 line-clamp-2 max-w-[260px]">{activeViewClo.deskripsi}</p>
+                                    </div>
                                 </div>
-                                <div className="rounded-xl border border-gray-200 bg-green-50 p-4">
-                                    <p className="text-xs uppercase tracking-wide text-gray-500">Valid</p>
-                                    <p className="mt-2 text-2xl font-semibold text-green-700">{importPreviewResult.valid}</p>
-                                </div>
-                                <div className="rounded-xl border border-gray-200 bg-red-50 p-4">
-                                    <p className="text-xs uppercase tracking-wide text-gray-500">Invalid</p>
-                                    <p className="mt-2 text-2xl font-semibold text-red-700">{importPreviewResult.invalid}</p>
-                                </div>
+                                <button onClick={() => setViewClo(null)}
+                                    className="ml-3 flex-shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
                             </div>
 
-                            {importPreviewResult.invalid > 0 && (
-                                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                                    File import memiliki baris yang tidak valid. Perbaiki file terlebih dahulu dan ulangi preview.
+                            {/* PLO badge */}
+                            {activeViewClo.plo && (
+                                <div className="px-5 pt-4 pb-0 flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-gray-500">PLO Induk:</span>
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-mono font-bold text-blue-700">
+                                        <GraduationCap size={11} />
+                                        {activeViewClo.plo.kode}
+                                    </span>
                                 </div>
                             )}
 
-                            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                                <table className="min-w-full divide-y divide-gray-200 text-left text-sm text-gray-600">
-                                    <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-700">
-                                        <tr>
-                                            <th className="px-4 py-3">Baris</th>
-                                            {currentImportType === 'plo' ? (
-                                                <>
-                                                    <th className="px-4 py-3">Kode PLO</th>
-                                                    <th className="px-4 py-3">Deskripsi</th>
-                                                    <th className="px-4 py-3">Kode Prodi</th>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <th className="px-4 py-3">Kode MK</th>
-                                                    <th className="px-4 py-3">Kode CLO</th>
-                                                    <th className="px-4 py-3">Deskripsi</th>
-                                                    <th className="px-4 py-3">Kode PLO</th>
-                                                </>
-                                            )}
-                                            <th className="px-4 py-3">Status</th>
-                                            <th className="px-4 py-3">Pesan Error</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {importPreviewResult.rows.slice(0, 20).map((row: any) => (
-                                            <tr key={row.row} className={row.status === 'invalid' ? 'bg-red-50' : ''}>
-                                                <td className="px-4 py-3 font-medium text-gray-900">{row.row}</td>
-                                                {currentImportType === 'plo' ? (
-                                                    <>
-                                                        <td className="px-4 py-3">{row.kode_plo}</td>
-                                                        <td className="px-4 py-3">{row.deskripsi}</td>
-                                                        <td className="px-4 py-3">{row.kode_prodi}</td>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <td className="px-4 py-3">{row.kode_mk}</td>
-                                                        <td className="px-4 py-3">{row.kode_clo}</td>
-                                                        <td className="px-4 py-3">{row.deskripsi}</td>
-                                                        <td className="px-4 py-3">{row.kode_plo}</td>
-                                                    </>
-                                                )}
-                                                <td className="px-4 py-3">
-                                                    <span className={row.status === 'valid' ? 'rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700' : 'rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700'}>
-                                                        {row.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 text-sm text-gray-700">
-                                                    {row.errors.length > 0 ? row.errors.join(' · ') : '—'}
-                                                </td>
-                                            </tr>
+                            {/* Mata Kuliah list */}
+                            <div className="px-5 py-4">
+                                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                                    Mata Kuliah Terkait
+                                    <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-gray-500 font-semibold">
+                                        {(activeViewClo.courses?.length ?? activeViewClo.courses_count) || 0}
+                                    </span>
+                                </p>
+
+                                {activeViewClo.courses && activeViewClo.courses.length > 0 ? (
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                        {activeViewClo.courses.map((mk) => (
+                                            <div key={mk.id}
+                                                className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 hover:border-green-300 hover:bg-green-50 transition">
+                                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-600">
+                                                    <Calendar size={14} />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-sm font-semibold text-gray-800">{mk.nama_mk}</p>
+                                                    <p className="font-mono text-[10px] text-gray-400">{mk.kode_mk}</p>
+                                                </div>
+                                            </div>
                                         ))}
-                                    </tbody>
-                                </table>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-200 py-8 text-center">
+                                        <Calendar size={28} className="text-gray-300" />
+                                        <p className="text-sm font-semibold text-gray-400">Belum ada mata kuliah</p>
+                                        <p className="text-xs text-gray-300">Tambahkan lewat tombol Edit CLO</p>
+                                    </div>
+                                )}
                             </div>
 
-                            {importPreviewResult.rows.length > 20 && (
-                                <p className="text-xs text-gray-500">Menampilkan 20 baris pertama. Jika file lebih besar, pastikan semua baris sudah valid.</p>
-                            )}
-                        </>
-                    ) : (
-                        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
-                            Pilih file Excel untuk melihat preview import.
+                            {/* Footer */}
+                            <div className="flex justify-end border-t border-gray-100 px-5 py-3">
+                                <button onClick={() => { setViewClo(null); handleOpenEditClo(activeViewClo); }}
+                                    className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--color-primary-dark)] transition">
+                                    <Edit2 size={12} /> Edit CLO
+                                </button>
+                            </div>
                         </div>
-                    )}
-                </div>
-            </Modal>
+                    </div>
+                );
+            })()}
+
+            {/* PLO Upload Wizard */}
+            <PloUploadWizard
+                open={ploUploadWizardOpen}
+                onClose={() => setPloUploadWizardOpen(false)}
+                onSuccess={() => {
+                    refetchPlo();
+                    queryClient.invalidateQueries({ queryKey: ['plo-dropdown-all'] });
+                }}
+            />
+
+            {/* CLO Upload Wizard */}
+            <CloUploadWizard
+                open={cloUploadWizardOpen}
+                onClose={() => setCloUploadWizardOpen(false)}
+                onSuccess={() => {
+                    refetchClo();
+                    queryClient.invalidateQueries({ queryKey: ['plo-dropdown-all'] });
+                }}
+            />
 
             <ConfirmDialog
                 open={deleteConfirmOpen}

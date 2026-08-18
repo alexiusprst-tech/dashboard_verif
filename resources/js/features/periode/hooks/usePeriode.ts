@@ -47,3 +47,11 @@ export function useActivatePeriode() {
         onSuccess: () => qc.invalidateQueries({ queryKey: [QUERY_KEY] }),
     });
 }
+
+export function useDeactivatePeriode() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => deactivatePeriode(id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: [QUERY_KEY] }),
+    });
+}

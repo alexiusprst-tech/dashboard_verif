@@ -12,13 +12,6 @@ class StoreCloRequest extends FormRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('periode_id') && ($this->periode_id === '' || $this->periode_id === 'null' || $this->periode_id === 0 || $this->periode_id === '0')) {
-            $this->merge(['periode_id' => null]);
-        }
-    }
-
     public function rules(): array
     {
         $ploId = $this->plo_id;
@@ -32,10 +25,13 @@ class StoreCloRequest extends FormRequest
                     return $query->where('plo_id', $ploId);
                 }),
             ],
-            'nama_clo'   => 'nullable|string|max:255',
-            'deskripsi'  => 'required|string',
-            'plo_id'     => 'required|exists:plo,id',
-            'periode_id' => 'nullable|exists:periode,id',
+            'nama_clo'          => 'nullable|string|max:255',
+            'deskripsi'         => 'required|string',
+            'plo_id'            => 'required|exists:plo,id',
+            'mata_kuliah_ids'   => 'nullable|array',
+            'mata_kuliah_ids.*' => 'exists:courses,id',
+            'courses'           => 'nullable|array',
+            'courses.*'         => 'exists:courses,id',
         ];
     }
 

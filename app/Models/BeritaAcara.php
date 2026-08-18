@@ -12,6 +12,7 @@ class BeritaAcara extends Model
 
     protected $fillable = [
         'nomor_ba',
+        'soal_id',
         'periode_id',
         'verifier_id',
         'generated_at',
@@ -27,6 +28,11 @@ class BeritaAcara extends Model
     }
 
     /* ── Relations ──────────────────────────────────────────── */
+
+    public function soal(): BelongsTo
+    {
+        return $this->belongsTo(Soal::class, 'soal_id');
+    }
 
     public function periode(): BelongsTo
     {

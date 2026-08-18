@@ -1,31 +1,47 @@
-import type { Periode } from '@/features/periode/types/periode.types';
-
-/** Representasi satu baris dari tabel user_roles (role PIC) */
-export interface UserRolePic {
+export interface PenugasanVerifikatorCourse {
     id: number;
-    user_id: number;
+    kode_mk: string;
+    nama_mk: string;
+    sks?: number;
+    semester?: number;
+}
+
+export interface PenugasanVerifikatorDosen {
+    id: number;
+    nama_lengkap: string;
+    kode_dosen: string;
+    email?: string;
+}
+
+export interface PenugasanVerifikatorPeriode {
+    id: number;
+    nama_periode: string;
+}
+
+export interface PenugasanVerifikatorAssignedBy {
+    id: number;
+    nama_lengkap: string;
+}
+
+export interface PenugasanVerifikator {
+    id: number;
+    course_id: number;
+    dosen_id: number;
     periode_id: number;
     assigned_at: string;
-    created_at: string;
-    /** Dosen yang diberi role PIC */
-    dosen?: {
-        id: number;
-        nama_lengkap: string;
-        kode_dosen: string;
-        email?: string;
-    };
-    /** Super Admin yang melakukan assignment */
-    assigned_by_user?: {
-        id: number;
-        nama_lengkap: string;
-    };
+    created_at?: string;
+    course?: PenugasanVerifikatorCourse | null;
+    dosen?: PenugasanVerifikatorDosen | null;
+    assigned_by_user?: PenugasanVerifikatorAssignedBy | null;
+    periode?: PenugasanVerifikatorPeriode | null;
 }
 
-/** Form data untuk assign PIC — simpel, tanpa target_dosen */
 export interface PenugasanFormData {
     periode_id: number | '';
-    pic_dosen_id: number | '';
+    dosen_id?: number | '';
+    pic_dosen_id?: number | '';
+    course_id?: number | null | '';
 }
 
-// Alias backward-compat untuk komponen yang masih pakai nama Penugasan
-export type Penugasan = UserRolePic;
+// Alias backward-compat
+export type Penugasan = PenugasanVerifikator;

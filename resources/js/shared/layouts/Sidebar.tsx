@@ -8,14 +8,13 @@ import {
     Users,
     Calendar,
     Tag,
-    Megaphone,
     ClipboardList,
     PanelLeft,
     GraduationCap,
-    Bell,
-    X,
     Scroll,
     BookMarked,
+    UserCheck,
+    FileDown,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -55,11 +54,10 @@ const BERITA_ACARA_ITEM: NavItem = { label: 'Berita Acara', href: '/berita-acara
 
 const SUPER_ADMIN_ITEMS: NavItem[] = [
     { label: 'Manajemen Dosen', href: '/dosen', icon: GraduationCap },
+    { label: 'Penugasan Koordinator MK', href: '/penugasan-koordinator', icon: UserCheck },
     { label: 'Penugasan Verifikator', href: '/penugasan-verifikator', icon: Users },
     { label: 'Periode & Deadline', href: '/periode', icon: Calendar },
-    { label: 'Kategori & Template', href: '/kategori', icon: Tag },
     { label: 'Template Berita Acara', href: '/template-ba', icon: Scroll },
-    { label: 'Broadcast', href: '/broadcast', icon: Megaphone },
     { label: 'Semua Soal', href: '/soal/semua', icon: FileText },
 ];
 
@@ -77,33 +75,51 @@ function buildNavSections(
     ];
 
     if (isSuperAdmin) {
-        sections.push({ title: 'Soal', items: DOSEN_ITEMS });
+        const verifikasiItems = VERIFIKATOR_ITEMS.map((item) =>
+            item.href === '/verifikasi' && verifikatorPendingCount
+                ? { ...item, badge: verifikatorPendingCount }
+                : item,
+        );
+        sections.push({
+            title: 'Soal & Verifikasi',
+            items: [
+                ...DOSEN_ITEMS,
+                ...verifikasiItems,
+                BERITA_ACARA_ITEM,
+            ],
+        });
         sections.push({ title: 'Manajemen (Super Admin)', items: SUPER_ADMIN_ITEMS });
         return sections;
     }
 
-    const soalSectionItems: NavItem[] = [];
-
-    // Dosen / Koordinator MK dapat mengunggah / merevisi soal
-    if (isKoordinatorMk || role === 'koordinator_mk' || role === 'coordinator' || role === 'dosen') {
-        soalSectionItems.push(...DOSEN_ITEMS);
+    if (isKoordinatorMk) {
+        sections.push({
+            title: 'Koordinator MK',
+            items: [
+                { label: 'Monitoring Verifikator', href: '/penugasan-verifikator', icon: Users },
+            ],
+        });
     }
 
-    // Dosen Verifikator dapat memverifikasi soal
     if (isVerifikatorActive || role === 'verifikator' || role === 'pic') {
         const verifikasiItems = VERIFIKATOR_ITEMS.map((item) =>
             item.href === '/verifikasi' && verifikatorPendingCount
                 ? { ...item, badge: verifikatorPendingCount }
                 : item,
         );
-        soalSectionItems.push(...verifikasiItems);
-        soalSectionItems.push(BERITA_ACARA_ITEM);
-    } else {
-        // Non-verifikator juga dapat melihat status Berita Acara
-        soalSectionItems.push(BERITA_ACARA_ITEM);
+        sections.push({
+            title: 'Verifikator Soal',
+            items: verifikasiItems,
+        });
     }
 
-    sections.push({ title: 'Soal & Verifikasi', items: soalSectionItems });
+    sections.push({
+        title: 'Soal & Berita Acara',
+        items: [
+            ...DOSEN_ITEMS,
+            BERITA_ACARA_ITEM,
+        ],
+    });
 
     return sections;
 }

@@ -6,13 +6,15 @@ const QUERY_KEY = 'penugasan';
 
 export function usePenugasanList(params: {
     periode_id: number | string;
-    page: number;
-    per_page: number;
+    course_id?: number | string;
+    q?: string;
+    page?: number;
+    per_page?: number;
 }) {
     return useQuery({
         queryKey: [QUERY_KEY, params],
         queryFn: () => getPenugasanList(params),
-        enabled: !!params.periode_id,
+        enabled: Boolean(params.periode_id),
     });
 }
 
@@ -20,7 +22,10 @@ export function useCreatePenugasan() {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (payload: PenugasanFormData) => createPenugasan(payload),
-        onSuccess: () => qc.invalidateQueries({ queryKey: [QUERY_KEY] }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: [QUERY_KEY] });
+            qc.invalidateQueries({ queryKey: ['penugasan-verifikator'] });
+        },
     });
 }
 
@@ -28,7 +33,10 @@ export function useDeletePenugasan() {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (id: number) => deletePenugasan(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: [QUERY_KEY] }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: [QUERY_KEY] });
+            qc.invalidateQueries({ queryKey: ['penugasan-verifikator'] });
+        },
     });
 }
 

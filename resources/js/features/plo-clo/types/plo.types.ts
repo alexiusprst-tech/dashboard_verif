@@ -7,7 +7,6 @@ export interface Plo {
     prodi_id: number;
     prodi_name?: string;
     prodi?: ProgramStudi;
-    periode_id?: number;
     created_by?: number;
     created_at: string;
     updated_at: string;
@@ -19,7 +18,6 @@ export interface PloFormData {
     kode: string;
     deskripsi: string;
     prodi_id: number | '';
-    periode_id?: number;
 }
 
 /* ── CLO Types ──────────────────────────────────────────────── */
@@ -41,7 +39,7 @@ export interface CloFormData {
     kode: string;
     deskripsi: string;
     plo_id: number | '';
-    periode_id?: number;
+    mata_kuliah_ids?: number[];
 }
 
 export interface PloImportPreviewRow {

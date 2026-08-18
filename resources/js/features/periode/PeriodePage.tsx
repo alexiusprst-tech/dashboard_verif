@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Check, Play, Edit2, MinusCircle, Calendar, Clock } from 'lucide-react';
+import { Plus, Check, Play, Pause, Edit2, MinusCircle, Calendar, Clock, Power, PowerOff } from 'lucide-react';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FilterBar } from '@/shared/components/ui/FilterBar';
 import { SearchBar } from '@/shared/components/ui/SearchBar';
@@ -18,6 +18,7 @@ import {
     useUpdatePeriode,
     useDeletePeriode,
     useActivatePeriode,
+    useDeactivatePeriode,
 } from './hooks/usePeriode';
 import { PeriodeModal } from './components/PeriodeModal';
 
@@ -52,6 +53,7 @@ export function PeriodePage() {
     const updateMutation = useUpdatePeriode();
     const deleteMutation = useDeletePeriode();
     const activateMutation = useActivatePeriode();
+    const deactivateMutation = useDeactivatePeriode();
 
     const handleReset = () => {
         setSearch('');
@@ -110,6 +112,16 @@ export function PeriodePage() {
             refetch();
         } catch (e: any) {
             toast.error(e.response?.data?.message || 'Gagal mengaktifkan periode.');
+        }
+    };
+
+    const handleDeactivate = async (id: number) => {
+        try {
+            await deactivateMutation.mutateAsync(id);
+            toast.success('Periode berhasil dinonaktifkan.');
+            refetch();
+        } catch (e: any) {
+            toast.error(e.response?.data?.message || 'Gagal menonaktifkan periode.');
         }
     };
 
@@ -174,15 +186,17 @@ export function PeriodePage() {
                             {!isLoading && (response?.data.length ?? 0) > 0 &&
                                 response?.data.map((r, idx) => {
                                     const closed = isDeadlinePassed(r.tanggal_deadline);
-                                    // Status styling
-                                    let badgeType: 'draft' | 'approved' | 'revisi' = 'draft';
-                                    let label = 'Draft';
+                                    let badgeType: 'approved' | 'warning' | 'revisi' = 'warning';
+                                    let label = 'Nonaktif';
                                     if (r.status === 'aktif') {
                                         badgeType = 'approved';
                                         label = 'Aktif';
                                     } else if (r.status === 'selesai' || closed) {
                                         badgeType = 'revisi';
                                         label = 'Selesai';
+                                    } else {
+                                        badgeType = 'warning';
+                                        label = 'Nonaktif';
                                     }
 
                                     return (
@@ -205,12 +219,12 @@ export function PeriodePage() {
                                             <td className="px-6 py-4">{r.tahun_akademik}</td>
                                             <td className="px-6 py-4">
                                                 <span
-                                                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                                                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
                                                         badgeType === 'approved'
-                                                            ? 'bg-[var(--color-success-light)] text-[var(--color-success)] border-[var(--color-success)]'
+                                                            ? 'bg-green-50 text-green-700 border-green-200'
                                                             : badgeType === 'revisi'
-                                                            ? 'bg-[var(--color-gray-100)] text-[var(--color-gray-500)] border-[var(--color-gray-300)]'
-                                                            : 'bg-[var(--color-warning-light)] text-[var(--color-warning)] border-[var(--color-warning)]'
+                                                            ? 'bg-gray-100 text-gray-600 border-gray-200'
+                                                            : 'bg-amber-50 text-amber-700 border-amber-200'
                                                     }`}
                                                 >
                                                     {label}
@@ -232,11 +246,19 @@ export function PeriodePage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    {r.status !== 'aktif' && (
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    {r.status === 'aktif' ? (
+                                                        <button
+                                                            onClick={() => handleDeactivate(r.id)}
+                                                            className="rounded-lg p-1.5 text-gray-500 hover:bg-amber-50 hover:text-amber-600 transition cursor-pointer"
+                                                            title="Nonaktifkan Periode"
+                                                        >
+                                                            <Pause size={15} />
+                                                        </button>
+                                                    ) : (
                                                         <button
                                                             onClick={() => handleActivate(r.id)}
-                                                            className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-success)] transition"
+                                                            className="rounded-lg p-1.5 text-gray-500 hover:bg-green-50 hover:text-[var(--color-success)] transition cursor-pointer"
                                                             title="Aktifkan Periode"
                                                         >
                                                             <Play size={15} />
@@ -244,14 +266,14 @@ export function PeriodePage() {
                                                     )}
                                                     <button
                                                         onClick={() => handleOpenEdit(r)}
-                                                        className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition"
+                                                        className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-primary)] transition cursor-pointer"
                                                         title="Edit"
                                                     >
                                                         <Edit2 size={15} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleOpenDelete(r.id)}
-                                                        className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition"
+                                                        className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-[var(--color-danger)] transition cursor-pointer"
                                                         title="Delete"
                                                     >
                                                         <MinusCircle size={15} />

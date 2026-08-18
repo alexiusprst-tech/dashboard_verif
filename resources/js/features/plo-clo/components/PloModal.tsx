@@ -9,7 +9,6 @@ const schema = z.object({
     kode:        z.string().min(1, 'Kode PLO wajib diisi').max(20, 'Kode PLO maksimal 20 karakter'),
     deskripsi:   z.string().min(1, 'Deskripsi PLO wajib diisi'),
     prodi_id:    z.coerce.number({ invalid_type_error: 'Program Studi wajib dipilih' }).min(1, 'Program Studi wajib dipilih'),
-    periode_id:  z.union([z.coerce.number(), z.literal('')]).optional().transform((val) => (val === '' ? undefined : val)),
 });
 
 interface PloModalProps {
@@ -18,7 +17,6 @@ interface PloModalProps {
     onSubmit: (data: PloFormData) => void;
     plo?: Plo | null;
     programStudiList: ProgramStudi[];
-    defaultPeriodeId?: string | number;
     loading?: boolean;
 }
 
@@ -27,8 +25,7 @@ export function PloModal({
     onClose,
     onSubmit,
     plo,
-    programStudiList,
-    defaultPeriodeId,
+    programStudiList = [],
     loading = false,
 }: PloModalProps) {
     const {
@@ -42,7 +39,6 @@ export function PloModal({
             kode:       '',
             deskripsi:  '',
             prodi_id:   '',
-            periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
         },
     });
 
@@ -54,18 +50,16 @@ export function PloModal({
                     kode:       plo.kode,
                     deskripsi:  plo.deskripsi,
                     prodi_id:   plo.prodi_id,
-                    periode_id: plo.periode_id ?? (defaultPeriodeId ? Number(defaultPeriodeId) : undefined),
                 });
             } else {
                 reset({
                     kode:       '',
                     deskripsi:  '',
                     prodi_id:   siProdi ? siProdi.id : '',
-                    periode_id: defaultPeriodeId ? Number(defaultPeriodeId) : undefined,
                 });
             }
         }
-    }, [plo, reset, open, defaultPeriodeId, programStudiList]);
+    }, [plo, reset, open, programStudiList]);
 
     return (
         <Modal
@@ -135,8 +129,6 @@ export function PloModal({
                         <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.deskripsi.message}</p>
                     )}
                 </div>
-                {/* Hidden field: periode_id — scoping PLO per periode */}
-                <input type="hidden" {...register('periode_id')} />
             </form>
         </Modal>
     );

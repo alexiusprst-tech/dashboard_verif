@@ -103,9 +103,27 @@ class SoalService
         // Validasi eligibilitas: LB semester check + pemetaan dosen_mata_kuliah
         $this->validateUploadEligibility($user, (int) $data['mata_kuliah_id'], $periode);
 
-        $template = $this->templateRepository->findById($data['template_id']);
-        if (!$template || !$template->is_active) {
-            throw new BusinessException('Template yang dipilih tidak valid atau sudah tidak aktif.', 422);
+        $cloId = $data['clo_id'] ?? null;
+        if (!$cloId && !empty($data['clo_ids'])) {
+            $cloId = is_array($data['clo_ids']) ? $data['clo_ids'][0] : $data['clo_ids'];
+        }
+
+        $templateId = $data['template_id'] ?? null;
+        if (!$templateId && !empty($data['kategori_id'])) {
+            $template = \App\Models\Template::where('kategori_id', $data['kategori_id'])
+                ->where('is_active', true)
+                ->first();
+            if (!$template) {
+                $template = \App\Models\Template::where('kategori_id', $data['kategori_id'])->first();
+            }
+            $templateId = $template?->id;
+        }
+
+        if ($templateId) {
+            $template = $this->templateRepository->findById($templateId);
+            if ($template && !$template->is_active && isset($data['template_id'])) {
+                throw new BusinessException('Template yang dipilih sudah tidak aktif.', 422);
+            }
         }
 
         // Store file in storage/app/public/soal
@@ -114,14 +132,14 @@ class SoalService
         $latestVersi = $this->soalRepository->getLatestVersi($user->id, $periode->id, $data['mata_kuliah_id']);
         $versi = $latestVersi + 1;
 
-        $soal = DB::transaction(function () use ($data, $user, $path, $versi) {
+        $soal = DB::transaction(function () use ($data, $user, $path, $versi, $cloId, $templateId) {
             return $this->soalRepository->create([
                 'uuid'           => Str::uuid()->toString(),
                 'dosen_id'       => $user->id,
                 'mata_kuliah_id' => $data['mata_kuliah_id'],
-                'clo_id'         => $data['clo_id'],
+                'clo_id'         => $cloId,
                 'periode_id'     => $data['periode_id'],
-                'template_id'    => $data['template_id'],
+                'template_id'    => $templateId,
                 'judul_soal'     => $data['judul_soal'],
                 'file_soal'      => $path,
                 'versi'          => $versi,
@@ -357,6 +375,10 @@ class SoalService
             ->orderBy('verifications.created_at', 'asc')
             ->get();
 
+        $ba = DB::table('berita_acara')->where('soal_id', $soal->id)->first();
+        $baPdfUrl = $ba && $ba->file_pdf ? \Illuminate\Support\Facades\Storage::disk('public')->url($ba->file_pdf) : null;
+        $baDocxUrl = $ba && $ba->file_docx ? \Illuminate\Support\Facades\Storage::disk('public')->url($ba->file_docx) : null;
+
         $history = [];
         $revNum = 1;
 
@@ -369,10 +391,14 @@ class SoalService
                 'status'        => $v->status,
                 'status_label'  => $statusLabel,
                 'notes'         => $v->catatan ?? '-',
+                'catatan_clo'   => !empty($v->catatan_clo) ? json_decode($v->catatan_clo, true) : null,
                 'version'       => 'v' . ($revNum - 1),
                 'file_soal'     => $soal->file_soal,
                 'verifier_name' => $v->verifier_name,
                 'created_at'    => $vTime->translatedFormat('d F Y, H:i'),
+                'ba_pdf_url'    => $baPdfUrl,
+                'ba_docx_url'   => $baDocxUrl,
+                'ba_nomor'      => $ba->nomor_ba ?? null,
             ];
         }
 

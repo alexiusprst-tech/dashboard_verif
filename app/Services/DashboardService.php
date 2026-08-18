@@ -56,16 +56,78 @@ class DashboardService
         $activePeriode = $this->getPeriodeTarget($periodeId);
         if (!$activePeriode) {
             return [
-                'periode' => null,
+                'periode'            => null,
                 'soal_status_counts' => [],
-                'deadline' => null
+                'deadline'           => null,
+                'koordinator_mk'     => null,
+            ];
+        }
+
+        $koordinatorData = null;
+        if ($user->isKoordinatorMk()) {
+            $assignments = \App\Models\PenugasanKoordinator::with('course')
+                ->where('dosen_id', $user->id)
+                ->where('periode_id', $activePeriode->id)
+                ->get();
+
+            $courseIds = $assignments->pluck('course_id')->all();
+
+            $verifikators = !empty($courseIds)
+                ? \App\Models\PenugasanVerifikator::with(['course', 'dosen', 'assignedBy'])
+                    ->where('periode_id', $activePeriode->id)
+                    ->whereIn('course_id', $courseIds)
+                    ->get()
+                : collect();
+
+            $soalsPerCourse = !empty($courseIds)
+                ? \App\Models\Soal::where('periode_id', $activePeriode->id)
+                    ->whereIn('mata_kuliah_id', $courseIds)
+                    ->get()
+                : collect();
+
+            $totalSoalAllCourses = $soalsPerCourse->count();
+            $approvedSoalAllCourses = $soalsPerCourse->filter(fn($s) => ($s->status instanceof \BackedEnum ? $s->status->value : (string)$s->status) === 'approved')->count();
+
+            $koordinatorData = [
+                'total_mata_kuliah'     => count($courseIds),
+                'total_verifikator'     => $verifikators->pluck('dosen_id')->unique()->count(),
+                'total_soal_mk'         => $totalSoalAllCourses,
+                'approved_soal_mk'      => $approvedSoalAllCourses,
+                'courses'               => $assignments->map(function ($a) use ($verifikators, $soalsPerCourse) {
+                    $courseVerifikators = $verifikators->where('course_id', $a->course_id)->values();
+                    $courseSoals = $soalsPerCourse->where('mata_kuliah_id', $a->course_id)->values();
+                    $totalCSoal = $courseSoals->count();
+                    $approvedCSoal = $courseSoals->filter(fn($s) => ($s->status instanceof \BackedEnum ? $s->status->value : (string)$s->status) === 'approved')->count();
+                    $pendingCSoal = $courseSoals->filter(fn($s) => in_array($s->status instanceof \BackedEnum ? $s->status->value : (string)$s->status, ['submitted', 'in_review']))->count();
+                    $revisiCSoal = $courseSoals->filter(fn($s) => ($s->status instanceof \BackedEnum ? $s->status->value : (string)$s->status) === 'revisi')->count();
+
+                    return [
+                        'course_id'    => $a->course_id,
+                        'kode_mk'      => $a->course?->kode_mk,
+                        'nama_mk'      => $a->course?->nama_mk,
+                        'sks'          => $a->course?->sks,
+                        'semester'     => $a->course?->semester,
+                        'total_soal'   => $totalCSoal,
+                        'approved_soal'=> $approvedCSoal,
+                        'pending_soal' => $pendingCSoal,
+                        'revisi_soal'  => $revisiCSoal,
+                        'verifikators' => $courseVerifikators->map(fn($v) => [
+                            'id'           => $v->dosen?->id,
+                            'nama_lengkap' => $v->dosen?->nama_lengkap,
+                            'kode_dosen'   => $v->dosen?->kode_dosen,
+                            'assigned_by'  => $v->assignedBy?->nama_lengkap,
+                            'assigned_at'  => $v->assigned_at?->toIso8601String(),
+                        ])->all(),
+                    ];
+                })->all(),
             ];
         }
 
         return [
-            'periode' => $activePeriode,
+            'periode'            => $activePeriode,
             'soal_status_counts' => $this->dashboardRepository->countSoalByStatus($activePeriode->id, $user->id),
-            'deadline' => $this->dashboardRepository->nearestDeadline($user->id)
+            'deadline'           => $this->dashboardRepository->nearestDeadline($user->id),
+            'koordinator_mk'     => $koordinatorData,
         ];
     }
 

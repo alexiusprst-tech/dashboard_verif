@@ -27,6 +27,7 @@ class PenugasanVerifikatorController extends Controller
     {
         $periodeId = $request->query('periode_id');
         $courseId  = $request->query('course_id');
+        $search    = $request->query('q') ?? $request->query('search');
         $perPage   = (int) $request->query('per_page', 50);
 
         if (!$periodeId) {
@@ -36,7 +37,78 @@ class PenugasanVerifikatorController extends Controller
             ], 422);
         }
 
-        $paginator = $this->repository->paginate((int) $periodeId, $courseId ? (int) $courseId : null, $perPage);
+        $user = $request->user();
+        $isKoordinatorView = false;
+        $coordinatedCourses = [];
+        $targetCourseId = $courseId ? (int) $courseId : null;
+
+        if ($user && !$user->isSuperAdmin()) {
+            if (!$user->isKoordinatorPadaPeriode((int) $periodeId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak. Fitur monitoring verifikator hanya tersedia untuk role Koordinator MK.',
+                ], 403);
+            }
+
+            $isKoordinatorView = true;
+
+            $coordinatedAssignments = \App\Models\PenugasanKoordinator::with('course')
+                ->where('dosen_id', $user->id)
+                ->where('periode_id', (int) $periodeId)
+                ->get();
+
+            $coordinatedCourseIds = $coordinatedAssignments->pluck('course_id')->all();
+            $coordinatedCourses = $coordinatedAssignments->map(fn($pk) => $pk->course ? [
+                'id'       => $pk->course->id,
+                'kode_mk'  => $pk->course->kode_mk,
+                'nama_mk'  => $pk->course->nama_mk,
+                'sks'      => $pk->course->sks,
+                'semester' => $pk->course->semester,
+            ] : null)->filter()->values()->all();
+
+            if (empty($coordinatedCourseIds)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data penugasan verifikator berhasil diambil.',
+                    'data'    => [],
+                    'meta'    => [
+                        'current_page'        => 1,
+                        'last_page'           => 1,
+                        'per_page'            => $perPage,
+                        'total'               => 0,
+                        'is_koordinator_view' => true,
+                        'coordinated_courses' => [],
+                    ],
+                ]);
+            }
+
+            if ($targetCourseId !== null) {
+                if (!in_array($targetCourseId, $coordinatedCourseIds)) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Data penugasan verifikator berhasil diambil.',
+                        'data'    => [],
+                        'meta'    => [
+                            'current_page'        => 1,
+                            'last_page'           => 1,
+                            'per_page'            => $perPage,
+                            'total'               => 0,
+                            'is_koordinator_view' => true,
+                            'coordinated_courses' => $coordinatedCourses,
+                        ],
+                    ]);
+                }
+            } else {
+                $targetCourseId = $coordinatedCourseIds;
+            }
+        }
+
+        $paginator = $this->repository->paginate(
+            (int) $periodeId,
+            $targetCourseId,
+            $search,
+            $perPage
+        );
 
         $items = collect($paginator->items())->map(function ($pv) {
             return [
@@ -46,9 +118,11 @@ class PenugasanVerifikatorController extends Controller
                 'periode_id'  => $pv->periode_id,
                 'assigned_at' => $pv->assigned_at?->toIso8601String(),
                 'course'      => $pv->course ? [
-                    'id'      => $pv->course->id,
-                    'kode_mk' => $pv->course->kode_mk,
-                    'nama_mk' => $pv->course->nama_mk,
+                    'id'       => $pv->course->id,
+                    'kode_mk'  => $pv->course->kode_mk,
+                    'nama_mk'  => $pv->course->nama_mk,
+                    'sks'      => $pv->course->sks,
+                    'semester' => $pv->course->semester,
                 ] : null,
                 'dosen'       => $pv->dosen ? [
                     'id'           => $pv->dosen->id,
@@ -60,6 +134,10 @@ class PenugasanVerifikatorController extends Controller
                     'id'           => $pv->assignedBy->id,
                     'nama_lengkap' => $pv->assignedBy->nama_lengkap,
                 ] : null,
+                'periode'     => $pv->periode ? [
+                    'id'           => $pv->periode->id,
+                    'nama_periode' => $pv->periode->nama_periode,
+                ] : null,
             ];
         });
 
@@ -68,10 +146,12 @@ class PenugasanVerifikatorController extends Controller
             'message' => 'Data penugasan verifikator berhasil diambil.',
             'data'    => $items,
             'meta'    => [
-                'current_page' => $paginator->currentPage(),
-                'last_page'    => $paginator->lastPage(),
-                'per_page'     => $paginator->perPage(),
-                'total'        => $paginator->total(),
+                'current_page'        => $paginator->currentPage(),
+                'last_page'           => $paginator->lastPage(),
+                'per_page'            => $paginator->perPage(),
+                'total'               => $paginator->total(),
+                'is_koordinator_view' => $isKoordinatorView,
+                'coordinated_courses' => $coordinatedCourses,
             ],
         ]);
     }

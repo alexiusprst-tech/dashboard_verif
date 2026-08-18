@@ -21,10 +21,6 @@ class StorePloRequest extends FormRequest
             $prodiId = $siProdi ? $siProdi->id : \App\Models\ProgramStudi::value('id');
             $this->merge(['prodi_id' => $prodiId]);
         }
-
-        if ($this->has('periode_id') && ($this->periode_id === '' || $this->periode_id === 'null' || $this->periode_id === 0 || $this->periode_id === '0')) {
-            $this->merge(['periode_id' => null]);
-        }
     }
 
     public function rules(): array
@@ -43,7 +39,6 @@ class StorePloRequest extends FormRequest
             'nama_plo'   => 'nullable|string|max:255',
             'deskripsi'  => 'required|string',
             'prodi_id'   => 'required|exists:program_studi,id',
-            'periode_id' => 'nullable|exists:periode,id',
         ];
     }
 
@@ -52,7 +47,7 @@ class StorePloRequest extends FormRequest
         return [
             'kode.required' => 'Kode PLO wajib diisi.',
             'kode.max' => 'Kode PLO maksimal 30 karakter.',
-            'kode.unique' => 'Kode PLO sudah terdaftar untuk mata kuliah ini.',
+            'kode.unique' => 'Kode PLO sudah terdaftar untuk Program Studi ini.',
             'prodi_id.required' => 'Program Studi wajib dipilih.',
             'prodi_id.exists' => 'Program Studi tidak valid.',
         ];

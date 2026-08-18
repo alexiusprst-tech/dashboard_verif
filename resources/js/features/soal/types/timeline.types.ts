@@ -22,14 +22,20 @@ export interface TimelineItem {
     created_at?: string;
 }
 
+import type { CatatanCloItem } from '@/features/verifikasi/types/verifikasi.types';
+
 export interface RevisionHistoryItem {
     id: number;
     revision: number;
     status: string;
     status_label?: string;
     notes: string;
+    catatan_clo?: CatatanCloItem[] | null;
     version: string;
     file_soal?: string | null;
     verifier_name: string;
     created_at: string;
+    ba_pdf_url?: string | null;
+    ba_docx_url?: string | null;
+    ba_nomor?: string | null;
 }

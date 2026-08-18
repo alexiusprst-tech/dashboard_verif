@@ -49,7 +49,7 @@ export function RevisionHistoryAccordion({ soalId }: RevisionHistoryAccordionPro
                             Belum terdapat riwayat revisi.
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
-                            Soal belum pernah diminta perbaikan oleh PIC verifikator.
+                            Soal belum pernah diminta perbaikan oleh Verifikator Soal.
                         </p>
                     </div>
                 ) : (
@@ -114,16 +114,101 @@ export function RevisionHistoryAccordion({ soalId }: RevisionHistoryAccordionPro
 
                                     {/* Accordion Body */}
                                     {isOpen && (
-                                        <div className="border-t border-amber-200/50 bg-white p-4">
-                                            <div className="mb-2 text-xs font-bold text-gray-500">
-                                                Catatan Verifikator:
-                                            </div>
-                                            <div className="rounded-xl bg-amber-50/60 p-3 text-xs leading-relaxed text-gray-800 border border-amber-200/60">
-                                                {item.notes}
+                                        <div className="border-t border-amber-200/50 bg-white p-4 space-y-3">
+                                            <div>
+                                                <div className="mb-1.5 text-xs font-bold text-gray-500">
+                                                    Catatan Keseluruhan:
+                                                </div>
+                                                <div className="rounded-xl bg-amber-50/60 p-3 text-xs leading-relaxed text-gray-800 border border-amber-200/60">
+                                                    {item.notes}
+                                                </div>
                                             </div>
 
+                                            {/* Catatan Khusus Per CLO jika ada */}
+                                            {item.catatan_clo && item.catatan_clo.length > 0 && (
+                                                <div>
+                                                    <div className="mb-1.5 text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                                                        <span>Catatan Khusus Per CLO:</span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {item.catatan_clo.map((c, cIdx) => (
+                                                            <div
+                                                                key={cIdx}
+                                                                className="rounded-lg border border-blue-100 bg-blue-50/40 p-2.5 text-xs space-y-1"
+                                                            >
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white font-mono">
+                                                                            {c.kode}
+                                                                        </span>
+                                                                        {c.deskripsi && (
+                                                                            <span className="text-[11px] text-gray-600 font-medium line-clamp-1">
+                                                                                {c.deskripsi}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {c.status && (
+                                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                                                            c.status === 'sesuai'
+                                                                                ? 'bg-green-100 text-green-700 border border-green-200'
+                                                                                : 'bg-orange-100 text-orange-700 border border-orange-200'
+                                                                        }`}>
+                                                                            {c.status === 'sesuai' ? 'Sesuai' : 'Perlu Revisi'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {c.catatan && (
+                                                                    <p className="text-gray-800 bg-white/80 p-2 rounded border border-blue-100/80 leading-relaxed mt-1">
+                                                                        {c.catatan}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Berita Acara Otomatis */}
+                                            {(item.ba_pdf_url || item.ba_docx_url) && (
+                                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-indigo-50/70 border border-indigo-200 p-2.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="h-4 w-4 text-indigo-600 shrink-0" />
+                                                        <div>
+                                                            <div className="text-xs font-bold text-indigo-950">
+                                                                Berita Acara Evaluasi ({item.ba_nomor ?? 'Resmi'})
+                                                            </div>
+                                                            <div className="text-[11px] text-indigo-700">
+                                                                Dokumen hasil evaluasi kesesuaian soal dengan CLO.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        {item.ba_pdf_url && (
+                                                            <a
+                                                                href={item.ba_pdf_url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-bold text-white shadow-2xs hover:bg-red-700 transition"
+                                                            >
+                                                                PDF
+                                                            </a>
+                                                        )}
+                                                        {item.ba_docx_url && (
+                                                            <a
+                                                                href={item.ba_docx_url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-bold text-white shadow-2xs hover:bg-indigo-700 transition"
+                                                            >
+                                                                Word (.docx)
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {item.file_soal && (
-                                                <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
+                                                <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-500 pt-1 border-t border-gray-100">
                                                     <FileText className="h-3.5 w-3.5 text-amber-600" />
                                                     <span>Versi Dokumen: </span>
                                                     <span className="font-semibold font-mono text-gray-700">

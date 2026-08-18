@@ -30,20 +30,27 @@ class EloquentPenugasanVerifikatorRepository implements PenugasanVerifikatorRepo
         return PenugasanVerifikator::with(['course', 'dosen', 'periode', 'assignedBy'])->find($id);
     }
 
-    public function paginate(int $periodeId, ?int $courseId = null, int $perPage = 15): LengthAwarePaginator
+    public function paginate(int $periodeId, int|array|null $courseId = null, ?string $search = null, int $perPage = 15): LengthAwarePaginator
     {
-        $query = PenugasanVerifikator::with(['course', 'dosen', 'assignedBy'])
+        $query = PenugasanVerifikator::with(['course', 'dosen', 'assignedBy', 'periode'])
             ->where('periode_id', $periodeId);
 
-        if ($courseId) {
-            $query->where('course_id', $courseId);
-        } else {
-            // Tampilkan 1 baris per dosen verifikator pada periode ini (mencegah duplikat baris di tabel)
-            $query->whereIn('id', function ($sub) use ($periodeId) {
-                $sub->selectRaw('MIN(id)')
-                    ->from('penugasan_verifikator')
-                    ->where('periode_id', $periodeId)
-                    ->groupBy('dosen_id');
+        if (is_array($courseId)) {
+            $query->whereIn('course_id', $courseId);
+        } elseif ($courseId !== null) {
+            $query->where('course_id', (int) $courseId);
+        }
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('dosen', function ($dq) use ($search) {
+                    $dq->where('nama_lengkap', 'like', "%{$search}%")
+                        ->orWhere('kode_dosen', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                })->orWhereHas('course', function ($cq) use ($search) {
+                    $cq->where('nama_mk', 'like', "%{$search}%")
+                        ->orWhere('kode_mk', 'like', "%{$search}%");
+                });
             });
         }
 

@@ -11,7 +11,8 @@ interface ModalProps {
     description?: string;
     children: ReactNode;
     footer?: ReactNode;
-    size?: 'sm' | 'md' | 'lg' | 'xl';
+    size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
+    className?: string;
 }
 
 const SIZE_CLASSES = {
@@ -19,6 +20,9 @@ const SIZE_CLASSES = {
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-2xl',
+    '2xl': 'max-w-4xl',
+    '3xl': 'max-w-5xl',
+    '4xl': 'max-w-6xl',
 };
 
 /* ── Component ──────────────────────────────────────────────── */
@@ -33,7 +37,7 @@ const SIZE_CLASSES = {
  * - footer: opsional slot untuk tombol aksi
  * - size: lebar modal (default: 'md')
  */
-export function Modal({ open, onClose, title, description, children, footer, size = 'md' }: ModalProps) {
+export function Modal({ open, onClose, title, description, children, footer, size = 'md', className }: ModalProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
 
     // Close on Escape key
@@ -79,6 +83,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
                     'relative z-10 w-full rounded-2xl bg-white shadow-2xl',
                     'flex flex-col max-h-[90vh]',
                     SIZE_CLASSES[size],
+                    className,
                 )}
             >
                 {/* Header */}

@@ -12,7 +12,7 @@ class EloquentSoalRepository implements SoalRepositoryContract
     {
         return Soal::with([
             'dosen',
-            'mataKuliah',
+            'mataKuliah.clo.plo',
             'clo.plo',
             'periode',
             'template.kategori',
@@ -27,7 +27,7 @@ class EloquentSoalRepository implements SoalRepositoryContract
 
     public function paginate(array $filters, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Soal::with(['dosen', 'mataKuliah', 'clo', 'periode', 'template.kategori']);
+        $query = Soal::with(['dosen', 'mataKuliah.clo.plo', 'clo.plo', 'periode', 'template.kategori']);
 
         if (!empty($filters['periode_id'])) {
             $query->where('periode_id', $filters['periode_id']);
@@ -97,17 +97,33 @@ class EloquentSoalRepository implements SoalRepositoryContract
 
     public function findForVerifier(int $verifierId, int $periodeId, int $perPage = 15, ?string $status = null): LengthAwarePaginator
     {
-        $query = Soal::with(['dosen', 'mataKuliah', 'clo', 'template.kategori'])
-            ->where('periode_id', $periodeId)
-            ->whereIn('mata_kuliah_id', function ($q) use ($verifierId, $periodeId) {
-                $q->select('course_id')
-                    ->from('penugasan_verifikator')
-                    ->where('dosen_id', $verifierId)
-                    ->where('periode_id', $periodeId);
-            });
+        $user = \App\Models\User::find($verifierId);
+        $isSuperAdmin = $user?->is_super_admin ?? false;
+
+        $query = Soal::with(['dosen', 'mataKuliah.clo.plo', 'clo.plo', 'template.kategori'])
+            ->where('periode_id', $periodeId);
+
+        if (!$isSuperAdmin) {
+            // Verifikator tidak dapat memverifikasi soal yang diupload sendiri
+            $query->where('dosen_id', '!=', $verifierId)
+                ->where(function ($q) use ($verifierId, $periodeId) {
+                    $q->whereIn('mata_kuliah_id', function ($sub) use ($verifierId, $periodeId) {
+                        $sub->select('course_id')
+                            ->from('penugasan_verifikator')
+                            ->where('dosen_id', $verifierId)
+                            ->where('periode_id', $periodeId);
+                    })
+                    ->orWhereIn('dosen_id', function ($sub) use ($verifierId, $periodeId) {
+                        $sub->select('target_dosen_id')
+                            ->from('penugasan')
+                            ->where('verifier_id', $verifierId)
+                            ->where('periode_id', $periodeId);
+                    });
+                });
+        }
 
         if (!empty($status) && $status !== 'all' && $status !== 'semua') {
-            if ($status === 'pending') {
+            if ($status === 'pending' || $status === 'perlu_verifikasi') {
                 $query->whereIn('status', ['submitted', 'in_review', 'revisi']);
             } else {
                 $query->where('status', $status);

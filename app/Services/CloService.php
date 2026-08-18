@@ -22,12 +22,19 @@ class CloService
 
     public function create(array $data, User $user): Clo
     {
+        $courses = $data['mata_kuliah_ids'] ?? $data['courses'] ?? null;
+        unset($data['mata_kuliah_ids'], $data['courses']);
+
         $data['created_by'] = $user->id;
         $clo = $this->cloRepository->create($data);
 
+        if (is_array($courses)) {
+            $clo->courses()->sync($courses);
+        }
+
         $this->activityLogService->log("Membuat CLO baru: {$clo->kode}", 'CLO', $user->id);
 
-        return $clo;
+        return $clo->load(['courses', 'plo']);
     }
 
     public function update(int $id, array $data, User $user): Clo
@@ -42,11 +49,18 @@ class CloService
             throw new BusinessException('Anda tidak memiliki akses untuk mengubah CLO ini.', 403);
         }
 
+        $courses = $data['mata_kuliah_ids'] ?? $data['courses'] ?? null;
+        unset($data['mata_kuliah_ids'], $data['courses']);
+
         $clo = $this->cloRepository->update($clo, $data);
+
+        if (is_array($courses)) {
+            $clo->courses()->sync($courses);
+        }
 
         $this->activityLogService->log("Mengubah CLO: {$clo->kode}", 'CLO', $user->id);
 
-        return $clo;
+        return $clo->load(['courses', 'plo']);
     }
 
     public function delete(int $id, User $user): void

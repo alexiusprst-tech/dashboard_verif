@@ -106,10 +106,15 @@ class BeritaAcaraController extends Controller
             abort(404, 'File DOCX belum di-generate.');
         }
 
-        $path = \Illuminate\Support\Facades\Storage::disk('local')->path($ba->file_docx);
-        if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($ba->file_docx)) {
+        $disk = \Illuminate\Support\Facades\Storage::disk('public')->exists($ba->file_docx)
+            ? 'public'
+            : 'local';
+
+        if (!\Illuminate\Support\Facades\Storage::disk($disk)->exists($ba->file_docx)) {
             abort(404, 'File tidak ditemukan di server.');
         }
+
+        $path = \Illuminate\Support\Facades\Storage::disk($disk)->path($ba->file_docx);
 
         return response()->download($path, basename($ba->file_docx));
     }

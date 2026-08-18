@@ -95,6 +95,7 @@ class EloquentDashboardRepository implements DashboardRepositoryContract
             $total = DB::table('soal')
                 ->where('periode_id', $periodeId)
                 ->whereIn('mata_kuliah_id', $assignedCourseIds)
+                ->where('dosen_id', '!=', $verifierId)
                 ->whereNull('deleted_at')
                 ->where('status', '!=', 'draft')
                 ->count();
@@ -102,6 +103,7 @@ class EloquentDashboardRepository implements DashboardRepositoryContract
             $done = DB::table('soal')
                 ->where('periode_id', $periodeId)
                 ->whereIn('mata_kuliah_id', $assignedCourseIds)
+                ->where('dosen_id', '!=', $verifierId)
                 ->whereNull('deleted_at')
                 ->whereIn('status', ['approved', 'revisi', 'rejected'])
                 ->count();

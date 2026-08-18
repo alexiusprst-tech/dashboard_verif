@@ -20,6 +20,7 @@ class VerificationResource extends JsonResource
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'catatan' => $this->catatan,
+            'catatan_clo' => $this->catatan_clo,
             'verified_at' => $this->verified_at?->toIso8601String(),
         ];
     }

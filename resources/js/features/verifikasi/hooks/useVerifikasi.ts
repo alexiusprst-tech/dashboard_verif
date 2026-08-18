@@ -13,6 +13,7 @@ export function useTugasSaya(params: {
     return useQuery({
         queryKey: [QUERY_KEY, 'tugas-saya', params],
         queryFn: () => getTugasSaya(params),
+        enabled: Boolean(params.periode_id),
     });
 }
 

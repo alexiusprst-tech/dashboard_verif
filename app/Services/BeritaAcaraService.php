@@ -7,8 +7,10 @@ use App\Repositories\Contracts\VerificationRepositoryContract;
 use App\Repositories\Contracts\PeriodeRepositoryContract;
 use App\Repositories\Contracts\BeritaAcaraTemplateRepositoryContract;
 use App\Models\BeritaAcara;
+use App\Models\Verification;
 use App\Models\User;
 use App\Enums\PrintType;
+use App\Enums\VerifikasiStatus;
 use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +37,143 @@ class BeritaAcaraService
         $this->periodeRepository = $periodeRepository;
         $this->activityLogService = $activityLogService;
         $this->templateBaRepository = $templateBaRepository;
+    }
+
+    /**
+     * Otomatis membuat dan merender Berita Acara Evaluasi untuk setiap Soal yang diverifikasi.
+     */
+    public function generateForVerification(Verification $verification): BeritaAcara
+    {
+        $verification->loadMissing([
+            'soal.mataKuliah.clo.plo',
+            'soal.mataKuliah.programStudi',
+            'soal.dosen',
+            'soal.periode',
+            'soal.kategori',
+            'verifier',
+        ]);
+
+        $soal = $verification->soal;
+        $verifier = $verification->verifier;
+        $periode = $soal->periode;
+        $course = $soal->mataKuliah;
+
+        // Cari dosen koordinator MK
+        $koordinator = null;
+        if ($course && $periode) {
+            $koordinatorAssign = \App\Models\PenugasanKoordinator::with('dosen')
+                ->where('course_id', $course->id)
+                ->where('periode_id', $periode->id)
+                ->first();
+            if ($koordinatorAssign && $koordinatorAssign->dosen) {
+                $koordinator = $koordinatorAssign->dosen->nama_lengkap ?? $koordinatorAssign->dosen->name;
+            }
+        }
+
+        // Build baris evaluasi dari catatan_clo atau CLO mata kuliah
+        $evaluasiList = [];
+        $bentukAsesmen = $soal->kategori?->nama_kategori ?? 'UTS';
+
+        if (!empty($verification->catatan_clo) && is_array($verification->catatan_clo)) {
+            foreach ($verification->catatan_clo as $idx => $c) {
+                $evaluasiList[] = [
+                    'bentuk_asesmen'   => $bentukAsesmen,
+                    'clo'              => $c['kode'] ?? ('CLO' . ($idx + 1)),
+                    'no_soal'          => (string)($idx + 1),
+                    'catatan_evaluasi' => (!empty($c['catatan']) ? $c['catatan'] : (($c['status'] ?? 'sesuai') === 'sesuai' ? 'Sesuai' : 'Perlu Revisi')),
+                    'rekomendasi'      => ($c['status'] ?? 'sesuai') === 'revisi' ? 'Perbaiki butir soal terkait CLO ini' : '-',
+                ];
+            }
+        } elseif ($course && $course->clo->isNotEmpty()) {
+            foreach ($course->clo as $idx => $clo) {
+                $evaluasiList[] = [
+                    'bentuk_asesmen'   => $bentukAsesmen,
+                    'clo'              => $clo->kode,
+                    'no_soal'          => (string)($idx + 1),
+                    'catatan_evaluasi' => $verification->status === VerifikasiStatus::Approved ? 'Sesuai' : ($verification->catatan ?: 'Perlu Revisi'),
+                    'rekomendasi'      => $verification->status === VerifikasiStatus::Revisi ? 'Perbaiki butir soal' : '-',
+                ];
+            }
+        } else {
+            $evaluasiList[] = [
+                'bentuk_asesmen'   => $bentukAsesmen,
+                'clo'              => 'CLO1',
+                'no_soal'          => '1',
+                'catatan_evaluasi' => $verification->catatan ?: ($verification->status === VerifikasiStatus::Approved ? 'Sesuai' : 'Perlu Revisi'),
+                'rekomendasi'      => '-',
+            ];
+        }
+
+        $baData = [
+            'form_no'                 => '100-S1SI-001-R1',
+            'no_dokumen'              => '100-S1SI-001-R1',
+            'no_revisi'               => '00',
+            'berlaku'                 => now()->format('d/m/Y'),
+            'semester_tahun_akademik' => $periode ? (ucfirst($periode->semester) . ' ' . $periode->tahun_akademik) : 'Ganjil 2026/2027',
+            'fakultas'                => 'Rekayasa Industri',
+            'nama_evaluator'          => $verifier->nama_lengkap ?? $verifier->name,
+            'kode_dosen'              => $verifier->kode_dosen ?? ($verifier->nip ?? 'EVA'),
+            'program_studi'           => $course?->programStudi?->nama_prodi ?? 'S1 Sistem Informasi',
+            'kode_mata_kuliah'        => $course->kode_mk ?? 'MK',
+            'nama_mata_kuliah'        => $course->nama_mk ?? $soal->judul_soal,
+            'program_studi_mk'        => $course?->programStudi?->nama_prodi ?? 'S1 Sistem Informasi',
+            'dosen_koordinator'       => $koordinator ?? 'Dr. Dosen Koordinator, M.Kom.',
+            'evaluasi'                => $evaluasiList,
+            'kota'                    => 'Bandung',
+            'tanggal'                 => now()->translatedFormat('d F Y'),
+            'ttd'                     => [
+                'evaluator_soal'    => $verifier->nama_lengkap ?? $verifier->name,
+                'dosen_koordinator' => $koordinator ?? 'Dr. Dosen Koordinator, M.Kom.',
+                'ka_prodi'          => 'Dr. Hubbul Walidain, S.Kom., M.T.',
+            ],
+        ];
+
+        Storage::disk('public')->makeDirectory('berita_acara');
+
+        $generatorService = app(BeritaAcaraEvaluasiGeneratorService::class);
+
+        // Generate PDF
+        $pdf = $generatorService->generatePdf($baData);
+        $relativePdfPath = "berita_acara/BA_SOAL_{$soal->id}.pdf";
+        Storage::disk('public')->put($relativePdfPath, $pdf->output());
+
+        // Generate DOCX
+        $tempDocxPath = $generatorService->generateDocx($baData);
+        $relativeDocxPath = "berita_acara/BA_SOAL_{$soal->id}.docx";
+        Storage::disk('public')->put($relativeDocxPath, file_get_contents($tempDocxPath));
+        if (\Illuminate\Support\Facades\File::exists($tempDocxPath)) {
+            \Illuminate\Support\Facades\File::delete($tempDocxPath);
+        }
+
+        $nomorBa = sprintf(
+            'BA/%s/%s/%04d',
+            str_replace(' ', '-', $periode->tahun_akademik ?? '2026-2027'),
+            $course->kode_mk ?? 'MK',
+            $soal->id
+        );
+
+        $ba = BeritaAcara::updateOrCreate(
+            ['soal_id' => $soal->id],
+            [
+                'nomor_ba'     => $nomorBa,
+                'periode_id'   => $soal->periode_id,
+                'verifier_id'  => $verifier->id,
+                'generated_at' => now(),
+                'file_pdf'     => $relativePdfPath,
+                'file_docx'    => $relativeDocxPath,
+            ]
+        );
+
+        \App\Models\BeritaAcaraItem::updateOrCreate(
+            ['berita_acara_id' => $ba->id, 'soal_id' => $soal->id],
+            [
+                'verification_id'  => $verification->id,
+                'status_snapshot'  => $verification->status->value,
+                'catatan_snapshot' => $verification->catatan,
+            ]
+        );
+
+        return $ba;
     }
 
     /**
@@ -270,7 +409,13 @@ class BeritaAcaraService
             throw new BusinessException('Berita Acara tidak ditemukan.', 404);
         }
 
-        if (!$user->isSuperAdmin() && $ba->verifier_id !== $user->id) {
+        $isAuthorized = $user->isSuperAdmin()
+            || $user->isCoordinator()
+            || $ba->verifier_id === $user->id
+            || ($ba->soal && $ba->soal->dosen_id === $user->id)
+            || $ba->items()->whereHas('soal', fn($q) => $q->where('dosen_id', $user->id))->exists();
+
+        if (!$isAuthorized) {
             throw new BusinessException('Anda tidak berwenang untuk mengakses Berita Acara ini.', 403);
         }
 

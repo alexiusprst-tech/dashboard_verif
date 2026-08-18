@@ -27,6 +27,11 @@ class Course extends Model
         return $this->belongsTo(ProgramStudi::class, 'prodi_id');
     }
 
+    public function prodi(): BelongsTo
+    {
+        return $this->programStudi();
+    }
+
     public function clo(): BelongsToMany
     {
         return $this->belongsToMany(Clo::class, 'course_clo', 'course_id', 'clo_id')->withTimestamps();
@@ -35,5 +40,15 @@ class Course extends Model
     public function soal(): HasMany
     {
         return $this->hasMany(Soal::class, 'mata_kuliah_id');
+    }
+
+    public function penugasanKoordinator(): HasMany
+    {
+        return $this->hasMany(PenugasanKoordinator::class, 'course_id');
+    }
+
+    public function penugasanVerifikator(): HasMany
+    {
+        return $this->hasMany(PenugasanVerifikator::class, 'course_id');
     }
 }

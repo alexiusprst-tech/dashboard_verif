@@ -10,7 +10,7 @@ interface PloRepositoryContract
 {
     public function findById(int $id): ?Plo;
 
-    public function findByProdi(int $prodiId, int $perPage = 15, ?int $mataKuliahId = null, ?int $periodeId = null, ?string $search = null): LengthAwarePaginator;
+    public function findByProdi(int $prodiId, int $perPage = 15, ?int $mataKuliahId = null, ?string $search = null): LengthAwarePaginator;
 
     public function create(array $data): Plo;
 
